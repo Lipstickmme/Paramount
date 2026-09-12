@@ -125,6 +125,7 @@ come next.
    | [`supabase/migrations/0002_email.sql`](../supabase/migrations/0002_email.sql) | `email_threads`, `email_messages` (skip if you are not receiving mail) |
    | [`supabase/migrations/0003_shipments.sql`](../supabase/migrations/0003_shipments.sql) | `shipments`, `shipment_events`, `quote_requests`, the roll-up trigger and `track_shipment()` — **the tracking product; without it the desk cannot book anything and every public lookup answers "not found"** |
    | [`supabase/migrations/0004_settings.sql`](../supabase/migrations/0004_settings.sql) | The email and chat settings the desk edits, on the settings row |
+   | [`supabase/migrations/0005_portal.sql`](../supabase/migrations/0005_portal.sql) | `shipment_claims` and the portal's two settings — needed for the customer portal at `/portal` |
 
    Everything is behind row level security. `enquiries` has no anon policy at all:
    writes arrive through the API using the service role.

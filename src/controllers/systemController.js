@@ -38,6 +38,13 @@ const PROBES = [
     columns: 'id,created_at,name,email,mode,origin,destination,status',
     migration: '0003_shipments.sql',
   },
+  // The customer portal. Without it, signing in works and the list is always
+  // empty, which reads as a fault rather than a missing migration.
+  {
+    table: 'shipment_claims',
+    columns: 'id,created_at,user_id,shipment_id,label',
+    migration: '0005_portal.sql',
+  },
   { table: 'applications', columns: 'id,created_at,name,email,phone,role_id,role_title,portfolio,experience,message,ip,status' },
   { table: 'chat_sessions', columns: 'id,created_at,visitor_id,last_message_at,status,handled_by_agent' },
   { table: 'chat_messages', columns: 'id,created_at,session_id,sender,body' },
@@ -163,6 +170,13 @@ exports.health = async (req, res) => {
     } catch (err) {
       warnings.push(
         'site_settings has no email or chat columns, so those settings cannot be changed from the desk and the environment decides them. Run supabase/migrations/0004_settings.sql.'
+      );
+    }
+    try {
+      await supabase.select('site_settings', 'select=portal_enabled&limit=1');
+    } catch (err) {
+      warnings.push(
+        'site_settings has no portal columns, so the customer portal cannot be switched off from the desk. Run supabase/migrations/0005_portal.sql.'
       );
     }
   }

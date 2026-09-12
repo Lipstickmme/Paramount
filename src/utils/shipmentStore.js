@@ -21,7 +21,9 @@ const tracking = require('./tracking');
 
 const TABLE = 'shipments';
 const EVENTS = 'shipment_events';
+const CLAIMS = 'shipment_claims';
 const FILE = 'shipments.json';
+const CLAIMS_FILE = 'claims.json';
 
 /** Everything the desk may set. Anything else in a payload is ignored. */
 const FIELDS = [
@@ -51,6 +53,9 @@ const PUBLIC_FIELDS = [
   'signed_by', 'picked_up_at', 'departed_at', 'estimated_delivery', 'delivered_at',
   'created_at', 'updated_at',
 ];
+
+/** How many ids to put in one `in.()` filter. Keeps the URL well inside limits. */
+const ID_BATCH = 80;
 
 const filePath = () => path.join(dataDir(), FILE);
 let writeChain = Promise.resolve();
@@ -340,6 +345,194 @@ async function remove(id) {
   });
 }
 
+/* --------------------------------------------------------------- claims --- */
+
+const claimsPath = () => path.join(dataDir(), CLAIMS_FILE);
+
+async function readClaims() {
+  try {
+    const raw = await fs.readFile(claimsPath(), 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    if (err.code === 'ENOENT') return [];
+    throw err;
+  }
+}
+
+function writeClaims(mutate) {
+  const task = writeChain.then(async () => {
+    await fs.mkdir(dataDir(), { recursive: true });
+    const all = await readClaims();
+    const result = await mutate(all);
+    await fs.writeFile(claimsPath(), JSON.stringify(all, null, 2), 'utf8');
+    return result;
+  });
+  writeChain = task.catch(() => {});
+  return task;
+}
+
+/**
+ * Attach a consignment to a customer's account.
+ *
+ * Claiming twice is not an error: the customer asked for it to be on their
+ * account, and it is. The unique index is what makes that true on the database
+ * side, and `ignore-duplicates` is what stops it being reported as a failure.
+ */
+async function claim(userId, shipmentId, label) {
+  const row = { user_id: userId, shipment_id: shipmentId, label: label || null };
+  const supabase = getSupabase();
+
+  if (supabase) {
+    await supabase.upsertOn(CLAIMS, row, 'user_id,shipment_id');
+    const rows = await supabase.select(
+      CLAIMS,
+      `select=*&user_id=eq.${encodeURIComponent(userId)}&shipment_id=eq.${encodeURIComponent(shipmentId)}&limit=1`
+    );
+    return rows[0] || row;
+  }
+
+  return writeClaims(async (all) => {
+    const existing = all.find((c) => c.user_id === userId && c.shipment_id === shipmentId);
+    if (existing) return existing;
+    const created = { id: crypto.randomUUID(), created_at: nowIso(), ...row };
+    all.unshift(created);
+    return created;
+  });
+}
+
+/** True when an error is "that table is not in this database". */
+const isMissingTable = (err) => /PGRST205|Could not find the table/i.test(String(err && err.message));
+
+async function listClaims(userId) {
+  const supabase = getSupabase();
+  if (supabase) {
+    try {
+      return await supabase.select(
+        CLAIMS,
+        `select=*&user_id=eq.${encodeURIComponent(userId)}&order=created_at.desc&limit=500`
+      );
+    } catch (err) {
+      // 0005_portal.sql brings the table. Without it a customer still sees the
+      // consignments their address matches, rather than an error page; the
+      // operator is told which file is missing by /api/health?probe=1.
+      if (!isMissingTable(err)) throw err;
+      console.warn('[paramount] shipment_claims is missing; run supabase/migrations/0005_portal.sql');
+      return [];
+    }
+  }
+  return (await readClaims()).filter((c) => c.user_id === userId);
+}
+
+/** Remove a consignment from an account. The consignment itself is untouched. */
+async function removeClaim(userId, shipmentId) {
+  const supabase = getSupabase();
+  if (supabase) {
+    await supabase.remove(
+      CLAIMS,
+      `user_id=eq.${encodeURIComponent(userId)}&shipment_id=eq.${encodeURIComponent(shipmentId)}`
+    );
+    return true;
+  }
+  return writeClaims(async (all) => {
+    const i = all.findIndex((c) => c.user_id === userId && c.shipment_id === shipmentId);
+    if (i >= 0) all.splice(i, 1);
+    return i >= 0;
+  });
+}
+
+/**
+ * Everything one customer may see.
+ *
+ * Two sources, deliberately separate: consignments they claimed with a tracking
+ * number, and — only when the caller has proved the address is theirs —
+ * consignments booked to or from it. Each row says which link brought it in, so
+ * the portal can show the difference and only offer to remove the claims.
+ *
+ * @param {{userId: string, email?: string, matchEmail?: boolean}} who
+ */
+async function listForCustomer({ userId, email, matchEmail = false }) {
+  const supabase = getSupabase();
+  const address = String(email || '').trim().toLowerCase();
+
+  const claims = await listClaims(userId);
+  const claimed = new Map();
+
+  if (claims.length) {
+    if (supabase) {
+      // Fetched in batches rather than one request per claim, and rather than
+      // one request for all of them: an `in.()` list of a few hundred uuids
+      // makes a URL long enough for a proxy to reject outright.
+      const ids = claims.map((c) => c.shipment_id);
+      for (let i = 0; i < ids.length; i += ID_BATCH) {
+        const batch = ids.slice(i, i + ID_BATCH);
+        const rows = await supabase.select(
+          TABLE,
+          `select=*&id=in.(${batch.map((id) => encodeURIComponent(id)).join(',')})`
+        );
+        rows.forEach((row) => claimed.set(row.id, row));
+      }
+    } else {
+      const all = await readFile();
+      claims.forEach((c) => {
+        const hit = all.find((sh) => sh.id === c.shipment_id);
+        if (hit) {
+          const { events, ...rest } = hit;
+          claimed.set(hit.id, rest);
+        }
+      });
+    }
+  }
+
+  const matched = new Map();
+  if (matchEmail && address) {
+    if (supabase) {
+      const encoded = encodeURIComponent(address);
+      const [toThem, fromThem] = await Promise.all([
+        supabase.select(TABLE, `select=*&receiver_email=eq.${encoded}&order=created_at.desc&limit=200`),
+        supabase.select(TABLE, `select=*&shipper_email=eq.${encoded}&order=created_at.desc&limit=200`),
+      ]);
+      [...toThem, ...fromThem].forEach((row) => matched.set(row.id, row));
+    } else {
+      (await readFile()).forEach((sh) => {
+        const hit = [sh.receiver_email, sh.shipper_email]
+          .map((v) => String(v || '').trim().toLowerCase())
+          .includes(address);
+        if (hit) {
+          const { events, ...rest } = sh;
+          matched.set(sh.id, rest);
+        }
+      });
+    }
+  }
+
+  // A consignment reached both ways is one consignment, and it is claimed:
+  // that is the link the customer can act on.
+  const rows = [];
+  matched.forEach((row, id) => {
+    if (!claimed.has(id)) rows.push({ row, via: 'email' });
+  });
+  claimed.forEach((row) => rows.push({ row, via: 'claim' }));
+
+  return rows.sort((a, b) => String(b.row.created_at).localeCompare(String(a.row.created_at)));
+}
+
+/** True when this consignment is one the customer is allowed to open. */
+async function customerCanSee({ userId, email, matchEmail = false }, shipment) {
+  if (!shipment) return false;
+  const address = String(email || '').trim().toLowerCase();
+
+  if (matchEmail && address) {
+    const onIt = [shipment.receiver_email, shipment.shipper_email]
+      .map((v) => String(v || '').trim().toLowerCase())
+      .includes(address);
+    if (onIt) return true;
+  }
+
+  const claims = await listClaims(userId);
+  return claims.some((c) => c.shipment_id === shipment.id);
+}
+
 /* ---------------------------------------------------------------- views --- */
 
 /**
@@ -389,6 +582,7 @@ module.exports = {
   PUBLIC_FIELDS,
   TABLE,
   EVENTS,
+  CLAIMS,
   pickFields,
   create,
   list,
@@ -399,4 +593,10 @@ module.exports = {
   addEvent,
   remove,
   toPublic,
+  claim,
+  isMissingTable,
+  listClaims,
+  removeClaim,
+  listForCustomer,
+  customerCanSee,
 };

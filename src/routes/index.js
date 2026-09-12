@@ -18,6 +18,8 @@ router.get('/site', require('../controllers/siteController').get);
 router.use('/track', require('../middleware/rateLimiter').trackLimiter, require('./track'));
 // Desk-only. Each handler checks the caller's session for itself.
 router.use('/shipments', require('./shipments'));
+// Customers, signed in to their own account.
+router.use('/portal', require('./portal'));
 
 router.use('/services', require('./services'));
 router.use('/network', require('./network'));

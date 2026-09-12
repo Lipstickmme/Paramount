@@ -576,6 +576,20 @@ form { display: grid; gap: 18px; }
 
 .nav-end { display: flex; align-items: center; gap: 10px; }
 
+.nav-portal {
+  padding: 9px 14px;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--ink-2);
+  transition: color 0.25s, background 0.25s;
+}
+.nav-portal:hover, .nav-portal.is-active { color: var(--ink); background: var(--panel); }
+
+/* Shown only once the row collapses into the menu, where there is room for it
+   to be spelled out. */
+.only-compact { display: none; }
+
 .theme-toggle {
   width: 38px;
   height: 38px;
@@ -616,8 +630,9 @@ form { display: grid; gap: 18px; }
 .nav-toggle[aria-expanded='true'] span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
 
 @media (max-width: 1020px) {
-  .nav-cta { display: none; }
+  .nav-cta, .nav-portal { display: none; }
   .nav-toggle { display: block; }
+  .only-compact { display: block; }
   .nav-links {
     position: fixed;
     inset: 68px 12px auto 12px;
@@ -1718,3 +1733,158 @@ form { display: grid; gap: 18px; }
   .tilt:hover { transform: translateY(-3px); }
   .hero h1 .line > span { transform: none; animation: none; }
 }
+
+
+/* =========================================================================
+   Customer portal
+   ========================================================================= */
+
+/* The portal leads with a job to do — sign in, or read your consignments — so
+   its header is deliberately smaller than a marketing page's. Without this the
+   sign-in card starts below the fold on a laptop. */
+.page-portal .page-hero { padding-bottom: clamp(18px, 2.5vw, 30px); }
+.page-portal .page-hero h1 { font-size: clamp(2rem, 3.6vw, 3.1rem); }
+.page-portal .page-hero .lede { font-size: 1rem; max-width: 58ch; }
+
+.pm-gate { display: grid; place-items: center; padding-block: 0 clamp(20px, 5vw, 60px); }
+.pm-gate .card { width: min(100%, 460px); display: grid; gap: 14px; }
+.pm-gate .card h2 { font-size: clamp(1.4rem, 2.6vw, 1.9rem); }
+
+.pm-auth .btn { margin-top: 4px; }
+.pm-auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  justify-content: space-between;
+}
+.pm-auth-links .link {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+#portal-shell { display: grid; gap: 20px; }
+
+/* Three small numbers, not three full-width panels: on a phone they are a
+   summary, and stacking them pushes the consignments themselves off screen. */
+#portal-counts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+#portal-counts .stat { padding: clamp(14px, 2.4vw, 28px); }
+#portal-counts .stat b { font-size: clamp(1.5rem, 4vw, 2.6rem); }
+#portal-counts .stat span { font-size: 0.78rem; }
+
+.pm-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 20px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+}
+.pm-who { display: block; font-family: var(--display); font-size: 1.05rem; margin-top: 4px; }
+
+.pm-claim { padding: clamp(18px, 2.2vw, 26px); }
+.pm-claim .tracker-head h2 { font-size: 1.1rem; }
+.pm-claim input {
+  font-family: var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.pm-claim input::placeholder { text-transform: none; letter-spacing: 0.04em; }
+
+.pm-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.pm-tab {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-3);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: color 0.25s, border-color 0.25s, background 0.25s;
+}
+.pm-tab:hover { color: var(--ink); }
+.pm-tab.is-active {
+  color: var(--ink);
+  border-color: var(--accent);
+  background: var(--grad-soft);
+}
+
+.pm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: clamp(14px, 1.6vw, 20px);
+}
+
+.pm-card { display: grid; gap: 14px; align-content: start; cursor: pointer; }
+.pm-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pm-number { font-size: 0.92rem; letter-spacing: 0.08em; }
+.pm-route {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.pm-route svg { color: var(--accent-2); flex-shrink: 0; }
+.pm-route span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.pm-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.pm-meta dt {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.pm-meta dd {
+  margin: 2px 0 0;
+  font-size: 0.86rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pm-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.pm-card-foot .link { font-size: 0.88rem; }
+
+/* With a consignment open, the list and its controls step aside rather than
+   sitting above it: the page is showing one thing, so it should look like it. */
+#portal.is-detail #portal-counts,
+#portal.is-detail #portal-claim-form,
+#portal.is-detail #portal-tabs,
+#portal.is-detail #portal-list { display: none; }
+
+.pm-detail { display: grid; gap: 18px; }
+.pm-detail-head { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; }
+.admin-danger {
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 40%, transparent);
+}
+.admin-danger:hover { border-color: var(--bad); }

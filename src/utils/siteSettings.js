@@ -43,8 +43,11 @@ const EMAIL_FLAGS = [
 const CHAT_FIELDS = ['chat_greeting', 'chat_agent_name', 'chat_away_message'];
 const CHAT_FLAGS = ['chat_enabled', 'chat_notify'];
 
+/** The customer portal: whether it is offered, and how accounts find work. */
+const PORTAL_FLAGS = ['portal_enabled', 'portal_email_matching'];
+
 const FIELDS = [...PUBLIC_FIELDS, ...EMAIL_FIELDS, ...CHAT_FIELDS];
-const FLAGS = [...EMAIL_FLAGS, ...CHAT_FLAGS];
+const FLAGS = [...EMAIL_FLAGS, ...CHAT_FLAGS, ...PORTAL_FLAGS];
 
 /** Flags that stay on unless the desk deliberately turns them off. */
 const FLAG_DEFAULTS = {
@@ -53,6 +56,11 @@ const FLAG_DEFAULTS = {
   notify_on_shipment_created: true,
   chat_enabled: true,
   chat_notify: String(process.env.CHAT_NOTIFY || 'on').toLowerCase() !== 'off',
+  portal_enabled: true,
+  // Linking by address is only sound when Supabase confirms addresses. It is
+  // on by default because that is the supported configuration; the server
+  // still refuses to match an address it has not seen confirmed.
+  portal_email_matching: true,
 };
 
 // Settings are read on nearly every request. One short-lived cache keeps that
@@ -129,6 +137,7 @@ function publicView(settings) {
   out.chat_enabled = settings.chat_enabled;
   out.chat_greeting = settings.chat_greeting || '';
   out.chat_agent_name = settings.chat_agent_name || settings.company_name || '';
+  out.portal_enabled = settings.portal_enabled;
   out.source = settings.source || 'defaults';
   return out;
 }
@@ -164,6 +173,7 @@ module.exports = {
   EMAIL_FLAGS,
   CHAT_FIELDS,
   CHAT_FLAGS,
+  PORTAL_FLAGS,
   FLAG_DEFAULTS,
   TABLE,
   ROW_ID,

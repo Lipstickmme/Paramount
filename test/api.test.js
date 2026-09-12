@@ -825,6 +825,231 @@ async function withApp(env, fn) {
     sb.close();
   }
 
+  /* ---- the customer portal ---- */
+  {
+    const sb = await mock.start({});
+    const url = `http://127.0.0.1:${sb.address().port}`;
+    sb.createUser('desk@paramount.test', 'pw-desk', { admin: true });
+    sb.createUser('ada@example.com', 'pw-ada');
+    sb.createUser('mallory@example.com', 'pw-mallory');
+    // Registered but never clicked the link in the confirmation email.
+    sb.createUser('unconfirmed@example.com', 'pw-unconfirmed', { confirmed: false });
+
+    const signIn = async (email, password) =>
+      (await fetch(`${url}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: { apikey: mock.ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      }).then((r) => r.json())).access_token;
+
+    const staff = await signIn('desk@paramount.test', 'pw-desk');
+    const ada = await signIn('ada@example.com', 'pw-ada');
+    const mallory = await signIn('mallory@example.com', 'pw-mallory');
+    const unconfirmed = await signIn('unconfirmed@example.com', 'pw-unconfirmed');
+
+    await withApp(
+      { SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY, SUPABASE_ANON_KEY: mock.ANON_KEY, RESEND_API_KEY: '' },
+      async (base) => {
+        const as = (token) => (method, path, body) =>
+          fetch(base + path, {
+            method,
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: body ? JSON.stringify(body) : undefined,
+          }).then(async (r) => ({ status: r.status, body: await r.json().catch(() => ({})) }));
+
+        const desk = as(staff);
+        const asAda = as(ada);
+        const asMallory = as(mallory);
+        const asUnconfirmed = as(unconfirmed);
+
+        // Booked to Ada, in mixed case, which is how a person types it.
+        const hers = (await desk('POST', '/api/shipments', {
+          shipper_name: 'Vestberg AB', receiver_name: 'Ada Kolen', receiver_email: 'Ada@Example.com',
+          origin_city: 'Gothenburg', destination_city: 'Rotterdam', mode: 'ocean_freight',
+          internal_notes: 'margin is thin', freight_cost: 8400,
+        })).body.shipment;
+
+        // Booked to somebody else entirely.
+        const theirs = (await desk('POST', '/api/shipments', {
+          shipper_name: 'Someone', receiver_name: 'Someone Else', receiver_email: 'other@example.com',
+          origin_city: 'Lagos', destination_city: 'Dubai', mode: 'air_freight',
+        })).body.shipment;
+
+        /* -- the portal is for people who are signed in -------------------- */
+        assert.strictEqual((await req(base, 'GET', '/api/portal/shipments')).status, 401);
+        console.log('  ok  the portal needs a session');
+
+        /* -- a confirmed address collects its own consignments ------------- */
+        const mine = await asAda('GET', '/api/portal/shipments');
+        assert.strictEqual(mine.status, 200);
+        assert.strictEqual(mine.body.count, 1, 'the consignment addressed to her, and only that one');
+        assert.strictEqual(mine.body.shipments[0].tracking_number, hers.tracking_number);
+        assert.strictEqual(mine.body.shipments[0].via, 'email');
+        assert.strictEqual(mine.body.account.emailMatching, true);
+        console.log('  ok  a confirmed address collects the consignments booked to it, whatever the case');
+
+        // The portal is a customer view, so it carries no more than /track does.
+        ['internal_notes', 'freight_cost', 'receiver_email', 'shipper_email', 'id'].forEach((key) => {
+          assert.ok(!(key in mine.body.shipments[0]), `${key} must not reach the portal`);
+        });
+        console.log('  ok  and carries none of the commercial or internal detail');
+
+        /* -- other people's consignments are not there --------------------- */
+        const empty = await asMallory('GET', '/api/portal/shipments');
+        assert.strictEqual(empty.body.count, 0, 'nothing is visible without a link to it');
+
+        const peek = await asMallory('GET', `/api/portal/shipments/${hers.tracking_number}`);
+        assert.strictEqual(peek.status, 404, "another customer's consignment is not readable");
+        console.log('  ok  one account cannot read another account\'s consignments');
+
+        /* -- an unconfirmed address is not proof of anything ---------------- */
+        const unproved = await asUnconfirmed('GET', '/api/portal/shipments');
+        assert.strictEqual(unproved.status, 200, 'the portal still works');
+        assert.strictEqual(unproved.body.account.emailConfirmed, false);
+        assert.strictEqual(unproved.body.account.emailMatching, false, 'but nothing is matched to it');
+        console.log('  ok  an unconfirmed address matches nothing, and is told so');
+
+        // The dangerous case, stated as a test: registering an address someone
+        // else's consignments are booked to must not hand them over.
+        sb.createUser('impostor@example.com', 'pw', { confirmed: false });
+        sb.users.get('impostor@example.com').email = 'ada@example.com';
+        const impostorToken = await signIn('impostor@example.com', 'pw');
+        const stolen = await as(impostorToken)('GET', '/api/portal/shipments');
+        assert.strictEqual(stolen.body.count, 0, "an unconfirmed claim on someone else's address sees nothing");
+        console.log('  ok  registering an unconfirmed address does not hand over its consignments');
+
+        /* -- claiming by tracking number ----------------------------------- */
+        const claimed = await asMallory('POST', '/api/portal/claims', {
+          // Typed the way it comes off a label: lower case, no dashes.
+          trackingNumber: theirs.tracking_number.toLowerCase().replace(/-/g, ''),
+        });
+        assert.strictEqual(claimed.status, 201, JSON.stringify(claimed.body));
+        assert.strictEqual(claimed.body.shipment.tracking_number, theirs.tracking_number);
+        assert.strictEqual(claimed.body.shipment.via, 'claim');
+
+        const again = await asMallory('POST', '/api/portal/claims', { trackingNumber: theirs.tracking_number });
+        assert.strictEqual(again.status, 201, 'claiming twice is not an error');
+        assert.strictEqual(sb.db.shipment_claims.rows.length, 1, 'and does not add a second row');
+        console.log('  ok  a consignment is claimed with its number, and claiming twice is idempotent');
+
+        const afterClaim = await asMallory('GET', '/api/portal/shipments');
+        assert.strictEqual(afterClaim.body.count, 1);
+        assert.strictEqual(afterClaim.body.shipments[0].via, 'claim');
+
+        const opened = await asMallory('GET', `/api/portal/shipments/${theirs.tracking_number}`);
+        assert.strictEqual(opened.status, 200);
+        assert.ok(Array.isArray(opened.body.shipment.events), 'the whole timeline comes with it');
+        console.log('  ok  a claimed consignment opens with its full timeline');
+
+        const nonsense = await asMallory('POST', '/api/portal/claims', { trackingNumber: 'nope' });
+        assert.strictEqual(nonsense.status, 422);
+        const unknown = await asMallory('POST', '/api/portal/claims', { trackingNumber: 'PMT-2026-4F7K2QX9' });
+        assert.strictEqual(unknown.status, 404);
+        console.log('  ok  a malformed number and an unknown one are told apart when claiming');
+
+        /* -- removing a claim ---------------------------------------------- */
+        const dropped = await asMallory('DELETE', `/api/portal/claims/${theirs.tracking_number}`);
+        assert.strictEqual(dropped.status, 200);
+        assert.strictEqual((await asMallory('GET', '/api/portal/shipments')).body.count, 0);
+        // The consignment itself is untouched by a customer tidying their list.
+        assert.ok(await (await fetch(`${base}/api/track/${theirs.tracking_number}`)).json().then((d) => d.ok));
+        console.log('  ok  removing a claim drops it from the account and leaves the consignment alone');
+
+        /* -- the list reflects what the desk does -------------------------- */
+        await desk('POST', `/api/shipments/${hers.id}/events`, {
+          status: 'on_hold', location: 'Rotterdam', note: 'Awaiting customs paperwork.',
+        });
+        const updated = await asAda('GET', '/api/portal/shipments');
+        assert.strictEqual(updated.body.shipments[0].status, 'on_hold');
+        assert.strictEqual(updated.body.shipments[0].last_event.location, 'Rotterdam');
+        assert.deepStrictEqual(updated.body.counts, { active: 0, delivered: 0, attention: 1 });
+        console.log('  ok  a movement at the desk reaches the customer\'s list, and the counts');
+
+        /* -- the desk can switch it off ------------------------------------ */
+        sb.db.site_settings.rows[0].portal_enabled = false;
+        // The settings cache holds for a few seconds; this is the read that skips it.
+        await req(base, 'GET', '/api/site?fresh=1');
+        const off = await asAda('GET', '/api/portal/shipments');
+        assert.strictEqual(off.status, 404);
+        assert.strictEqual(off.body.error, 'portal_disabled');
+        sb.db.site_settings.rows[0].portal_enabled = true;
+        await req(base, 'GET', '/api/site?fresh=1');
+        console.log('  ok  the desk can turn the portal off');
+
+        /* -- and can switch address matching off separately ---------------- */
+        sb.db.site_settings.rows[0].portal_email_matching = false;
+        await req(base, 'GET', '/api/site?fresh=1');
+        const claimsOnly = await asAda('GET', '/api/portal/shipments');
+        assert.strictEqual(claimsOnly.body.count, 0, 'with matching off, only claims are listed');
+        assert.strictEqual(claimsOnly.body.account.emailMatching, false);
+        sb.db.site_settings.rows[0].portal_email_matching = true;
+        await req(base, 'GET', '/api/site?fresh=1');
+        console.log('  ok  address matching can be turned off on its own');
+      }
+    );
+    sb.close();
+  }
+
+  /* ---- the portal on a database that has not run 0005 ---- */
+  {
+    const sb = await mock.start({});
+    const url = `http://127.0.0.1:${sb.address().port}`;
+    sb.createUser('desk@paramount.test', 'pw-desk', { admin: true });
+    sb.createUser('ada@example.com', 'pw-ada');
+    delete sb.db.shipment_claims;
+
+    const signIn = async (email, password) =>
+      (await fetch(`${url}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: { apikey: mock.ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      }).then((r) => r.json())).access_token;
+
+    const staff = await signIn('desk@paramount.test', 'pw-desk');
+    const ada = await signIn('ada@example.com', 'pw-ada');
+
+    await withApp(
+      { SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY, SUPABASE_ANON_KEY: mock.ANON_KEY, RESEND_API_KEY: '' },
+      async (base) => {
+        const as = (token) => (method, path, body) =>
+          fetch(base + path, {
+            method,
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: body ? JSON.stringify(body) : undefined,
+          }).then(async (r) => ({ status: r.status, body: await r.json().catch(() => ({})) }));
+
+        const made = await as(staff)('POST', '/api/shipments', {
+          shipper_name: 'S', receiver_name: 'Ada Kolen', receiver_email: 'ada@example.com',
+          origin_city: 'Gothenburg', destination_city: 'Rotterdam',
+        });
+
+        // Matching still works, because it does not need the claims table.
+        const list = await as(ada)('GET', '/api/portal/shipments');
+        assert.strictEqual(list.status, 200, 'the portal still answers');
+        assert.strictEqual(list.body.count, 1);
+        assert.strictEqual(list.body.shipments[0].via, 'email');
+
+        // Claiming cannot work, and says so rather than failing as a 500.
+        const claim = await as(ada)('POST', '/api/portal/claims', {
+          trackingNumber: made.body.shipment.tracking_number,
+        });
+        assert.strictEqual(claim.status, 503);
+        assert.strictEqual(claim.body.error, 'claims_unavailable');
+
+        const health = await req(base, 'GET', '/api/health?probe=1');
+        assert.ok(
+          health.body.warnings.some((w) => /shipment_claims[\s\S]*0005_portal\.sql/.test(w)),
+          'the probe names the migration: ' + JSON.stringify(health.body.warnings)
+        );
+        console.log('  ok  without 0005 the portal degrades to address matching and names the migration');
+      }
+    );
+    sb.close();
+  }
+
   /* ---- rate requests ---- */
   {
     const sb = await mock.start({});

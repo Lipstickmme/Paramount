@@ -1334,6 +1334,15 @@
       ],
     },
     {
+      title: 'Customer portal',
+      note: 'Customers sign in at /portal to see every consignment of theirs. Matching by address only ever applies to an address Supabase has confirmed \u2014 turn on "Confirm email" under Authentication, Providers, Email, or leave matching off and let customers add consignments by tracking number.',
+      fields: [],
+      flags: [
+        ['portal_enabled', 'Offer the customer portal'],
+        ['portal_email_matching', 'Show customers consignments booked to their confirmed address'],
+      ],
+    },
+    {
       title: 'Live chat',
       note: 'How the widget introduces itself on the public pages, and whether the desk is alerted.',
       fields: [
@@ -1443,7 +1452,8 @@
 
     if (missing.length) {
       form.appendChild(el('p', 'admin-empty',
-        `This database is missing ${missing.length} newer setting column(s), so they are not shown. Run supabase/migrations/0004_settings.sql to add them.`));
+        `This database is missing ${missing.length} newer setting column(s), so they are not shown: ${missing.join(', ')}. ` +
+        'Run the migrations in supabase/migrations that have not been applied yet — 0004_settings.sql adds the email and chat settings, 0005_portal.sql the portal ones.'));
     }
 
     const status = el('div', 'form-status');

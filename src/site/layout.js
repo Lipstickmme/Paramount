@@ -166,12 +166,14 @@ function nav(active = '') {
       ${link('/about', 'About', 'about')}
       ${link('/careers', 'Careers', 'careers')}
       ${link('/contact', 'Contact', 'contact')}
+      <a href="/portal" class="only-compact${active === 'portal' ? ' is-active' : ''}">My consignments</a>
     </nav>
     <div class="nav-end">
       <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch between light and dark">
         <svg class="i-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         <svg class="i-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
       </button>
+      <a href="/portal" class="nav-portal${active === 'portal' ? ' is-active' : ''}">Sign in</a>
       <a href="/quote" class="btn sm nav-cta">Get a quote <span class="arw">&rsaquo;</span></a>
       <button class="nav-toggle" id="navtoggle" aria-label="Open menu" aria-expanded="false" aria-controls="navlinks">
         <span></span><span></span><span></span>
@@ -208,6 +210,7 @@ function footer() {
       <div class="col">
         <h5>Support</h5>
         <a href="/track">Track a consignment</a>
+        <a href="/portal">Customer portal</a>
         <a href="mailto:${esc(site.email)}" data-site="email">${esc(site.email)}</a>
         <a href="tel:${esc(site.support_phone).replace(/\s+/g, '')}" data-site="support_phone">${esc(site.support_phone)}</a>
         <span data-site="hours">${esc(site.hours)}</span>
@@ -283,7 +286,14 @@ function page(opts) {
     content,
     footer(),
     chatWidget(),
-    scripts(['/js/main.js', '/js/track.js', '/js/supabase-lite.js', '/js/chat.js', ...extraScripts]),
+    scripts([
+      '/js/main.js',
+      '/js/track-view.js',
+      '/js/track.js',
+      '/js/supabase-lite.js',
+      '/js/chat.js',
+      ...extraScripts,
+    ]),
   ].join('\n');
 }
 

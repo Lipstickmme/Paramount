@@ -33,6 +33,7 @@ function schema() {
         'notify_email', 'from_email', 'reply_to', 'email_signature',
         'auto_reply', 'notify_on_shipment_update', 'notify_on_shipment_created',
         'chat_enabled', 'chat_greeting', 'chat_notify', 'chat_agent_name', 'chat_away_message',
+        'portal_enabled', 'portal_email_matching',
       ],
       defaults: () => ({ id: 'default', updated_at: new Date().toISOString() }),
       rows: [{
@@ -40,6 +41,7 @@ function schema() {
         address: null, email: null, phone: null, hours: null,
         auto_reply: true, notify_on_shipment_update: true, notify_on_shipment_created: true,
         chat_enabled: true, chat_notify: true,
+        portal_enabled: true, portal_email_matching: true,
       }],
     },
     applications: {
@@ -117,6 +119,17 @@ function schema() {
       notNull: ['shipment_id', 'status'],
       rows: [],
     },
+    shipment_claims: {
+      columns: ['id', 'created_at', 'user_id', 'shipment_id', 'label'],
+      defaults: () => ({ id: uuid(), created_at: new Date().toISOString() }),
+      notNull: ['user_id', 'shipment_id'],
+      // The unique index from 0005_portal.sql.
+      unique: (row, rows) =>
+        rows.some((r) => r !== row && r.user_id === row.user_id && r.shipment_id === row.shipment_id)
+          ? 'duplicate key value violates unique constraint "shipment_claims_unique"'
+          : null,
+      rows: [],
+    },
     quote_requests: {
       columns: ['id', 'created_at', 'name', 'email', 'phone', 'company', 'mode', 'origin', 'destination',
         'cargo_type', 'weight_kg', 'dimensions', 'pieces', 'ready_date', 'incoterms', 'message', 'ip', 'status', 'notes'],
@@ -177,6 +190,8 @@ function start({ tables, port = 0, drop = [] }) {
       const session = db.chat_sessions.rows.find((s) => s.id === row.session_id);
       return Boolean(session && session.visitor_id === who.user.id);
     }
+    // A customer reads their own claims and nobody else's.
+    if (table === 'shipment_claims') return row.user_id === who.user.id;
     // shipments, shipment_events and quote_requests are staff-only: a visitor
     // reaches a consignment through /api/track, never through PostgREST.
     return false;
@@ -186,6 +201,9 @@ function start({ tables, port = 0, drop = [] }) {
     if (who.role === 'service_role') return true;
     if (who.role !== 'authenticated') return false;
     if (table === 'chat_sessions') return row.visitor_id === who.user.id || isAdmin(who);
+    // Deleting a claim is a customer's own business; inserting one goes
+    // through the API under the service role.
+    if (table === 'shipment_claims') return row.user_id === who.user.id;
     if (table === 'chat_messages') {
       if (row.sender === 'agent') return isAdmin(who);
       const session = db.chat_sessions.rows.find((s) => s.id === row.session_id);
@@ -196,6 +214,10 @@ function start({ tables, port = 0, drop = [] }) {
 
   function matches(row, filters) {
     return filters.every(([column, op, value]) => {
+      if (op === 'in') {
+        const list = value.replace(/^\(|\)$/g, '').split(',').map((v) => decodeURIComponent(v.trim()));
+        return list.includes(String(row[column]));
+      }
       if (op !== 'eq') return true;
       return String(row[column]) === value;
     });
@@ -229,7 +251,9 @@ function start({ tables, port = 0, drop = [] }) {
         sessions.set(token, user);
         return json(res, 200, { access_token: token, refresh_token: uuid(), expires_in: 3600, user });
       }
-      const user = { id: uuid(), email: body.email, is_anonymous: false };
+      // Confirmations are on, as the portal requires: a sign-up returns a user
+      // with an unproved address and no session.
+      const user = { id: uuid(), email: body.email, is_anonymous: false, email_confirmed_at: null };
       users.set(body.email, { ...user, password: body.password });
       return json(res, 200, { user });
     }
@@ -240,7 +264,12 @@ function start({ tables, port = 0, drop = [] }) {
         if (!found || found.password !== body.password) {
           return fail(res, 400, 'invalid_credentials', 'Invalid login credentials');
         }
-        const user = { id: found.id, email: found.email, is_anonymous: false };
+        const user = {
+          id: found.id,
+          email: found.email,
+          is_anonymous: false,
+          email_confirmed_at: found.email_confirmed_at || null,
+        };
         const token = uuid();
         sessions.set(token, user);
         return json(res, 200, { access_token: token, refresh_token: uuid(), expires_in: 3600, user });
@@ -370,7 +399,13 @@ function start({ tables, port = 0, drop = [] }) {
         }
 
         const collision = table.unique && table.unique(row, table.rows);
-        if (collision) return fail(res, 409, '23505', collision);
+        if (collision) {
+          // `resolution=ignore-duplicates` maps to ON CONFLICT DO NOTHING, and
+          // PostgREST applies it to the conflict target named by on_conflict,
+          // not only to the primary key.
+          if (/ignore-duplicates/.test(prefer)) continue;
+          return fail(res, 409, '23505', collision);
+        }
 
         table.rows.push(row);
         created.push(row);
@@ -436,6 +471,7 @@ function start({ tables, port = 0, drop = [] }) {
       if (name === 'shipments') {
         const gone = new Set(doomed.map((r) => r.id));
         db.shipment_events.rows = db.shipment_events.rows.filter((e) => !gone.has(e.shipment_id));
+        db.shipment_claims.rows = db.shipment_claims.rows.filter((c) => !gone.has(c.shipment_id));
       }
       if (/return=representation/.test(prefer)) return json(res, 200, doomed.map(project));
       return json(res, 204);
@@ -447,8 +483,18 @@ function start({ tables, port = 0, drop = [] }) {
   server.anonymousEnabled = true;
   server.db = db;
   server.users = users;
-  server.createUser = (email, password, { admin } = {}) => {
-    const user = { id: uuid(), email, is_anonymous: false };
+  /**
+   * The dashboard's "Add user" with Auto Confirm User ticked, which is how
+   * staff accounts are made. Pass `confirmed: false` for an account whose
+   * address has not been proved — the portal treats the two differently.
+   */
+  server.createUser = (email, password, { admin, confirmed = true } = {}) => {
+    const user = {
+      id: uuid(),
+      email,
+      is_anonymous: false,
+      email_confirmed_at: confirmed ? new Date().toISOString() : null,
+    };
     users.set(email, { ...user, password });
     if (admin) db.admins.rows.push({ user_id: user.id, email, created_at: new Date().toISOString() });
     return user;

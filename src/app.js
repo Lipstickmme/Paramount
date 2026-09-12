@@ -73,6 +73,8 @@ app.get('/services/:id', sendPage('service.html'));
 app.get('/network', sendPage('network.html'));
 app.get('/about', sendPage('about.html'));
 app.get('/quote', sendPage('quote.html'));
+// Customer portal. Access is decided by Supabase auth on the page itself.
+app.get('/portal', sendPage('portal.html'));
 app.get('/careers', sendPage('careers.html'));
 app.get('/apply', sendPage('apply.html'));
 app.get('/contact', sendPage('contact.html'));

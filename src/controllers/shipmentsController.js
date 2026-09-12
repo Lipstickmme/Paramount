@@ -26,6 +26,20 @@ function text(value, max = 240) {
   return out || null;
 }
 
+/**
+ * An email address, folded to lower case.
+ *
+ * The portal finds a customer's consignments by matching this against the
+ * address on their account, and that comparison happens in the database, which
+ * does not fold case for us. Normalising on the way in is what makes
+ * `ADA@example.com` on the booking and `ada@example.com` on the account the
+ * same person.
+ */
+function email(value, max = 200) {
+  const out = text(value, max);
+  return out ? out.toLowerCase() : out;
+}
+
 function number(value) {
   if (value == null || value === '') return undefined;
   const n = Number(value);
@@ -65,13 +79,13 @@ function toColumns(body = {}) {
 
     shipper_name: text(body.shipper_name, 160),
     shipper_company: text(body.shipper_company, 160),
-    shipper_email: text(body.shipper_email, 200),
+    shipper_email: email(body.shipper_email),
     shipper_phone: text(body.shipper_phone, 60),
     shipper_address: text(body.shipper_address, 400),
 
     receiver_name: text(body.receiver_name, 160),
     receiver_company: text(body.receiver_company, 160),
-    receiver_email: text(body.receiver_email, 200),
+    receiver_email: email(body.receiver_email),
     receiver_phone: text(body.receiver_phone, 60),
     receiver_address: text(body.receiver_address, 400),
 

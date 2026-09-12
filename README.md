@@ -33,6 +33,7 @@ works from.
 | `/network`      | Hubs, trade lanes and the world map                                 |
 | `/about`        | The company, its leadership and the four rules it works to          |
 | `/quote`        | Rate request form                                                   |
+| `/portal`       | Customer portal: every consignment on the signed-in account         |
 | `/contact`      | Contact details, enquiry form and the FAQ                           |
 | `/careers`      | Open roles                                                          |
 | `/apply`        | Application form, with the role prefilled from the careers page     |
@@ -73,6 +74,34 @@ When a consignment is booked, the shipper and consignee are emailed the tracking
 number and a link to it. Every public movement emails the same people. Both are
 settings the desk can switch off, and both are silent no-ops until `RESEND_API_KEY`
 is set.
+
+## The customer portal (`/portal`)
+
+A customer signs in and sees every consignment of theirs in one place, each with
+the same timeline `/track` shows. Two things put a consignment on an account,
+and the difference is the whole security model:
+
+- **Claimed.** The customer enters a tracking number and it is added to their
+  account. Holding the number is already what public tracking accepts as proof,
+  so this grants nothing `/track` did not.
+- **Matched.** Consignments carrying the account's email address as shipper or
+  consignee appear on their own, with nothing to add.
+
+Matching is only ever applied to an address Supabase has **confirmed**. That is
+not a detail:
+
+> **Turn on "Confirm email"** under Authentication → Providers → Email in
+> Supabase. With it off every sign-up is auto-confirmed, and anyone could
+> register a customer's address to read that customer's consignments. The server
+> refuses to match an unconfirmed address, so the portal still works without
+> it — but only claiming does, which is the behaviour you want in that case.
+
+The desk can turn the portal off entirely, or leave it on with matching off, in
+Settings. Everything the portal returns goes through the same public projection
+as `/track`, so it cannot show a field the tracking page would not.
+
+Accounts are ordinary Supabase users. Being on the `admins` table is unrelated:
+staff use `/admin`, customers use `/portal`, and neither grants the other.
 
 ## The operations desk (`/admin`)
 
@@ -119,7 +148,9 @@ public/                 static frontend (built pages + assets)
   css/styles.css        design system: tokens, components, motion
   css/admin.css         the desk
   js/main.js            shared runtime: nav, theme, reveals, tilt, counters, forms
-  js/track.js           the tracking console and the result rendering
+  js/track-view.js      how a consignment is drawn, shared by /track and /portal
+  js/track.js           the tracking console and its lookups
+  js/portal.js          the customer portal
   js/chat.js            live chat, visitor side
   js/admin.js           the desk
   js/supabase-lite.js   a tiny Supabase client (auth + PostgREST over fetch)
@@ -131,12 +162,12 @@ src/
   controllers/          request handling
   utils/
     tracking.js         tracking numbers, statuses, modes
-    shipmentStore.js    consignments and movements (Supabase or local files)
+    shipmentStore.js    consignments, movements and portal claims
+    sessionAuth.js      server-side "who is this?" for staff and customers
     storage.js          enquiries, applications, rate requests
     chatStore.js        chat persistence
     siteSettings.js     the settings row, with the environment behind it
     notify.js           email and webhook delivery
-    adminAuth.js        server-side staff check
 supabase/migrations/    the schema, in order
 scripts/
   build-pages.js        renders src/site into public/*.html
@@ -164,6 +195,15 @@ Public:
 | `GET`  | `/api/public-config`   | Supabase URL and browser key                |
 | `POST` | `/api/chat/message`    | Chat, fallback path                         |
 | `POST` | `/api/inbound/resend`  | Signed inbound-mail webhook                 |
+
+Customer, signed in (Bearer token from their own session):
+
+| Method   | Route                            | Purpose                                  |
+| -------- | -------------------------------- | ---------------------------------------- |
+| `GET`    | `/api/portal/shipments`          | Every consignment on the account         |
+| `GET`    | `/api/portal/shipments/:number`  | One of them, with its full timeline      |
+| `POST`   | `/api/portal/claims`             | Add one by tracking number               |
+| `DELETE` | `/api/portal/claims/:number`     | Take one off the account                 |
 
 Desk only (Bearer token from the signed-in staff session):
 
@@ -210,6 +250,7 @@ run more than once.
 | `0002_email.sql`      | The inbound-mail archive (optional)                          |
 | `0003_shipments.sql`  | Consignments, movement history, rate requests, `track_shipment()` |
 | `0004_settings.sql`   | Email and chat settings on the settings row                  |
+| `0005_portal.sql`     | Customer portal: `shipment_claims` and its two settings      |
 | `grant-admin.sql`     | Grants one address access to the desk                        |
 
 `GET /api/health?probe=1` reads one row of every column the server uses and names

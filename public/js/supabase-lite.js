@@ -1,8 +1,9 @@
 'use strict';
 
 /**
- * A small Supabase client: anonymous and password sign-in, token refresh, and
- * PostgREST reads and writes as the signed-in user.
+ * A small Supabase client: anonymous, password and self-service sign-in, token
+ * refresh, password recovery, and PostgREST reads and writes as the signed-in
+ * user.
  *
  * It exists instead of @supabase/supabase-js because this site has no bundler
  * and no runtime dependencies, and a page that cannot load a third-party CDN
@@ -155,9 +156,32 @@
           }
         },
 
-        /** Staff. Accounts are created in the Supabase dashboard, not here. */
+        /** Staff and customers alike. Staff accounts are made in the dashboard. */
         async signInWithPassword(email, password) {
           return adopt(await auth('token?grant_type=password', { email, password }));
+        },
+
+        /**
+         * Customers, registering themselves.
+         *
+         * Returns a session only when the project is not confirming addresses.
+         * With confirmation on — which is what makes the portal's matching by
+         * address safe — there is nothing to sign in to until the link in the
+         * email is followed, and the caller has to say so rather than assuming
+         * it worked silently.
+         */
+        async signUp(email, password) {
+          const data = await auth('signup', { email, password });
+          return adopt(data) || data;
+        },
+
+        /** Sends the "set a new password" email. */
+        async resetPassword(email, redirectTo) {
+          const path = redirectTo
+            ? `recover?redirect_to=${encodeURIComponent(redirectTo)}`
+            : 'recover';
+          await auth(path, { email });
+          return true;
         },
 
         async signOut() {

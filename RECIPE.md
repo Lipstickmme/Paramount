@@ -22,6 +22,8 @@ supabase/
   migrations/0003_shipments.sql  shipments, shipment_events, quote_requests,
                              roll-up trigger, track_shipment() for anon reads
   migrations/0004_settings.sql   email + chat settings on the settings row
+  migrations/0005_portal.sql     shipment_claims: the customer portal's link
+                             between an account and a consignment
   grant-admin.sql            one-off: make yourself an admin
 src/
   utils/
@@ -32,7 +34,8 @@ src/
     storage.js               enquiries, applications, rate requests:
                              Supabase, or local files in dev
     tracking.js              tracking-number alphabet, statuses, modes
-    shipmentStore.js         consignments + movements, either backend
+    shipmentStore.js         consignments, movements + portal claims
+    sessionAuth.js           server-side identity: staff and customers
     chatStore.js             chat transcripts: Supabase, or local files
     notify.js                Resend send + optional desk webhook
     webhookSignature.js      Svix HMAC over the raw request bytes
@@ -41,6 +44,7 @@ src/
     contactController.js     validation, honeypot, write, notify
     trackingController.js    the one public consignment lookup
     shipmentsController.js   desk-only booking, correcting, movement
+    portalController.js      a customer's own consignments
     chatController.js        rule-based responder, tracking answers, notification
     inboundController.js     signed webhook -> email_threads -> forward
   routes/                    mounted under /api
@@ -173,3 +177,12 @@ bundler, use the real client and take realtime with it.
    under their own session; everyone else goes through the API route, or through
    `track_shipment(text)`, a `security definer` function with the same contract
    for clients that would rather call Postgres directly.
+
+5. **A customer account proves an address, or it proves nothing.** The portal
+   lists a consignment for two reasons: the customer claimed it with its
+   tracking number, or it carries their email address. The first is as safe as
+   public tracking, because it *is* public tracking's credential. The second is
+   only safe if the address has been confirmed, so the server checks
+   `email_confirmed_at` on the session and refuses to match without it — which
+   means the portal degrades to claim-only on a project with confirmations off,
+   rather than handing consignments to whoever registers the address first.

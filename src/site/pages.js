@@ -833,6 +833,91 @@ const applyContent = `
     </section>
   </main>`;
 
+/* ---------------------------------------------------------------- portal --- */
+
+const portalContent = `
+  <main id="main">
+    <section class="page-hero">
+      <div class="wrap inner">
+        <div class="crumbs"><a href="/">Home</a> <span>/</span> <span>My consignments</span></div>
+        <h1>Your shipments, <span class="grad-text">all of them.</span></h1>
+        <p class="lede">One account, every consignment booked to or from your address — plus anything you add by tracking number. The same timeline the control tower reads.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:clamp(12px,2vw,28px)">
+      <div class="wrap" id="portal">
+
+        <div class="pm-gate" id="portal-boot">
+          <div class="card"><p class="muted">Checking your session&hellip;</p></div>
+        </div>
+
+        <div class="pm-gate" id="portal-unavailable" hidden>
+          <div class="card">
+            <span class="eyebrow">Customer portal</span>
+            <h2 style="margin-top:14px">Accounts are not available here yet.</h2>
+            <p class="muted" style="margin-top:12px">This deployment has no account service connected, so there is nothing to sign in to. You can still track any consignment with its number.</p>
+            <div class="hero-actions"><a class="btn" href="/track">Track a consignment <span class="arw">&rsaquo;</span></a></div>
+          </div>
+        </div>
+
+        <div class="pm-gate" id="portal-auth" hidden>
+          <form class="card pm-auth" id="portal-auth-form" novalidate>
+            <span class="eyebrow">Customer portal</span>
+            <h2 id="portal-auth-title">Your consignments, in one place.</h2>
+            <p class="muted" id="portal-auth-note"></p>
+            <div class="field">
+              <label for="portal-email">Email</label>
+              <input type="email" id="portal-email" name="email" autocomplete="email" required />
+            </div>
+            <div class="field" id="portal-password-field">
+              <label for="portal-password">Password</label>
+              <input type="password" id="portal-password" name="password" autocomplete="current-password" minlength="8" />
+            </div>
+            <div class="err" id="portal-auth-error" role="alert"></div>
+            <div class="form-status" id="portal-auth-note-out" role="status" aria-live="polite"></div>
+            <button type="submit" class="btn block" id="portal-auth-submit">Sign in</button>
+            <div class="pm-auth-links">
+              <button type="button" class="link" id="portal-auth-alt">Create an account</button>
+              <button type="button" class="link" id="portal-auth-forgot">Forgot password?</button>
+            </div>
+            <p class="muted" style="font-size:.84rem">Tracking a single consignment needs no account at all — <a class="link" href="/track">use the tracking page</a>.</p>
+          </form>
+        </div>
+
+        <div id="portal-shell" hidden>
+          <div class="pm-bar">
+            <div>
+              <span class="eyebrow">Signed in</span>
+              <strong class="pm-who" id="portal-who"></strong>
+            </div>
+            <button type="button" class="btn ghost sm" id="portal-signout">Sign out</button>
+          </div>
+
+          <p class="result-note" id="portal-unconfirmed" hidden></p>
+
+          <div class="stats" id="portal-counts"></div>
+
+          <form class="tracker pm-claim" id="portal-claim-form" novalidate>
+            <div class="tracker-head"><h2>Add a consignment</h2></div>
+            <div class="tracker-input">
+              <label class="sr-only" for="portal-claim-number">Tracking number</label>
+              <input type="text" id="portal-claim-number" name="number" placeholder="e.g. PMT-${YEAR}-4F7K2QX9"
+                     autocomplete="off" spellcheck="false" maxlength="32" />
+              <button type="submit" class="btn" id="portal-claim-submit">Add <span class="arw">&rsaquo;</span></button>
+            </div>
+            <div class="form-status" id="portal-claim-status" role="status" aria-live="polite"></div>
+          </form>
+
+          <div class="pm-tabs" id="portal-tabs"></div>
+          <div id="portal-list"></div>
+          <div class="pm-detail" id="portal-detail" hidden></div>
+        </div>
+
+      </div>
+    </section>
+  </main>`;
+
 /* ------------------------------------------------------------------- 404 --- */
 
 const notFoundContent = `
@@ -936,6 +1021,17 @@ module.exports = [
     bodyClass: 'page-apply',
     content: applyContent,
     extraScripts: ['/js/apply.js'],
+  },
+  {
+    file: 'portal.html',
+    title: `My consignments | ${BRAND}`,
+    description: 'Sign in to see every Paramount consignment on your account, with its live timeline.',
+    active: 'portal',
+    bodyClass: 'page-portal',
+    content: portalContent,
+    // Nothing here should be indexed: it is one account's consignments.
+    noindex: true,
+    extraScripts: ['/js/portal.js'],
   },
   {
     file: '404.html',

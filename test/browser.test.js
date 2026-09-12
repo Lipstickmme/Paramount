@@ -16,6 +16,12 @@ const mock = require('./mock-supabase');
 
 const ROOT = require('path').join(__dirname, '..');
 
+/** A plain JSON GET, for checking the public API behind the page's back. */
+async function req(base, path) {
+  const res = await fetch(base + path, { headers: { Accept: 'application/json' } });
+  return res.json().catch(() => ({}));
+}
+
 /** Poll a condition; the browser and the server settle at their own pace. */
 async function until(check, what, timeout = 10000) {
   const deadline = Date.now() + timeout;
@@ -47,6 +53,8 @@ async function until(check, what, timeout = 10000) {
   const sbUrl = `http://127.0.0.1:${sb.address().port}`;
   sb.createUser('desk@paramount.test', 'desk-password', { admin: true });
   sb.createUser('nobody@paramount.test', 'outsider-password');
+  // A customer, with the address their consignments are booked to.
+  sb.createUser('ada@example.com', 'customer-password');
 
   process.env.SUPABASE_URL = sbUrl;
   process.env.SUPABASE_ANON_KEY = mock.ANON_KEY;
@@ -261,6 +269,78 @@ async function until(check, what, timeout = 10000) {
     );
     console.log('  ok  a staff reply reaches the visitor without a reload');
 
+    /* ---------------- the customer portal ---------------- */
+    const customerCtx = await browser.newContext();
+    const customer = await newPage(customerCtx);
+    await customer.goto(`${base}/portal`, { waitUntil: 'networkidle' });
+    await customer.waitForSelector('#portal-auth:not([hidden])', { timeout: 10000 });
+
+    // A wrong password is reported rather than swallowed.
+    await customer.fill('#portal-email', 'ada@example.com');
+    await customer.fill('#portal-password', 'wrong');
+    await customer.click('#portal-auth-submit');
+    await customer.waitForFunction(() => document.getElementById('portal-auth-error').textContent.length > 0);
+    console.log('  ok  the portal reports a bad password');
+
+    await customer.fill('#portal-password', 'customer-password');
+    await customer.click('#portal-auth-submit');
+    await customer.waitForSelector('#portal-shell:not([hidden])', { timeout: 10000 });
+    assert.strictEqual(await customer.textContent('#portal-who'), 'ada@example.com');
+
+    // The consignment the desk booked earlier is addressed to someone else, so
+    // her list starts empty — which is the point: nothing is hers by default.
+    await customer.waitForSelector('#portal-list', { timeout: 10000 });
+    assert.strictEqual(await customer.$$eval('.pm-card', (n) => n.length), 0, 'nothing is hers yet');
+    console.log('  ok  a new account starts empty');
+
+    // She holds the tracking number, so she can add it.
+    await customer.fill('#portal-claim-number', number.toLowerCase());
+    await customer.click('#portal-claim-submit');
+    await customer.waitForFunction(
+      () => /added to your account/.test(document.getElementById('portal-claim-status').textContent),
+      null,
+      { timeout: 15000 }
+    );
+    await customer.waitForFunction(() => document.querySelectorAll('.pm-card').length === 1, null, { timeout: 10000 });
+    assert.match(await customer.textContent('.pm-card'), new RegExp(number));
+    console.log('  ok  a consignment is added to the account with its tracking number');
+
+    // Opening it shows the same timeline the tracking page renders.
+    await customer.click('.pm-card');
+    await customer.waitForSelector('#portal-detail .timeline li', { timeout: 10000 });
+    assert.strictEqual(
+      await customer.$$eval('#portal-detail .timeline li', (n) => n.length),
+      2,
+      'the public timeline, internal note excluded'
+    );
+    assert.ok(
+      await customer.isHidden('#portal-list'),
+      'the list steps aside while one consignment is open'
+    );
+    const portalText = await customer.textContent('#portal-detail');
+    assert.ok(!/Margin is thin/.test(portalText), 'internal notes must not reach the portal');
+    console.log('  ok  a consignment opens with the customer timeline and none of the internal detail');
+
+    // Taking it off the account leaves the consignment itself alone.
+    customer.on('dialog', (d) => d.accept());
+    await customer.click('[data-remove]');
+    await customer.waitForFunction(() => document.querySelectorAll('.pm-card').length === 0, null, { timeout: 10000 });
+    assert.strictEqual((await req(base, `/api/track/${number}`)).ok, true, 'the consignment still tracks publicly');
+    console.log('  ok  removing it from the account does not touch the consignment');
+
+    // The session survives a reload, and signing out returns to the gate.
+    await customer.fill('#portal-claim-number', number);
+    await customer.click('#portal-claim-submit');
+    await customer.waitForFunction(() => document.querySelectorAll('.pm-card').length === 1, null, { timeout: 15000 });
+    await customer.reload({ waitUntil: 'networkidle' });
+    await customer.waitForSelector('.pm-card', { timeout: 15000 });
+    console.log('  ok  the session and the list survive a reload');
+
+    await customer.click('#portal-signout');
+    await customer.waitForSelector('#portal-auth:not([hidden])', { timeout: 10000 });
+    console.log('  ok  signing out returns to the gate');
+    await customer.close();
+
     /* ---------------- enquiry and rate request reach the desk ---------------- */
     await visitor.goto(`${base}/contact`, { waitUntil: 'networkidle' });
     await visitor.fill('#contact-form-name', 'Ada Kolen');
@@ -374,7 +454,7 @@ async function until(check, what, timeout = 10000) {
 
     /* ---------------- every reveal actually reveals ---------------- */
     const reader = await newPage(visitorCtx);
-    for (const path of ['/', '/services', '/network', '/about', '/careers', '/track']) {
+    for (const path of ['/', '/services', '/network', '/about', '/careers', '/track', '/portal']) {
       await reader.goto(base + path, { waitUntil: 'networkidle' });
       await reader.evaluate(async () => {
         // Walk the page so every section enters the viewport at least once.

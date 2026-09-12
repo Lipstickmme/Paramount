@@ -67,6 +67,26 @@ function getSupabase() {
       return true;
     },
 
+    /**
+     * Insert, tolerating a row that already exists on some other unique index.
+     *
+     * `upsert` above resolves against the primary key, which is the wrong
+     * target when the constraint that matters is a unique index over two
+     * columns — claiming a consignment twice collides on (user_id,
+     * shipment_id), not on the id PostgREST would otherwise check.
+     */
+    async upsertOn(table, rows, onConflict) {
+      const res = await fetch(`${base}/${table}?on_conflict=${encodeURIComponent(onConflict)}`, {
+        method: 'POST',
+        headers: { ...headers, Prefer: 'resolution=ignore-duplicates,return=minimal' },
+        body: JSON.stringify(Array.isArray(rows) ? rows : [rows]),
+      });
+      if (!res.ok) {
+        throw new Error(`supabase upsert ${table} failed: ${res.status} ${await res.text().catch(() => '')}`);
+      }
+      return true;
+    },
+
     /** Insert and return the created rows (needed when we want the new id). */
     async insertReturning(table, rows) {
       const res = await fetch(`${base}/${table}`, {
