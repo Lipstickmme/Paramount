@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Runtime data (contact submissions persisted at runtime)
+data/submissions.json
+data/chat/
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel

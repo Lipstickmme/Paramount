@@ -1,0 +1,42 @@
+[
+  {
+    "id": "senior-structural",
+    "title": "Senior Structural Engineer",
+    "team": "Structural",
+    "location": "Studio",
+    "type": "Full time",
+    "summary": "Lead the structural design of tall buildings and long-span structures from concept through to site."
+  },
+  {
+    "id": "bridge-engineer",
+    "title": "Bridge Engineer",
+    "team": "Civil & Infrastructure",
+    "location": "Site based",
+    "type": "Full time",
+    "summary": "Design bridges and marine structures for demanding wind and durability requirements."
+  },
+  {
+    "id": "bim-coordinator",
+    "title": "BIM Coordinator",
+    "team": "Digital Engineering",
+    "location": "Studio",
+    "type": "Full time",
+    "summary": "Keep multi-discipline models coordinated and drive our digital-twin workflows."
+  },
+  {
+    "id": "mechanical-graduate",
+    "title": "Graduate Mechanical Engineer",
+    "team": "Mechanical Systems",
+    "location": "Studio",
+    "type": "Graduate",
+    "summary": "Join our systems team on energy, HVAC and process work with senior mentorship."
+  },
+  {
+    "id": "project-engineer",
+    "title": "Project Engineer",
+    "team": "Civil & Infrastructure",
+    "location": "Site based",
+    "type": "Full time",
+    "summary": "Coordinate delivery on major infrastructure commissions across sectors and borders."
+  }
+]

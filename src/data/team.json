@@ -1,0 +1,6 @@
+[
+  { "id": "tommy", "name": "Tommy Kowalski", "role": "Founding Principal", "discipline": "Structural", "initials": "TK" },
+  { "id": "tomas", "name": "Tomás Reyes", "role": "Director of Civil", "discipline": "Infrastructure", "initials": "TR" },
+  { "id": "lena", "name": "Lena Okafor", "role": "Head of Digital Engineering", "discipline": "BIM / VDC", "initials": "LO" },
+  { "id": "jun", "name": "Jun-seo Park", "role": "Principal, Mechanical", "discipline": "Systems", "initials": "JP" }
+]

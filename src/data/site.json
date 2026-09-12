@@ -1,0 +1,7 @@
+{
+  "_comment": "The studio's contact details. Address and telephone are blank by default and only appear on the site once they are set under Settings at /admin; email and hours are the values the pages are built with. Anything set at the desk reaches every page on the next load, with no rebuild.",
+  "address": "",
+  "email": "info@blueprinthavenltd.com",
+  "phone": "",
+  "hours": "Monday to Friday, 09:00 to 18:00 CET"
+}

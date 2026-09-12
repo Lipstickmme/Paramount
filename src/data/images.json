@@ -1,0 +1,77 @@
+{
+  "_comment": "Page-level image slots. Each slot lists the files it would like, best first, and the placeholder it falls back on if none is there. Names are matched without regard to case and any of .webp .avif .jpg .jpeg .png works, with .webp preferred, so adding photography is a file drop into public/assets/img/ and needs no code change. The second and third preferences let a site with only some of merkel1..merkel5 still show photography everywhere rather than a mix of photographs and placeholder drawings. Per-project images live in projects.json; the CEO portrait lives in leadership.json.",
+  "slots": {
+    "underlay": {
+      "prefer": [
+        "m1",
+        "mk1",
+        "merkel1"
+      ],
+      "fallback": "/assets/slides/blueprint-01.webp"
+    },
+    "capabilities": {
+      "prefer": [
+        "m2",
+        "mk2",
+        "merkel2"
+      ],
+      "fallback": "/assets/slides/blueprint-02.webp"
+    },
+    "metrics": {
+      "prefer": [
+        "m3",
+        "mk3",
+        "merkel3"
+      ],
+      "fallback": "/assets/slides/blueprint-03.webp"
+    },
+    "work": {
+      "prefer": [
+        "m4",
+        "mk4",
+        "merkel4"
+      ],
+      "fallback": "/assets/img/proj-helix-tower.svg"
+    },
+    "contact": {
+      "prefer": [
+        "mk5",
+        "mk3",
+        "mk1"
+      ],
+      "fallback": "/assets/img/contact.svg"
+    },
+    "projectsHeader": {
+      "prefer": [
+        "m3",
+        "mk1",
+        "merkel4"
+      ],
+      "fallback": "/assets/img/proj-helix-tower.svg"
+    },
+    "careersHeader": {
+      "prefer": [
+        "m1",
+        "addd",
+        "merkel3"
+      ],
+      "fallback": "/assets/img/careers.svg"
+    },
+    "contactHeader": {
+      "prefer": [
+        "m4",
+        "add2",
+        "merkel5"
+      ],
+      "fallback": "/assets/img/contact.svg"
+    }
+  },
+  "heroSlides": [
+    {
+      "prefer": [
+        "merkel2"
+      ],
+      "fallback": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/merkel2-X5a3OtwTvD1tkkyJ2iLPGsVU7Xgfqt.png"
+    }
+  ]
+}

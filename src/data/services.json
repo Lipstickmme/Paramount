@@ -1,0 +1,122 @@
+[
+  {
+    "id": "structural",
+    "code": "S-01",
+    "title": "Structural Engineering",
+    "summary": "Load-path analysis, seismic detailing and frame design that let architecture reach further on less material.",
+    "capabilities": ["Finite element analysis", "Seismic and wind design", "Steel, concrete and timber", "Retrofit and assessment"],
+    "image": "/assets/img/mk1.webp",
+    "lede": "Every scheme starts with the load path. Get that right and the rest of the building gets cheaper, lighter and easier to build.",
+    "body": [
+      "We size and detail frames in steel, concrete and timber, from single-storey portal sheds to forty-storey towers. Analysis runs in the same model the drawings come out of, so a change to a member size is a change everywhere it appears.",
+      "Assessment work is a large part of what we do. Owners come to us with a structure that has to carry more than it was built for, and the answer is usually a targeted strengthening scheme rather than a replacement."
+    ],
+    "deliverables": ["Scheme design and options report", "Full analysis model and calculations", "Fabrication and rebar drawings", "Site queries and inspection"],
+    "sectors": ["Commercial", "Industrial", "Infrastructure"]
+  },
+  {
+    "id": "civil",
+    "code": "S-02",
+    "title": "Civil and Infrastructure",
+    "summary": "Roads, bridges, drainage and site works engineered for a hundred year horizon and a changing climate.",
+    "capabilities": ["Highway and transit", "Stormwater and flood", "Bridges and culverts", "Land development"],
+    "image": "/assets/img/mk3.webp",
+    "lede": "Ground is the least forgiving part of any project. We survey it, model it, and design what sits on it.",
+    "body": [
+      "Our civil team takes a site from topographic survey through earthworks, drainage and pavement design to the point where a contractor can price it without a list of assumptions.",
+      "Flood and stormwater work is modelled against the rainfall the site will see in fifty years, not the rainfall it saw last year. That changes attenuation volumes, and it is cheaper to find out at design stage."
+    ],
+    "deliverables": ["Site and drainage strategy", "Earthworks and pavement design", "Flood modelling and consent support", "Construction issue drawings"],
+    "sectors": ["Infrastructure", "Transit", "Land development"]
+  },
+  {
+    "id": "mechanical",
+    "code": "S-03",
+    "title": "Mechanical and Process",
+    "summary": "Piping, thermal systems and plant layouts tuned for throughput, redundancy and quiet operation.",
+    "capabilities": ["Process piping and stress", "HVAC and ventilation", "Energy modelling", "Plant layout"],
+    "image": "/assets/img/merkel4.webp",
+    "lede": "Process plant lives or dies on layout. Pipe runs, access and maintenance decide the operating cost for the next thirty years.",
+    "body": [
+      "We design piping systems and their supports, run stress analysis on hot lines, and lay out plant so that the units needing weekly attention are the ones a fitter can reach.",
+      "Energy work is measured, not assumed. We meter the existing plant first, then model the change, so the saving in the report is the saving on the bill."
+    ],
+    "deliverables": ["P and ID and line lists", "Pipe stress and support design", "Plant layout and access review", "Energy model and measured baseline"],
+    "sectors": ["Industrial", "Energy", "Commercial"]
+  },
+  {
+    "id": "digital",
+    "code": "S-04",
+    "title": "Digital Engineering",
+    "summary": "One coordinated model that every discipline works from, and that survives into operation.",
+    "capabilities": ["BIM and VDC", "Parametric design", "Digital twins", "Clash and 4D scheduling"],
+    "image": "/assets/img/merkel2.webp",
+    "lede": "A model is worth having when the site team opens it. Everything else is a picture of a building.",
+    "body": [
+      "We run federated models across structure, civils, mechanical and electrical, with a clash routine that closes issues rather than counting them.",
+      "Parametric work pays for itself on repetitive geometry: a node family that resolves itself against member sizes saves weeks of drafting on a diagrid or a long viaduct."
+    ],
+    "deliverables": ["Federated model and BEP", "Clash reports and resolution log", "4D sequence for the build", "Asset data handover"],
+    "sectors": ["Commercial", "Infrastructure", "Industrial"]
+  },
+  {
+    "id": "steel",
+    "code": "S-05",
+    "title": "Steel Fabrication and Erection",
+    "summary": "Connection design, shop detailing and erection sequencing, from the drawing office to the last bolt.",
+    "capabilities": ["Connection design", "Shop detailing", "Erection sequencing", "Temporary works"],
+    "image": "/assets/img/steelcanopy.webp",
+    "lede": "Steel is decided in the connections. Design them early and the frame goes up in the order the crane wants.",
+    "body": [
+      "We detail connections to the fabricator's shop standards rather than a generic library, which cuts weld volume and keeps the pieces inside the transport envelope.",
+      "Erection sequence is designed alongside the frame, with the temporary stability case checked at every stage, so nothing on site waits on a stability check that was never done."
+    ],
+    "deliverables": ["Connection calculations", "Shop and assembly drawings", "Erection sequence and stability case", "Temporary works design"],
+    "sectors": ["Industrial", "Commercial", "Infrastructure"]
+  },
+  {
+    "id": "groundworks",
+    "code": "S-06",
+    "title": "Groundworks and Foundations",
+    "summary": "Piling, rafts and retaining structures designed against the ground that is actually there.",
+    "capabilities": ["Piling and raft design", "Retaining structures", "Ground improvement", "Settlement analysis"],
+    "image": "/assets/img/mk2.webp",
+    "lede": "The cheapest foundation is the one that matches the ground investigation, not the one that matches the last job.",
+    "body": [
+      "We specify and interpret ground investigation, then design the foundation that suits it, whether that is a raft on improved ground or bored piles to rock.",
+      "Settlement is checked against the structure above, because a slab that moves within tolerance still cracks a facade that does not."
+    ],
+    "deliverables": ["Ground investigation specification", "Foundation design and calculations", "Settlement and heave analysis", "Rebar and piling drawings"],
+    "sectors": ["Industrial", "Commercial", "Infrastructure"]
+  },
+  {
+    "id": "plant",
+    "code": "S-07",
+    "title": "Industrial Plant Construction",
+    "summary": "Full delivery of process and energy plant, from foundations to the day it runs.",
+    "capabilities": ["Multi discipline delivery", "Package procurement", "Site management", "Live plant tie-ins"],
+    "image": "/assets/img/mk8.webp",
+    "lede": "Building next to a plant that is still running is a different job from building on an empty field.",
+    "body": [
+      "We take plant projects from foundations through structures, pipework and electrical to a working handover, holding the interfaces between packages so the client is not left arbitrating them.",
+      "Tie-ins to live systems are planned around the shutdown window that actually exists, and rehearsed before it opens."
+    ],
+    "deliverables": ["Package scopes and procurement", "Integrated programme", "Site supervision and QA", "Shutdown and tie-in planning"],
+    "sectors": ["Energy", "Industrial", "Chemical"]
+  },
+  {
+    "id": "commissioning",
+    "code": "S-08",
+    "title": "Commissioning and Handover",
+    "summary": "Proving the thing works, and leaving the operator with records they can use.",
+    "capabilities": ["Commissioning management", "Performance testing", "Operator training", "As-built and asset data"],
+    "image": "/assets/img/mk5.webp",
+    "lede": "A project ends when the operator can run it without ringing us, not when the last valve is fitted.",
+    "body": [
+      "Commissioning is planned from the design stage, so the instrumentation needed to prove performance is in the drawings rather than added later.",
+      "Handover includes the as-built model, the test records and time with the people who will operate it. Most of the value of a digital model is realised after practical completion."
+    ],
+    "deliverables": ["Commissioning plan and witness schedule", "Performance test records", "As-built model and asset register", "Operator training"],
+    "sectors": ["Industrial", "Energy", "Commercial"]
+  }
+]

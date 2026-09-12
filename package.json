@@ -1,0 +1,30 @@
+{
+  "name": "merkel-constructions",
+  "version": "1.0.0",
+  "description": "Merkel Constructions corporate website and API server",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node scripts/build-pages.js && node --watch server.js",
+    "build": "node scripts/build-pages.js",
+    "prestart": "node scripts/build-pages.js",
+    "check:vercel": "node scripts/check-vercel-upload.js",
+    "test": "node test/api.test.js",
+    "test:browser": "node test/browser.test.js && node test/fallback.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "engineering",
+    "express",
+    "website"
+  ],
+  "author": "Merkel Constructions",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apply | Merkel Constructions</title>
+  <meta name="description" content="Apply to Merkel Constructions. One form, read by the people you would work with." />
+  <meta name="theme-color" content="#fafaf9" />
+  <link rel="icon" href="/favicon.ico" sizes="32x32" />
+  <link rel="icon" href="/favicon.png" type="image/png" sizes="512x512" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  
+</head>
+<body class="page-apply">
+  <div class="scroll-progress" id="progress"></div>
+
+  <header class="nav" id="nav">
+    <a class="brand" href="/" aria-label="Merkel Constructions home">
+      <img class="brand-logo" src="/assets/brand/merkel-constructions-wordmark-light.png" alt="Merkel Constructions" width="1048" height="203" />
+    </a>
+    <nav class="nav-links" id="navlinks">
+      <a href="/projects">Projects</a>
+      <a href="/services">Services</a>
+      <a href="/careers" class="is-active">Careers</a>
+      <a href="/contact">Contact us</a>
+    </nav>
+    <a href="/contact" class="btn ghost nav-cta">Contact us <span class="arw">&rsaquo;</span></a>
+  <button class="nav-toggle" id="navtoggle" aria-label="Open menu" aria-expanded="false">
+  <span></span><span></span><span></span>
+  </button>
+  </header>
+
+  
+  <header class="page-header" style="--ph-image:url('/assets/img/m3.webp')">
+    <div class="page-header-media" aria-hidden="true"></div>
+    <div class="wrap page-header-inner">
+      <span class="eyebrow">Careers</span>
+      <h1 data-reveal>Apply.</h1>
+      <p data-reveal>One form, read by the people you would work with. We reply to everyone.</p>
+    </div>
+  </header>
+  <section class="section-pad">
+    <div class="wrap contact-grid">
+      <div class="contact-info" data-reveal>
+        <h2 id="apply-role-title">Speculative application</h2>
+        <p class="contact-lede" id="apply-role-sub">Tell us what you have built and where you want to take it next.</p>
+        <div class="contact-detail" id="apply-role-meta"></div>
+        <div class="contact-note">
+          <p>We read every application ourselves. If your experience does not line up with an open role we will say so, and say what would change that.</p>
+        </div>
+        <a class="link-arrow" href="/careers">All open roles <span class="arw">&rsaquo;</span></a>
+      </div>
+
+      <form id="apply-form" novalidate data-reveal>
+        <div class="field two">
+          <div class="field"><label for="apply-name">Name</label><input type="text" id="apply-name" name="name" autocomplete="name" required /><div class="err" data-err="name"></div></div>
+          <div class="field"><label for="apply-email">Email</label><input type="email" id="apply-email" name="email" autocomplete="email" required /><div class="err" data-err="email"></div></div>
+        </div>
+        <div class="field two">
+          <div class="field"><label for="apply-phone">Phone <span class="opt">(optional)</span></label><input type="tel" id="apply-phone" name="phone" autocomplete="tel" /><div class="err" data-err="phone"></div></div>
+          <div class="field"><label for="apply-experience">Years in practice</label>
+            <select id="apply-experience" name="experience">
+              <option value="">Select</option>
+              <option>Graduate</option>
+              <option>1 to 3</option>
+              <option>4 to 8</option>
+              <option>9 to 15</option>
+              <option>15 or more</option>
+            </select><div class="err" data-err="experience"></div>
+          </div>
+        </div>
+        <div class="field"><label for="apply-role">Role</label>
+          <select id="apply-role" name="roleId"><option value="">Speculative application</option></select>
+          <div class="err" data-err="roleId"></div>
+        </div>
+        <div class="field"><label for="apply-portfolio">Portfolio or profile <span class="opt">(optional)</span></label><input type="url" id="apply-portfolio" name="portfolio" placeholder="https://" /><div class="err" data-err="portfolio"></div></div>
+        <div class="field"><label for="apply-message">What have you worked on?</label><textarea id="apply-message" name="message" placeholder="The projects you would want us to ask about, and what you did on them." required></textarea><div class="err" data-err="message"></div></div>
+        <div class="honeypot" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
+        <div class="form-status" id="apply-status" role="status" aria-live="polite"></div>
+        <button type="submit" class="btn" id="apply-submit">Send application <span class="arw">&rsaquo;</span></button>
+      </form>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="wrap footer-top">
+      <div class="footer-brand">
+        <img class="brand-logo footer-logo" src="/assets/brand/merkel-constructions-wordmark-light.png" alt="Merkel Constructions" width="1048" height="203" />
+        <p>Engineering for buildings and infrastructure.</p>
+      </div>
+      <div class="col">
+        <h5>Company</h5>
+        <a href="/projects">Projects</a>
+        <a href="/services">Services</a>
+        <a href="/careers">Careers</a>
+        <a href="/apply">Apply</a>
+      </div>
+      <div class="col">
+        <h5>Contact</h5>
+        <a href="mailto:info@blueprinthavenltd.com" data-site="email">info@blueprinthavenltd.com</a>
+        <a href="/contact">Contact us</a>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <span>&copy; 2026 Merkel Constructions B.V.</span>
+    </div>
+  </footer>
+
+  <div class="chat" id="chat" aria-live="polite">
+    <button class="chat-toggle" id="chat-toggle" aria-label="Open live chat" aria-expanded="false">
+      <svg class="i-open" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg>
+      <svg class="i-close" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <div class="chat-panel" id="chat-panel" hidden>
+      <div class="chat-head">
+        <div class="chat-head-id">
+          <span class="dot"></span>
+          <div>
+            <strong>Merkel Studio</strong>
+            <small>Typically replies in a few minutes</small>
+          </div>
+        </div>
+        <button class="chat-min" id="chat-min" aria-label="Minimise chat">&minus;</button>
+      </div>
+      <div class="chat-log" id="chat-log"></div>
+      <form class="chat-form" id="chat-form">
+        <input type="text" id="chat-input" name="text" placeholder="Ask us anything" autocomplete="off" maxlength="2000" />
+        <button type="submit" aria-label="Send message">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </form>
+    </div>
+  </div>
+  <script src="/js/main.js"></script>
+  <script src="/js/supabase-lite.js"></script>
+  <script src="/js/chat.js"></script>
+  <script src="/js/apply.js"></script>
+</body>
+</html>
