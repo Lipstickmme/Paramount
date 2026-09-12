@@ -1,0 +1,26 @@
+{
+  "hubs": [
+    { "id": "rotterdam", "city": "Rotterdam", "country": "Netherlands", "role": "Global HQ & ocean gateway", "code": "RTM", "lat": 51.92, "lng": 4.48, "modes": ["ocean_freight", "road_haulage", "warehousing"], "note": "Deep-sea terminal access, 180k pallet positions, bonded." },
+    { "id": "singapore", "city": "Singapore", "country": "Singapore", "role": "Asia-Pacific control tower", "code": "SIN", "lat": 1.35, "lng": 103.82, "modes": ["ocean_freight", "air_freight", "warehousing"], "note": "Transhipment desk staffed around the clock." },
+    { "id": "dubai", "city": "Dubai", "country": "United Arab Emirates", "role": "Middle East & Africa hub", "code": "DXB", "lat": 25.25, "lng": 55.36, "modes": ["air_freight", "ocean_freight", "road_haulage"], "note": "Jebel Ali free-zone warehousing and air-sea corridors." },
+    { "id": "newark", "city": "Newark", "country": "United States", "role": "North America gateway", "code": "EWR", "lat": 40.69, "lng": -74.17, "modes": ["air_freight", "road_haulage", "express_courier"], "note": "East-coast customs brokerage and final-mile network." },
+    { "id": "shanghai", "city": "Shanghai", "country": "China", "role": "Origin consolidation", "code": "PVG", "lat": 31.23, "lng": 121.47, "modes": ["ocean_freight", "air_freight", "rail_freight"], "note": "Weekly LCL boxes to eleven European ports." },
+    { "id": "lagos", "city": "Lagos", "country": "Nigeria", "role": "West Africa distribution", "code": "LOS", "lat": 6.45, "lng": 3.39, "modes": ["ocean_freight", "road_haulage", "warehousing"], "note": "Apapa clearance team and inland haulage to five states." },
+    { "id": "hamburg", "city": "Hamburg", "country": "Germany", "role": "Rail & intermodal", "code": "HAM", "lat": 53.55, "lng": 9.99, "modes": ["rail_freight", "ocean_freight"], "note": "Eurasian block-train terminal." },
+    { "id": "santos", "city": "Santos", "country": "Brazil", "role": "South America gateway", "code": "SSZ", "lat": -23.96, "lng": -46.33, "modes": ["ocean_freight", "warehousing"], "note": "Reefer consolidation for perishables." }
+  ],
+  "lanes": [
+    { "from": "shanghai", "to": "rotterdam", "mode": "ocean_freight", "transit": "28 days", "label": "Shanghai → Rotterdam" },
+    { "from": "shanghai", "to": "hamburg", "mode": "rail_freight", "transit": "18 days", "label": "Shanghai → Hamburg" },
+    { "from": "rotterdam", "to": "lagos", "mode": "ocean_freight", "transit": "19 days", "label": "Rotterdam → Lagos" },
+    { "from": "dubai", "to": "newark", "mode": "air_freight", "transit": "36 hours", "label": "Dubai → Newark" },
+    { "from": "singapore", "to": "dubai", "mode": "ocean_freight", "transit": "11 days", "label": "Singapore → Dubai" },
+    { "from": "newark", "to": "santos", "mode": "ocean_freight", "transit": "16 days", "label": "Newark → Santos" }
+  ],
+  "stats": [
+    { "label": "Consignments moved each year", "value": 2400000, "suffix": "+" },
+    { "label": "Countries served", "value": 172, "suffix": "" },
+    { "label": "On-time delivery", "value": 98, "suffix": "%" },
+    { "label": "Warehouse floor, m²", "value": 610000, "suffix": "" }
+  ]
+}

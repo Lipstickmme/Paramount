@@ -60,11 +60,11 @@ async function withApp(env, fn) {
       { SUPABASE_URL: sbUrl, SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY, SUPABASE_ANON_KEY: mock.ANON_KEY, CHAT_NOTIFY: 'off' },
       async (base) => {
         const token = 'visitortoken1234';
-        const sent = await req(base, 'POST', '/api/chat/message', { sessionId: token, text: 'We need a bridge assessed.' });
+        const sent = await req(base, 'POST', '/api/chat/message', { sessionId: token, text: 'Where is my consignment?' });
         assert.strictEqual(sent.status, 201, JSON.stringify(sent.body));
         assert.strictEqual(sent.body.stored, true, 'message must persist: ' + JSON.stringify(sent.body));
         assert.strictEqual(sent.body.messages.length, 2);
-        assert.strictEqual(sent.body.messages[0].text, 'We need a bridge assessed.');
+        assert.strictEqual(sent.body.messages[0].text, 'Where is my consignment?');
         assert.strictEqual(sent.body.messages[1].role, 'agent');
 
         assert.strictEqual(sb.db.chat_sessions.rows.length, 1, 'one session row');
@@ -84,7 +84,7 @@ async function withApp(env, fn) {
         assert.strictEqual(history.status, 200);
         assert.strictEqual(history.body.messages.length, 4);
         assert.deepStrictEqual(history.body.messages.map((m) => m.role), ['user', 'agent', 'user', 'agent']);
-        assert.strictEqual(history.body.messages[0].text, 'We need a bridge assessed.');
+        assert.strictEqual(history.body.messages[0].text, 'Where is my consignment?');
         console.log('  ok  history reads back in order with app roles');
 
         // Once a human answers, the canned responder stays quiet.
@@ -174,7 +174,7 @@ async function withApp(env, fn) {
         SUPABASE_URL: `http://127.0.0.1:${receiving.address().port}`,
         SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY,
         SUPABASE_ANON_KEY: mock.ANON_KEY,
-        MAILBOX_ADDRESS: 'Merkel Constructions <contact@merkel.test>',
+        MAILBOX_ADDRESS: 'Paramount Logistics <ops@paramount.test>',
       },
       async (base) => {
         const res = await req(base, 'GET', '/api/health?probe=1');
@@ -330,16 +330,16 @@ async function withApp(env, fn) {
       { SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY, SUPABASE_ANON_KEY: mock.ANON_KEY },
       async (base) => {
         const res = await req(base, 'POST', '/api/applications', {
-          name: 'Sanne Vermeer', email: 'sanne@example.nl', roleId: 'bridge-engineer',
+          name: 'Sanne Vermeer', email: 'sanne@example.nl', roleId: 'customs-broker',
           phone: '+31 6 1234 5678', experience: '4 to 8',
-          message: 'Six years on bridges, mostly cable stayed and one lock gate.',
+          message: 'Six years of entries, mostly pharma and industrial, plus two audits.',
         });
         assert.strictEqual(res.status, 201);
         assert.strictEqual(res.body.stored, 'enquiries', 'it must land somewhere');
         assert.strictEqual(sb.db.enquiries.rows.length, 1);
         const filed = sb.db.enquiries.rows[0];
         assert.match(filed.service, /^Application: /);
-        assert.match(filed.message, /Six years on bridges/);
+        assert.match(filed.message, /Six years of entries/);
         assert.match(filed.message, /\+31 6 1234 5678/, 'the phone survives the fallback');
         console.log('  ok  an application is filed as an enquiry when its own table is missing');
       }
@@ -361,7 +361,11 @@ async function withApp(env, fn) {
 
         sb.db.site_settings.rows[0].email = 'desk@example.com';
         sb.db.site_settings.rows[0].phone = '+31 (0)20 111 2222';
-        const after = await req(base, 'GET', '/api/site');
+        // Settings are cached for a few seconds, since every page load reads
+        // them; `?fresh=1` is the read that skips it.
+        const cached = await req(base, 'GET', '/api/site');
+        assert.strictEqual(cached.body.email, defaults.email, 'the cached read is still the old value');
+        const after = await req(base, 'GET', '/api/site?fresh=1');
         assert.strictEqual(after.body.email, 'desk@example.com');
         assert.strictEqual(after.body.phone, '+31 (0)20 111 2222');
         assert.strictEqual(after.body.address, defaults.address, 'a field left blank keeps the built-in value');
@@ -385,7 +389,7 @@ async function withApp(env, fn) {
   /* ---- 15. a signed Resend delivery reaches the admin inbox ---- */
   {
     const { sign } = require(ROOT + '/src/utils/webhookSignature');
-    const SECRET = 'whsec_' + Buffer.from('merkel-inbound-test-secret').toString('base64');
+    const SECRET = 'whsec_' + Buffer.from('paramount-inbound-test-secret').toString('base64');
     const sb = await mock.start({});
     await withApp(
       {
@@ -393,7 +397,7 @@ async function withApp(env, fn) {
         SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY,
         SUPABASE_ANON_KEY: mock.ANON_KEY,
         RESEND_WEBHOOK_SECRET: SECRET,
-        MAILBOX_ADDRESS: 'Merkel Constructions <contact@merkel.test>',
+        MAILBOX_ADDRESS: 'Paramount Logistics <ops@paramount.test>',
         // No forwarding here: this asserts the archive that /admin reads.
         FORWARD_TO: '',
         RESEND_API_KEY: '',
@@ -416,8 +420,8 @@ async function withApp(env, fn) {
           type: 'email.received',
           data: {
             from: 'Ada Kolen <ada@example.com>',
-            to: ['contact@merkel.test'],
-            subject: 'Re: A 40m span',
+            to: ['ops@paramount.test'],
+            subject: 'Re: Rates for Shanghai to Rotterdam',
             text: 'Can you quote the canal crossing?',
             message_id: '<m1@example.com>',
           },
@@ -429,10 +433,10 @@ async function withApp(env, fn) {
         assert.strictEqual(sb.db.email_threads.rows.length, 1, 'a thread was opened');
         assert.strictEqual(sb.db.email_threads.rows[0].participant_email, 'ada@example.com');
         // Re: is stripped so a reply joins the conversation it belongs to.
-        assert.strictEqual(sb.db.email_threads.rows[0].subject, 'A 40m span');
+        assert.strictEqual(sb.db.email_threads.rows[0].subject, 'Rates for Shanghai to Rotterdam');
         assert.strictEqual(sb.db.email_messages.rows.length, 1);
         assert.strictEqual(sb.db.email_messages.rows[0].direction, 'inbound');
-        assert.strictEqual(sb.db.email_messages.rows[0].to_email, 'contact@merkel.test');
+        assert.strictEqual(sb.db.email_messages.rows[0].to_email, 'ops@paramount.test');
         console.log('  ok  a signed inbound delivery lands in the admin inbox');
 
         const tampered = body.replace('Ada Kolen', 'Mallory Vane');
@@ -470,7 +474,7 @@ async function withApp(env, fn) {
         SUPABASE_URL: `http://127.0.0.1:${sb.address().port}`,
         SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY, SUPABASE_ANON_KEY: mock.ANON_KEY,
         RESEND_WEBHOOK_SECRET: SECRET, RESEND_API_KEY: 'test-key',
-        MAILBOX_ADDRESS: 'contact@merkel.test', FORWARD_TO: '',
+        MAILBOX_ADDRESS: 'ops@paramount.test', FORWARD_TO: '',
       },
       async (base) => {
         // Shaped like a real Resend delivery: envelope only, no text or html.
@@ -481,9 +485,9 @@ async function withApp(env, fn) {
             email_id: '4a93e097-c85c-408f-89fd-67bc22511be5',
             from: 'ada@example.com',
             message_id: '<ada-2@example.com>',
-            received_for: ['contact@merkel.test'],
+            received_for: ['ops@paramount.test'],
             subject: 'Canal crossing',
-            to: ['contact@merkel.test'],
+            to: ['ops@paramount.test'],
           },
         });
         const id = 'msg_body', ts = String(Math.floor(Date.now() / 1000));
@@ -542,27 +546,27 @@ async function withApp(env, fn) {
       return res.json();
     };
 
-    const staff = await signIn('desk@merkel.test', 'pw-desk');
+    const staff = await signIn('desk@paramount.test', 'pw-desk');
     const outsider = await signIn('nosy@example.com', 'pw-nosy');
     sb.db.admins.rows.push({ user_id: staff.user.id, email: staff.user.email });
 
     const thread = {
       id: '11111111-2222-4333-8444-555555555555',
       created_at: new Date().toISOString(), last_message_at: new Date().toISOString(),
-      subject: 'A 40m span', participant_email: 'ada@example.com', participant_name: 'Ada', status: 'new',
+      subject: 'Rates for Shanghai to Rotterdam', participant_email: 'ada@example.com', participant_name: 'Ada', status: 'new',
     };
     sb.db.email_threads.rows.push(thread);
     sb.db.email_messages.rows.push({
       id: 'aaaaaaaa-2222-4333-8444-555555555555', created_at: new Date().toISOString(),
       thread_id: thread.id, direction: 'inbound', from_email: 'ada@example.com',
-      to_email: 'contact@merkel.test', subject: 'A 40m span', message_id: '<ada-1@example.com>',
+      to_email: 'ops@paramount.test', subject: 'Rates for Shanghai to Rotterdam', message_id: '<ada-1@example.com>',
       has_attachments: false,
     });
 
     await withApp(
       {
         SUPABASE_URL: sbUrl, SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY, SUPABASE_ANON_KEY: mock.ANON_KEY,
-        RESEND_API_KEY: 'test-key', MAILBOX_ADDRESS: 'contact@merkel.test',
+        RESEND_API_KEY: 'test-key', MAILBOX_ADDRESS: 'ops@paramount.test',
       },
       async (base) => {
         const reply = (token, payload) => fetch(base + '/api/emails/reply', {
@@ -594,12 +598,12 @@ async function withApp(env, fn) {
         assert.strictEqual(ok.status, 201, JSON.stringify(await ok.json().catch(() => ({}))));
         assert.strictEqual(sentMail.length, 1);
         assert.deepStrictEqual(sentMail[0].to, ['ada@example.com']);
-        assert.strictEqual(sentMail[0].subject, 'Re: A 40m span', 'one Re: prefix, not two');
+        assert.strictEqual(sentMail[0].subject, 'Re: Rates for Shanghai to Rotterdam', 'one Re: prefix, not two');
         // Threading headers are what put the reply inside Ada's conversation.
         assert.strictEqual(sentMail[0].headers['In-Reply-To'], '<ada-1@example.com>');
         // A bare MAILBOX_ADDRESS would otherwise show in the recipient's inbox
-        // as "contact", the local part, rather than as the studio.
-        assert.strictEqual(sentMail[0].from, 'Merkel Constructions <contact@merkel.test>');
+        // as "ops", the local part, rather than as the company.
+        assert.strictEqual(sentMail[0].from, 'Paramount Logistics <ops@paramount.test>');
         // Written by a person, so no monospace HTML part goes with it.
         assert.strictEqual(sentMail[0].html, undefined);
         assert.strictEqual(sentMail[0].text, 'Quoting next week.');
@@ -614,6 +618,295 @@ async function withApp(env, fn) {
 
     global.fetch = realFetch;
     sb.close();
+  }
+
+  /* ---- tracking: the desk books, the world looks it up ---- */
+  {
+    const sb = await mock.start({});
+    const url = `http://127.0.0.1:${sb.address().port}`;
+    sb.createUser('desk@paramount.test', 'pw-desk', { admin: true });
+    sb.createUser('visitor@example.com', 'pw-visitor');
+
+    const signIn = async (email, password) => {
+      const res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: { apikey: mock.ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      return (await res.json()).access_token;
+    };
+
+    const staff = await signIn('desk@paramount.test', 'pw-desk');
+    const outsider = await signIn('visitor@example.com', 'pw-visitor');
+
+    await withApp(
+      { SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY, SUPABASE_ANON_KEY: mock.ANON_KEY, RESEND_API_KEY: '' },
+      async (base) => {
+        const asStaff = (method, path, body) =>
+          fetch(base + path, {
+            method,
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${staff}` },
+            body: body ? JSON.stringify(body) : undefined,
+          }).then(async (r) => ({ status: r.status, body: await r.json().catch(() => ({})) }));
+
+        /* -- only the desk may touch a consignment ----------------------- */
+        const anonymous = await req(base, 'POST', '/api/shipments', { shipper_name: 'x' });
+        assert.strictEqual(anonymous.status, 401, 'no session, no booking');
+
+        const notStaff = await fetch(base + '/api/shipments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${outsider}` },
+          body: JSON.stringify({ shipper_name: 'x', receiver_name: 'y', origin_city: 'a', destination_city: 'b' }),
+        });
+        assert.strictEqual(notStaff.status, 403, 'a signed-in stranger is not the desk');
+        console.log('  ok  booking a consignment needs a desk session');
+
+        /* -- a booking mints a number and opens the timeline -------------- */
+        const missing = await asStaff('POST', '/api/shipments', { shipper_name: 'Only a shipper' });
+        assert.strictEqual(missing.status, 422);
+        assert.deepStrictEqual(missing.body.fields, ['receiver_name', 'origin_city', 'destination_city']);
+        console.log('  ok  a booking names every field it still needs');
+
+        const created = await asStaff('POST', '/api/shipments', {
+          shipper_name: 'Vestberg Components AB',
+          receiver_name: 'Okonkwo Trading Ltd',
+          receiver_email: 'rcv@example.com',
+          origin_city: 'Gothenburg',
+          origin_country: 'Sweden',
+          destination_city: 'Lagos',
+          destination_country: 'Nigeria',
+          mode: 'ocean_freight',
+          pieces: 12,
+          weight_kg: 4200,
+          internal_notes: 'margin is thin on this one',
+          freight_cost: 8400,
+        });
+        assert.strictEqual(created.status, 201, JSON.stringify(created.body));
+        const number = created.body.shipment.tracking_number;
+        const id = created.body.shipment.id;
+        assert.match(number, /^PMT-\d{4}-[0-9A-HJ-NP-Z]{8}$/, 'the number follows the published shape');
+        assert.strictEqual(sb.db.shipment_events.rows.length, 1, 'the timeline opens with the booking');
+        console.log('  ok  a booking mints a tracking number and opens the timeline:', number);
+
+        /* -- anyone holding the number can look it up -------------------- */
+        const tracked = await req(base, 'GET', `/api/track/${number}`);
+        assert.strictEqual(tracked.status, 200);
+        assert.strictEqual(tracked.body.shipment.status_label, 'Booking registered');
+        assert.strictEqual(tracked.body.shipment.events.length, 1);
+        assert.strictEqual(tracked.body.shipment.mode_label, 'Ocean freight');
+
+        // Commercial and internal columns must never reach a public response.
+        ['internal_notes', 'freight_cost', 'shipper_email', 'receiver_email', 'payment_status', 'id'].forEach((key) => {
+          assert.ok(!(key in tracked.body.shipment), `${key} must not be public`);
+        });
+        console.log('  ok  a public lookup returns the customer view and nothing else');
+
+        // Typed in lower case, without the dashes, with a stray space.
+        const sloppy = await req(base, 'GET', `/api/track/${encodeURIComponent(` ${number.toLowerCase().replace(/-/g, '')} `)}`);
+        assert.strictEqual(sloppy.status, 200);
+        assert.strictEqual(sloppy.body.shipment.tracking_number, number);
+        console.log('  ok  a number typed loosely still finds its consignment');
+
+        const nonsense = await req(base, 'GET', '/api/track/NOT-A-NUMBER');
+        assert.strictEqual(nonsense.status, 422);
+        assert.strictEqual(nonsense.body.error, 'malformed_tracking_number');
+
+        const unknown = await req(base, 'GET', '/api/track/PMT-2026-4F7K2QX9');
+        assert.strictEqual(unknown.status, 404);
+        assert.strictEqual(unknown.body.error, 'not_found');
+        console.log('  ok  a malformed number and an unknown one are told apart');
+
+        /* -- movement is an event, and it rolls up ------------------------ */
+        const moved = await asStaff('POST', `/api/shipments/${id}/events`, {
+          status: 'in_transit',
+          location: 'Algeciras, Spain',
+          lat: 36.13,
+          lng: -5.45,
+          note: 'Transhipped to MV Aurora.',
+        });
+        assert.strictEqual(moved.status, 201, JSON.stringify(moved.body));
+        assert.strictEqual(moved.body.shipment.status, 'in_transit');
+        assert.strictEqual(moved.body.shipment.current_location, 'Algeciras, Spain');
+
+        const afterMove = await req(base, 'GET', `/api/track/${number}`);
+        assert.strictEqual(afterMove.body.shipment.events.length, 2);
+        assert.strictEqual(afterMove.body.shipment.events[0].location, 'Algeciras, Spain', 'newest first');
+        assert.strictEqual(afterMove.body.shipment.progress, 45);
+        console.log('  ok  a movement updates the consignment and the public timeline');
+
+        const badStatus = await asStaff('POST', `/api/shipments/${id}/events`, { status: 'teleported' });
+        assert.strictEqual(badStatus.status, 422);
+        assert.strictEqual(badStatus.body.error, 'invalid_status');
+        console.log('  ok  an unknown status is refused');
+
+        /* -- an internal note stays off the customer's timeline ----------- */
+        await asStaff('POST', `/api/shipments/${id}/events`, {
+          status: 'exception',
+          location: 'Desk',
+          note: 'Chasing the consignee for a Form M.',
+          internal: true,
+        });
+        const afterInternal = await req(base, 'GET', `/api/track/${number}`);
+        assert.strictEqual(afterInternal.body.shipment.events.length, 2, 'the internal note is not published');
+        assert.strictEqual(afterInternal.body.shipment.status, 'in_transit', 'and it does not move the consignment');
+
+        const deskView = await asStaff('GET', `/api/shipments/${id}/events`);
+        assert.strictEqual(deskView.body.events.length, 3, 'the desk sees it');
+        console.log('  ok  an internal note is recorded for the desk and hidden from the customer');
+
+        /* -- delivery closes it out --------------------------------------- */
+        await asStaff('POST', `/api/shipments/${id}/events`, { status: 'delivered', location: 'Lagos, Nigeria', note: 'Signed by A. Bello.' });
+        const delivered = await req(base, 'GET', `/api/track/${number}`);
+        assert.strictEqual(delivered.body.shipment.is_delivered, true);
+        assert.strictEqual(delivered.body.shipment.progress, 100);
+        assert.ok(delivered.body.shipment.delivered_at, 'delivery is timestamped');
+        console.log('  ok  delivery completes the progress and stamps the time');
+
+        /* -- corrections, and what a correction may not do ----------------- */
+        const patched = await asStaff('PATCH', `/api/shipments/${id}`, { carrier: 'Maersk Line', status: 'pending' });
+        assert.strictEqual(patched.status, 200);
+        assert.strictEqual(patched.body.shipment.carrier, 'Maersk Line');
+        assert.strictEqual(patched.body.shipment.status, 'delivered', 'status only moves through an event');
+        console.log('  ok  editing corrects the file but cannot rewrite the status');
+
+        /* -- the desk list, and search ------------------------------------- */
+        const list = await asStaff('GET', '/api/shipments?q=lagos');
+        assert.strictEqual(list.body.count, 1);
+        const none = await asStaff('GET', '/api/shipments?q=reykjavik');
+        assert.strictEqual(none.body.count, 0);
+        console.log('  ok  the desk can search its consignments');
+
+        /* -- a supplied number must be one of ours, and unique ------------- */
+        const clash = await asStaff('POST', '/api/shipments', {
+          shipper_name: 'a', receiver_name: 'b', origin_city: 'c', destination_city: 'd', tracking_number: number,
+        });
+        assert.strictEqual(clash.status, 409);
+        const malformed = await asStaff('POST', '/api/shipments', {
+          shipper_name: 'a', receiver_name: 'b', origin_city: 'c', destination_city: 'd', tracking_number: 'ABC-123',
+        });
+        assert.strictEqual(malformed.status, 422);
+        console.log('  ok  a supplied tracking number must be ours, and free');
+
+        /* -- deleting takes the history with it ---------------------------- */
+        const removed = await asStaff('DELETE', `/api/shipments/${id}`);
+        assert.strictEqual(removed.status, 200);
+        assert.strictEqual((await req(base, 'GET', `/api/track/${number}`)).status, 404);
+        assert.strictEqual(sb.db.shipment_events.rows.length, 0, 'the events cascade');
+        console.log('  ok  deleting a consignment takes its whole history with it');
+
+        /* -- the chat answers a tracking question from the real record ----- */
+        const live = await asStaff('POST', '/api/shipments', {
+          shipper_name: 'Helio Pharma', receiver_name: 'St Mary Hospital',
+          origin_city: 'Frankfurt', destination_city: 'Nairobi', mode: 'air_freight',
+        });
+        const liveNumber = live.body.shipment.tracking_number;
+        await asStaff('POST', `/api/shipments/${live.body.shipment.id}/events`, {
+          status: 'out_for_delivery', location: 'Nairobi, Kenya',
+        });
+
+        const asked = await req(base, 'POST', '/api/chat/message', {
+          sessionId: 'chattoken12345',
+          text: `hi, where is ${liveNumber} right now?`,
+        });
+        assert.strictEqual(asked.status, 201);
+        const answer = asked.body.messages[1].text;
+        assert.match(answer, /out for delivery/i, 'the widget answers from the record: ' + answer);
+        assert.match(answer, /Nairobi/);
+        console.log('  ok  the chat widget answers a tracking question from the record');
+
+        const guessed = await req(base, 'POST', '/api/chat/message', {
+          sessionId: 'chattoken12345',
+          text: 'where is PMT-2026-4F7K2QX9?',
+        });
+        assert.match(guessed.body.messages[1].text, /could not find/i);
+        console.log('  ok  and says so plainly when the number is not one of ours');
+      }
+    );
+    sb.close();
+  }
+
+  /* ---- rate requests ---- */
+  {
+    const sb = await mock.start({});
+    const url = `http://127.0.0.1:${sb.address().port}`;
+    await withApp(
+      { SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY, SUPABASE_ANON_KEY: mock.ANON_KEY, RESEND_API_KEY: '' },
+      async (base) => {
+        const bad = await req(base, 'POST', '/api/quotes', { name: 'x', email: 'not-an-email' });
+        assert.strictEqual(bad.status, 422);
+        assert.deepStrictEqual(
+          Object.keys(bad.body.fields).sort(),
+          ['destination', 'email', 'mode', 'name', 'origin']
+        );
+        console.log('  ok  a rate request reports every missing field at once');
+
+        const good = await req(base, 'POST', '/api/quotes', {
+          name: 'Dana Okafor', email: 'dana@example.com', company: 'Okafor Imports',
+          mode: 'ocean_freight', origin: 'Shanghai', destination: 'Rotterdam',
+          weightKg: 8200, pieces: 4, readyDate: '2026-11-02', message: 'Two 40ft HC monthly.',
+        });
+        assert.strictEqual(good.status, 201, JSON.stringify(good.body));
+        assert.strictEqual(good.body.stored, 'quote_requests');
+        assert.strictEqual(sb.db.quote_requests.rows.length, 1);
+        const row = sb.db.quote_requests.rows[0];
+        assert.strictEqual(row.origin, 'Shanghai');
+        assert.strictEqual(row.weight_kg, 8200);
+        assert.strictEqual(row.ready_date, '2026-11-02');
+        console.log('  ok  a rate request is filed with its cargo details');
+
+        // The honeypot is filled only by bots: accepted, and dropped.
+        const trap = await req(base, 'POST', '/api/quotes', {
+          name: 'Bot', email: 'bot@example.com', mode: 'air_freight',
+          origin: 'Aarhus', destination: 'Bergen', website: 'http://spam.example',
+        });
+        assert.strictEqual(trap.status, 201);
+        assert.strictEqual(sb.db.quote_requests.rows.length, 1, 'the trap submission is not filed');
+        console.log('  ok  a honeypot submission is accepted and dropped');
+      }
+    );
+    sb.close();
+  }
+
+  /* ---- the tracking product is covered by the schema probe ---- */
+  {
+    const sb = await mock.start({});
+    const url = `http://127.0.0.1:${sb.address().port}`;
+    delete sb.db.shipments;
+    await withApp(
+      { SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY, SUPABASE_ANON_KEY: mock.ANON_KEY },
+      async (base) => {
+        const health = await req(base, 'GET', '/api/health?probe=1');
+        assert.ok(
+          health.body.warnings.some((w) => /shipments[\s\S]*0003_shipments\.sql/.test(w)),
+          'the probe must name the migration that creates it: ' + JSON.stringify(health.body.warnings)
+        );
+        console.log('  ok  a database without the shipment tables is told which file adds them');
+      }
+    );
+    sb.close();
+  }
+
+  /* ---- tracking numbers ---- */
+  {
+    const tracking = require(ROOT + '/src/utils/tracking');
+    const seen = new Set();
+    for (let i = 0; i < 500; i += 1) {
+      const n = tracking.generate();
+      assert.ok(tracking.isTrackingNumber(n), n);
+      seen.add(n);
+    }
+    assert.strictEqual(seen.size, 500, 'generated numbers must not repeat');
+
+    // The alphabet leaves out the characters people confuse when reading a
+    // number down a phone line.
+    assert.ok(!/[ILOU]/.test(tracking.ALPHABET));
+
+    assert.strictEqual(tracking.normalise(' pmt-2026-4f7k2qx9 '), 'PMT-2026-4F7K2QX9');
+    assert.strictEqual(tracking.normalise('pmt20264f7k2qx9'), 'PMT-2026-4F7K2QX9');
+    assert.strictEqual(tracking.findInText('any news on PMT 2026 4F7K2QX9 today?'), 'PMT-2026-4F7K2QX9');
+    assert.strictEqual(tracking.findInText('no number here'), '');
+    assert.strictEqual(tracking.isTrackingNumber('PMT-2026-ILOU2QX9'), false, 'the excluded letters are not valid');
+    console.log('  ok  tracking numbers are unique, unambiguous and forgiving to type');
   }
 
   console.log('\nserver suite passed');

@@ -1,0 +1,8 @@
+[
+  { "id": "pharma", "title": "Pharmaceutical & life sciences", "blurb": "GDP-compliant lanes, validated packaging and unbroken temperature records from plant to pharmacy.", "icon": "flask" },
+  { "id": "automotive", "title": "Automotive & industrial", "blurb": "Inbound-to-manufacture sequencing, line-side delivery and emergency AOG-style escalation for production stoppages.", "icon": "gear" },
+  { "id": "retail", "title": "Retail & e-commerce", "blurb": "Origin consolidation, DC bypass and a fulfilment layer that turns a picked order into a tracked consignment.", "icon": "cart" },
+  { "id": "energy", "title": "Energy & project cargo", "blurb": "Out-of-gauge, heavy-lift and multi-modal project moves with route surveys and lift plans carried in-house.", "icon": "bolt" },
+  { "id": "perishables", "title": "Food & perishables", "blurb": "Reefer and controlled-atmosphere capacity, phytosanitary paperwork and shelf-life-aware routing.", "icon": "leaf" },
+  { "id": "tech", "title": "Technology & semiconductors", "blurb": "High-value security protocols, ESD-safe handling and hand-carry for wafer and tooling moves.", "icon": "chip" }
+]

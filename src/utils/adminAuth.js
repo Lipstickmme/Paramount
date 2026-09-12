@@ -8,7 +8,7 @@
  * that way: it needs the Resend key, which only the server holds. This route is
  * therefore the one place that has to re-establish server side what those
  * policies would have enforced. Without it the endpoint would let anyone on the
- * internet send mail as the studio.
+ * internet send mail as the company.
  */
 
 const config = require('./config');
@@ -44,7 +44,7 @@ async function requireAdmin(req) {
     if (!res.ok) return { ok: false, status: 401, reason: 'invalid_token' };
     user = await res.json();
   } catch (err) {
-    console.warn('[merkel] admin auth unreachable:', err.message);
+    console.warn('[paramount] admin auth unreachable:', err.message);
     return { ok: false, status: 503, reason: 'auth_unreachable' };
   }
 

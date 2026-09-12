@@ -16,7 +16,7 @@ function notFound(req, res, next) {
 function errorHandler(err, req, res, next) {
   const status = err.status || err.statusCode || 500;
   if (status >= 500) {
-    console.error('[merkel] error:', err);
+    console.error('[paramount] error:', err);
   }
   const payload = {
     error: err.code || (status >= 500 ? 'internal_error' : 'request_error'),

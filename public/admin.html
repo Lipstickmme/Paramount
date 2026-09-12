@@ -3,13 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Studio desk | Merkel Constructions</title>
-  <meta name="description" content="Staff dashboard." />
+  <title>Desk | Paramount Logistics</title>
+  <meta name="description" content="Paramount Logistics operations desk." />
   <meta name="robots" content="noindex, nofollow" />
-  <meta name="theme-color" content="#fafaf9" />
-  <link rel="icon" href="/favicon.ico" sizes="32x32" />
-  <link rel="icon" href="/favicon.png" type="image/png" sizes="512x512" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#04070f" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -25,7 +23,7 @@
 
     <section class="admin-gate" id="admin-unconfigured" hidden>
       <div class="admin-card">
-        <span class="eyebrow">Merkel / Studio desk</span>
+        <span class="eyebrow">Paramount / Desk</span>
         <h1>Backend not connected.</h1>
         <div id="admin-missing"></div>
         <p class="admin-note">Set it in the deployment's environment variables and reload. Nothing needs rebuilding, but the change only reaches a running deployment after a redeploy.</p>
@@ -36,9 +34,9 @@
 
     <section class="admin-gate" id="admin-login" hidden>
       <form class="admin-card" id="login-form" novalidate>
-        <span class="eyebrow">Merkel / Studio desk</span>
+        <span class="eyebrow">Paramount / Desk</span>
         <h1>Staff sign in.</h1>
-        <p class="admin-note" id="login-note">Enquiries, live chat and studio mail in one place.</p>
+        <p class="admin-note" id="login-note">Consignments, rate requests, enquiries, live chat and company mail in one place.</p>
         <div class="field"><label for="login-email">Email</label><input type="email" id="login-email" name="email" autocomplete="username" required /></div>
         <div class="field"><label for="login-password">Password</label><input type="password" id="login-password" name="password" autocomplete="current-password" required /></div>
         <div class="err" id="login-error" role="alert"></div>
@@ -50,8 +48,8 @@
     <div class="admin-shell" id="admin-shell" hidden>
       <header class="admin-bar">
         <a class="admin-brand" href="/">
-          <img src="/assets/brand/merkel-constructions-wordmark.png" alt="Merkel Constructions" width="1048" height="203" />
-          <span>Studio desk</span>
+          <img src="/assets/brand/paramount-wordmark.svg" alt="Paramount Logistics" width="520" height="96" />
+          <span>Operations desk</span>
         </a>
         <div class="admin-bar-end">
           <span class="admin-who" id="admin-who"></span>
@@ -60,7 +58,9 @@
       </header>
 
       <nav class="admin-tabs" id="admin-tabs" role="tablist" aria-label="Sections">
-        <button type="button" class="admin-tab is-active" role="tab" data-tab="enquiries" aria-selected="true">Enquiries<span class="tally" data-tally="enquiries">0</span></button>
+        <button type="button" class="admin-tab is-active" role="tab" data-tab="shipments" aria-selected="true">Consignments<span class="tally" data-tally="shipments">0</span></button>
+        <button type="button" class="admin-tab" role="tab" data-tab="quotes" aria-selected="false">Rate requests<span class="tally" data-tally="quotes">0</span></button>
+        <button type="button" class="admin-tab" role="tab" data-tab="enquiries" aria-selected="false">Enquiries<span class="tally" data-tally="enquiries">0</span></button>
         <button type="button" class="admin-tab" role="tab" data-tab="applications" aria-selected="false">Applications<span class="tally" data-tally="applications">0</span></button>
         <button type="button" class="admin-tab" role="tab" data-tab="chat" aria-selected="false">Live chat<span class="tally" data-tally="chat">0</span></button>
         <button type="button" class="admin-tab" role="tab" data-tab="email" aria-selected="false">Email<span class="tally" data-tally="email">0</span></button>
@@ -70,7 +70,21 @@
       <p class="admin-alert" id="admin-alert" role="alert" hidden></p>
 
       <div class="admin-body">
-        <section class="admin-panel" data-panel="enquiries">
+        <section class="admin-panel" data-panel="shipments">
+          <div class="admin-split wide">
+            <ul class="admin-list" id="shipment-list"><li class="admin-empty">Loading&hellip;</li></ul>
+            <div class="admin-detail" id="shipment-detail"><p class="admin-empty">Pick a consignment, or create one.</p></div>
+          </div>
+        </section>
+
+        <section class="admin-panel" data-panel="quotes" hidden>
+          <div class="admin-split">
+            <ul class="admin-list" id="quote-list"><li class="admin-empty">Loading&hellip;</li></ul>
+            <div class="admin-detail" id="quote-detail"><p class="admin-empty">Pick a rate request to read it.</p></div>
+          </div>
+        </section>
+
+        <section class="admin-panel" data-panel="enquiries" hidden>
           <div class="admin-split">
             <ul class="admin-list" id="enquiry-list"><li class="admin-empty">Loading&hellip;</li></ul>
             <div class="admin-detail" id="enquiry-detail"><p class="admin-empty">Pick an enquiry to read it.</p></div>

@@ -47,7 +47,7 @@ exports.create = async (req, res, next) => {
       try {
         await storage.append(record);
       } catch (err) {
-        console.error('[merkel] failed to persist enquiry:', err.message);
+        console.error('[paramount] failed to persist enquiry:', err.message);
       }
       await notify.enquiry(record);
     }
@@ -55,7 +55,7 @@ exports.create = async (req, res, next) => {
     return res.status(201).json({
       ok: true,
       id: record.id,
-      message: 'Thank you. Your enquiry has reached our engineers.',
+      message: 'Thank you. Your enquiry is with the Paramount desk and we will come back to you.',
     });
   } catch (err) {
     return next(err);

@@ -35,7 +35,7 @@
 
   function createClient(url, anonKey, options) {
     const base = String(url || '').replace(/\/+$/, '');
-    const storageKey = (options && options.storageKey) || 'merkel-auth';
+    const storageKey = (options && options.storageKey) || 'pm-auth';
     const listeners = [];
 
     let session = null;
@@ -181,5 +181,5 @@
     };
   }
 
-  global.MerkelSupabase = { createClient };
+  global.ParamountSupabase = { createClient };
 })(window);

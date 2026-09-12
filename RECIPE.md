@@ -1,9 +1,15 @@
 # Rebuilding this stack on another site
 
-Ported from the tested build at `Lipstickmme/hospital`. The schema, the
-security model and the email plumbing transfer unchanged; the front end here is
-static HTML and vanilla JS rather than TanStack Start, so the client-side parts
-are written differently while making the same decisions.
+The schema, the security model and the email plumbing transfer unchanged
+between sites; the front end here is static HTML and vanilla JS, so the
+client-side parts are written differently while making the same decisions.
+
+This site adds a tracking product on top of that base — consignments, an
+append-only movement history, and one public lookup keyed on a number nobody
+can guess. Those pieces are `supabase/migrations/0003_shipments.sql`,
+`src/utils/tracking.js`, `src/utils/shipmentStore.js` and
+`src/controllers/{tracking,shipments}Controller.js`, and the notes at the end
+of this file say why each is shaped the way it is.
 
 ## File structure
 
@@ -13,6 +19,9 @@ supabase/
                              chat_sessions, chat_messages, touch trigger,
                              realtime publication
   migrations/0002_email.sql  email_threads, email_messages, touch trigger
+  migrations/0003_shipments.sql  shipments, shipment_events, quote_requests,
+                             roll-up trigger, track_shipment() for anon reads
+  migrations/0004_settings.sql   email + chat settings on the settings row
   grant-admin.sql            one-off: make yourself an admin
 src/
   utils/
@@ -20,14 +29,19 @@ src/
                              which addresses are "ours" and whether FORWARD_TO
                              would loop
     supabase.js              service-role PostgREST client (server only)
-    storage.js               enquiries: Supabase, or local files in dev
+    storage.js               enquiries, applications, rate requests:
+                             Supabase, or local files in dev
+    tracking.js              tracking-number alphabet, statuses, modes
+    shipmentStore.js         consignments + movements, either backend
     chatStore.js             chat transcripts: Supabase, or local files
     notify.js                Resend send + optional desk webhook
     webhookSignature.js      Svix HMAC over the raw request bytes
   controllers/
     systemController.js      /api/public-config, /api/health
     contactController.js     validation, honeypot, write, notify
-    chatController.js        rule-based responder + notification
+    trackingController.js    the one public consignment lookup
+    shipmentsController.js   desk-only booking, correcting, movement
+    chatController.js        rule-based responder, tracking answers, notification
     inboundController.js     signed webhook -> email_threads -> forward
   routes/                    mounted under /api
   site/                      build-time page source (layout.js, pages.js)
@@ -126,3 +140,36 @@ bundler, use the real client and take realtime with it.
   dies on a file that is present locally. Anchor with a leading slash: `/data/`.
   `npm run check:vercel` simulates the upload and fails if anything the build
   requires would be excluded. This one bit us for real.
+
+
+## The tracking product, and the four decisions in it
+
+1. **The number is the credential.** There is no account behind public
+   tracking, so the tracking number is the only thing standing between a
+   stranger and a consignment. It is drawn from `crypto.randomBytes` over a
+   32-character alphabet with I, L, O and U removed — unambiguous when read
+   aloud, and 32^8 wide. `/api/track` carries its own tighter rate limit so the
+   space cannot be walked, and the lookup matches the whole number exactly:
+   there is no prefix search, and no "did you mean".
+
+2. **Movements are events, not a status column.** `shipment_events` is
+   append-only; the shipment's own `status`, `current_location` and coordinates
+   are a roll-up of the newest public event, applied by a trigger (and again in
+   JavaScript, so the file backend and the tests behave identically). This is
+   why a status change is refused on `PATCH /api/shipments/:id`: moving a
+   consignment has to leave a record, so it goes through
+   `POST /api/shipments/:id/events` or it does not happen. A back-dated
+   correction is recorded but does not drag the consignment backwards.
+
+3. **The public projection is a whitelist, in one place.**
+   `shipmentStore.PUBLIC_FIELDS` decides what a customer sees; everything else —
+   costs, payment status, internal notes, the other party's contact details — is
+   private by default, so a column added later is private until someone
+   deliberately publishes it. The chat widget answers tracking questions through
+   the same projection, so there is one definition of "public", not two.
+
+4. **Tables have no public read policy at all.** A blanket `select` policy on
+   `shipments` would let anyone page through the business. Staff read the tables
+   under their own session; everyone else goes through the API route, or through
+   `track_shipment(text)`, a `security definer` function with the same contract
+   for clients that would rather call Postgres directly.

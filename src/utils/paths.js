@@ -9,7 +9,7 @@ const path = require('path');
  */
 function dataDir() {
   if (process.env.DATA_DIR) return process.env.DATA_DIR;
-  if (process.env.VERCEL) return '/tmp/merkel-data';
+  if (process.env.VERCEL) return '/tmp/paramount-data';
   return path.join(__dirname, '..', '..', 'data');
 }
 

@@ -1,7 +1,10 @@
 'use strict';
 
 /**
- * Record persistence for the things visitors send us.
+ * Record persistence for the things visitors send us: enquiries, rate requests
+ * and job applications. Consignments have a store of their own
+ * (shipmentStore.js), because they are edited after the fact rather than only
+ * appended to.
  *
  * Supabase in production; local JSON files when it is not configured, so
  * development works offline.
@@ -17,6 +20,9 @@ const { getSupabase } = require('./supabase');
  * their table, their file and the shape of a row, so the mechanics of falling
  * back to disk, serialising writes and mapping columns live here once.
  */
+/** Postgres hands timestamps back as strings; a file store keeps Dates. */
+const asIso = (value) => (value instanceof Date ? value.toISOString() : value || null);
+
 function createStore({ table, file, toRow, fromRow }) {
   const filePath = () => path.join(dataDir(), file);
   let writeChain = Promise.resolve();
@@ -118,9 +124,53 @@ const applications = createStore({
   }),
 });
 
+const quotes = createStore({
+  table: 'quote_requests',
+  file: 'quotes.json',
+  toRow: (r) => ({
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    phone: r.phone,
+    company: r.company,
+    mode: r.mode,
+    origin: r.origin,
+    destination: r.destination,
+    cargo_type: r.cargoType,
+    weight_kg: r.weightKg,
+    dimensions: r.dimensions,
+    pieces: r.pieces,
+    ready_date: r.readyDate,
+    incoterms: r.incoterms,
+    message: r.message,
+    ip: r.ip,
+    created_at: r.receivedAt,
+  }),
+  fromRow: (row) => ({
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    phone: row.phone,
+    company: row.company,
+    mode: row.mode,
+    origin: row.origin,
+    destination: row.destination,
+    cargoType: row.cargo_type,
+    weightKg: row.weight_kg,
+    dimensions: row.dimensions,
+    pieces: row.pieces,
+    readyDate: row.ready_date,
+    incoterms: row.incoterms,
+    message: row.message,
+    ip: row.ip,
+    receivedAt: asIso(row.created_at),
+  }),
+});
+
 module.exports = {
   createStore,
   applications,
+  quotes,
   // The enquiry store is the original API of this module; callers predate the
   // factory and there is no reason to make them spell it out.
   readAll: enquiries.readAll,

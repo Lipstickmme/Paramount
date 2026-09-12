@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Merkel Constructions server entry point.
+ * Paramount Logistics server entry point.
  * Boots the HTTP server and wires graceful shutdown.
  */
 
@@ -14,14 +14,14 @@ const server = http.createServer(app);
 
 server.listen(PORT, () => {
   const mode = process.env.NODE_ENV || 'development';
-  console.log(`[merkel] server listening on http://localhost:${PORT} (${mode})`);
+  console.log(`[paramount] server listening on http://localhost:${PORT} (${mode})`);
 });
 
 // Graceful shutdown so runtime data flushes cleanly.
 function shutdown(signal) {
-  console.log(`[merkel] received ${signal}, shutting down...`);
+  console.log(`[paramount] received ${signal}, shutting down...`);
   server.close(() => {
-    console.log('[merkel] closed remaining connections. bye.');
+    console.log('[paramount] closed remaining connections. bye.');
     process.exit(0);
   });
   // Force-exit if connections hang.

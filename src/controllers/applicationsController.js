@@ -52,14 +52,14 @@ async function persist(record) {
     await storage.applications.append(record);
     return 'applications';
   } catch (err) {
-    console.warn('[merkel] applications table unavailable, filing as an enquiry:', err.message);
+    console.warn('[paramount] applications table unavailable, filing as an enquiry:', err.message);
   }
 
   try {
     await storage.enquiries.append(asEnquiry(record));
     return 'enquiries';
   } catch (err) {
-    console.error('[merkel] failed to persist application:', err.message);
+    console.error('[paramount] failed to persist application:', err.message);
     return null;
   }
 }
@@ -68,7 +68,7 @@ async function persist(record) {
  * POST /api/applications
  *
  * The apply link on /careers lands here. Same contract as the contact form:
- * validated, rate limited, persisted, and raised with the studio by email or
+ * validated, rate limited, persisted, and raised with the team by email or
  * webhook, with persistence and notification both best effort so neither can
  * lose the other.
  */
@@ -85,7 +85,7 @@ exports.create = async (req, res, next) => {
     const errors = {};
     if (name.length < 2) errors.name = 'Please enter your name.';
     if (!EMAIL_RE.test(email)) errors.email = 'Please enter a valid email address.';
-    if (message.length < 20) errors.message = 'Tell us a little about the work you have done (20+ characters).';
+    if (message.length < 20) errors.message = 'Tell us about the work you have done (20+ characters).';
 
     // The role is optional: a speculative application is still an application.
     const role = roles.find((r) => r.id === roleId);
@@ -121,7 +121,7 @@ exports.create = async (req, res, next) => {
       ok: true,
       id: record.id,
       stored,
-      message: 'Thank you. Your application is with the studio and we will come back to you.',
+      message: 'Thank you. Your application is with our people team and we will come back to you.',
     });
   } catch (err) {
     return next(err);

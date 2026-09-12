@@ -3,10 +3,10 @@
 /**
  * Resolves the page-level image slots at build time.
  *
- * Every slot names the file it would rather have and the placeholder it uses
- * until that file exists. So adding real photography is a file drop, not a
- * code change: put merkel1 .. merkel5 into public/assets/img/ in any common
- * format and the next build picks them up.
+ * Every slot names the files it would rather have and the placeholder it uses
+ * until one of them exists, so adding real photography is a file drop rather
+ * than a code change: put the named file into public/assets/img/ in any common
+ * format and the next build picks it up. src/data/images.json lists the names.
  */
 
 const fs = require('fs');
@@ -25,7 +25,7 @@ const found = [];
 /**
  * Every candidate file, indexed by lower-cased name.
  *
- * Case-insensitive on purpose: an upload named Merkel3.png has to be found on
+ * Case-insensitive on purpose: an upload named Hero-1.PNG has to be found on
  * Linux, where the deploy runs, not only on the machine it was named on.
  */
 const index = new Map();
@@ -68,6 +68,15 @@ Object.entries(data.slots).forEach(([slot, spec]) => {
   images[slot] = resolve(spec);
 });
 images.heroSlides = data.heroSlides.map(resolve);
+
+/** One per service id, so a service card can carry its own artwork. */
+images.services = {};
+Object.entries(data.serviceSlots || {}).forEach(([id, spec]) => {
+  images.services[id] = resolve(spec);
+});
+
+/** The artwork for a service, falling back to the generic freight placeholder. */
+images.forService = (id) => images.services[id] || images.network;
 
 /** What the build should report: which real images were picked up, if any. */
 images._resolved = found;

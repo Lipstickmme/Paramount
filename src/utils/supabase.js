@@ -87,9 +87,35 @@ function getSupabase() {
       }
       return res.json();
     },
+
+    /** Patch the rows a filter selects, and hand back what they became. */
+    async update(table, query, patch) {
+      const res = await fetch(`${base}/${table}${query ? `?${query}` : ''}`, {
+        method: 'PATCH',
+        headers: { ...headers, Prefer: 'return=representation' },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) {
+        throw new Error(`supabase update ${table} failed: ${res.status} ${await res.text().catch(() => '')}`);
+      }
+      // A 204 carries no body even when representation was asked for.
+      const text = await res.text().catch(() => '');
+      return text ? JSON.parse(text) : [];
+    },
+
+    async remove(table, query) {
+      const res = await fetch(`${base}/${table}${query ? `?${query}` : ''}`, {
+        method: 'DELETE',
+        headers: { ...headers, Prefer: 'return=minimal' },
+      });
+      if (!res.ok) {
+        throw new Error(`supabase delete ${table} failed: ${res.status} ${await res.text().catch(() => '')}`);
+      }
+      return true;
+    },
   };
 
-  console.log('[merkel] storage: Supabase');
+  console.log('[paramount] storage: Supabase');
   return client;
 }
 

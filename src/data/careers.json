@@ -1,42 +1,67 @@
 [
   {
-    "id": "senior-structural",
-    "title": "Senior Structural Engineer",
-    "team": "Structural",
-    "location": "Studio",
+    "id": "control-tower-analyst",
+    "title": "Control Tower Analyst",
+    "team": "Operations",
+    "location": "Rotterdam · Hybrid",
     "type": "Full time",
-    "summary": "Lead the structural design of tall buildings and long-span structures from concept through to site."
+    "summary": "Watch live consignments across ocean and air, spot the ones about to slip, and re-plan them before the customer has to ask.",
+    "requirements": [
+      "2+ years in forwarding, carrier operations or a control tower",
+      "Comfortable reading vessel schedules and flight manifests",
+      "Calm under a live exception; clear in writing"
+    ]
   },
   {
-    "id": "bridge-engineer",
-    "title": "Bridge Engineer",
-    "team": "Civil & Infrastructure",
-    "location": "Site based",
+    "id": "customs-broker",
+    "title": "Licensed Customs Broker",
+    "team": "Compliance",
+    "location": "Newark · On site",
     "type": "Full time",
-    "summary": "Design bridges and marine structures for demanding wind and durability requirements."
+    "summary": "Own entries end to end for a book of industrial and pharma importers, and keep our classification library honest.",
+    "requirements": [
+      "Active broker licence",
+      "Experience with FDA / partner government agency filings",
+      "Appetite for tidy records, not just fast ones"
+    ]
   },
   {
-    "id": "bim-coordinator",
-    "title": "BIM Coordinator",
-    "team": "Digital Engineering",
-    "location": "Studio",
+    "id": "lane-manager-apac",
+    "title": "Trade Lane Manager, APAC",
+    "team": "Commercial",
+    "location": "Singapore · Hybrid",
     "type": "Full time",
-    "summary": "Keep multi-discipline models coordinated and drive our digital-twin workflows."
+    "summary": "Build and defend allocation on the lanes we sell, and price them so operations can actually deliver what was quoted.",
+    "requirements": [
+      "5+ years in trade lane or procurement roles",
+      "Carrier negotiation experience at allocation level",
+      "Fluent English; Mandarin or Bahasa an advantage"
+    ]
   },
   {
-    "id": "mechanical-graduate",
-    "title": "Graduate Mechanical Engineer",
-    "team": "Mechanical Systems",
-    "location": "Studio",
-    "type": "Graduate",
-    "summary": "Join our systems team on energy, HVAC and process work with senior mentorship."
+    "id": "warehouse-supervisor",
+    "title": "Warehouse Supervisor",
+    "team": "Contract Logistics",
+    "location": "Dubai · On site",
+    "type": "Full time",
+    "summary": "Run a shift across bonded and ambient space, holding inventory accuracy above 99.9% while volumes swing.",
+    "requirements": [
+      "3+ years supervising a pick-and-pack operation",
+      "WMS fluency and a bias for cycle counting",
+      "Safety-first leadership on a busy floor"
+    ]
   },
   {
-    "id": "project-engineer",
-    "title": "Project Engineer",
-    "team": "Civil & Infrastructure",
-    "location": "Site based",
+    "id": "platform-engineer",
+    "title": "Platform Engineer, Visibility",
+    "team": "Technology",
+    "location": "Remote (CET ±3)",
     "type": "Full time",
-    "summary": "Coordinate delivery on major infrastructure commissions across sectors and borders."
+    "summary": "Own the event pipeline behind public tracking: carrier feeds in, clean milestones out, no silent gaps.",
+    "requirements": [
+      "Strong Node.js and Postgres",
+      "Experience with webhook ingestion and idempotent processing",
+      "Cares about the customer-facing consequence of a missed event"
+    ]
   }
 ]

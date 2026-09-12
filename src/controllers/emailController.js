@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Replying to studio mail from the dashboard.
+ * Replying to company mail from the desk.
  *
  * The rest of the dashboard writes to Supabase straight from the browser, but a
  * reply has to leave through Resend, whose key is server-only. So this is a
@@ -11,6 +11,7 @@
 
 const config = require('../utils/config');
 const notify = require('../utils/notify');
+const siteSettings = require('../utils/siteSettings');
 const { requireAdmin } = require('../utils/adminAuth');
 const { getSupabase } = require('../utils/supabase');
 
@@ -21,8 +22,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * The From header for a reply, always carrying a display name.
  *
  * Mail clients fall back to the local part of the address when there is none,
- * so a reply from contact@merkelconstructions.com shows in the recipient's
- * inbox as "contact" rather than the studio's name.
+ * so a reply from ops@paramountlogistics.com shows in the recipient's
+ * inbox as "ops" rather than the company name.
  */
 function senderIdentity() {
   const configured = config.mailboxAddress() || config.formFrom();
@@ -84,11 +85,17 @@ exports.reply = async (req, res, next) => {
     const from = senderIdentity();
     const subject = replySubject(thread.subject);
 
+    // The signature is a setting rather than something the agent retypes, but
+    // it is not forced on a reply that already ends with it.
+    const settings = await siteSettings.read();
+    const signature = String(settings.email_signature || '').trim();
+    const outgoing = signature && !body.endsWith(signature) ? `${body}\n\n${signature}` : body;
+
     const sent = await notify.send({
       to: thread.participant_email,
       from,
       subject,
-      text: body,
+      text: outgoing,
       // Written by a person, so it goes as plain text rather than the monospace
       // block the automated notifications use.
       html: false,
@@ -112,7 +119,7 @@ exports.reply = async (req, res, next) => {
       from_name: config.parseAddress(from).name || null,
       to_email: thread.participant_email,
       subject,
-      body_text: body,
+      body_text: outgoing,
       message_id: sent.id || null,
       in_reply_to: inReplyTo,
     });

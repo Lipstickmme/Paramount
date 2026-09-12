@@ -21,6 +21,23 @@ const { getSupabase } = require('../utils/supabase');
 const PROBES = [
   { table: 'enquiries', columns: 'id,created_at,name,email,company,service,message,ip,status' },
   { table: 'site_settings', columns: 'id,updated_at,address,email,phone,hours', optional: true },
+  // The tracking product. Without these the desk cannot book a consignment and
+  // every public lookup answers "not found", so they are not optional.
+  {
+    table: 'shipments',
+    columns: 'id,created_at,tracking_number,status,mode,shipper_name,receiver_name,origin_city,destination_city,current_location,estimated_delivery',
+    migration: '0003_shipments.sql',
+  },
+  {
+    table: 'shipment_events',
+    columns: 'id,shipment_id,occurred_at,status,location,lat,lng,note,internal',
+    migration: '0003_shipments.sql',
+  },
+  {
+    table: 'quote_requests',
+    columns: 'id,created_at,name,email,mode,origin,destination,status',
+    migration: '0003_shipments.sql',
+  },
   { table: 'applications', columns: 'id,created_at,name,email,phone,role_id,role_title,portfolio,experience,message,ip,status' },
   { table: 'chat_sessions', columns: 'id,created_at,visitor_id,last_message_at,status,handled_by_agent' },
   { table: 'chat_messages', columns: 'id,created_at,session_id,sender,body' },
@@ -82,6 +99,7 @@ exports.publicConfig = (req, res) => {
     supabaseAnonKey: anonKey,
     // The widget degrades to the server-side chat when this is false.
     chatEnabled: Boolean(url && anonKey),
+    trackingPrefix: require('../utils/tracking').PREFIX,
     missing,
   });
 };
@@ -135,6 +153,20 @@ exports.health = async (req, res) => {
     );
   }
 
+  // 0004_settings.sql widens site_settings into the place email and chat are
+  // configured from. Its absence is a missing capability, not a fault: the
+  // environment still answers for every one of those values.
+  const supabase = getSupabase();
+  if (supabase) {
+    try {
+      await supabase.select('site_settings', 'select=notify_email,chat_enabled&limit=1');
+    } catch (err) {
+      warnings.push(
+        'site_settings has no email or chat columns, so those settings cannot be changed from the desk and the environment decides them. Run supabase/migrations/0004_settings.sql.'
+      );
+    }
+  }
+
   // Opt-in: the plain health check stays a pure environment read.
   let schema;
   if (req.query.probe) {
@@ -149,7 +181,7 @@ exports.health = async (req, res) => {
 
   res.json({
     status: warnings.length ? 'degraded' : 'ok',
-    service: 'merkel-constructions',
+    service: 'paramount-logistics',
     time: new Date().toISOString(),
     config: {
       supabaseUrl: Boolean(url),

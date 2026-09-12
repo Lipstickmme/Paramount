@@ -1,9 +1,9 @@
 # Dependencies
 node_modules/
 
-# Runtime data (contact submissions persisted at runtime)
-data/submissions.json
-data/chat/
+# Runtime data. Everything the local (no-database) backend writes: enquiries,
+# applications, rate requests, consignments and chat transcripts.
+/data/
 
 # Environment
 .env

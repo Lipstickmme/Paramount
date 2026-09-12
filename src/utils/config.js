@@ -50,15 +50,16 @@ const resendApiKey = () => pick('RESEND_API_KEY');
 const resendWebhookSecret = () => pick('RESEND_WEBHOOK_SECRET');
 
 const formTo = () => pick('FORM_TO', 'CONTACT_NOTIFY_EMAIL');
-const formFrom = () => pick('FORM_FROM', 'NOTIFY_FROM') || 'Merkel Website <onboarding@resend.dev>';
+const formFrom = () => pick('FORM_FROM', 'NOTIFY_FROM') || 'Paramount Logistics <onboarding@resend.dev>';
 const mailboxAddress = () => pick('MAILBOX_ADDRESS');
 const forwardTo = () => pick('FORWARD_TO');
 
 /**
  * The name a recipient sees beside the address. Without one, mail clients fall
- * back to the local part, so a reply from contact@ shows up as "contact".
+ * back to the local part, so a reply from ops@ shows up as "ops".
  */
-const studioName = () => pick('STUDIO_NAME') || 'Merkel Constructions';
+const studioName = () => pick('COMPANY_NAME', 'STUDIO_NAME') || 'Paramount Logistics';
+const companyName = studioName;
 
 /** Bare address out of "Name <a@b.c>". */
 function parseAddress(value) {
@@ -102,6 +103,7 @@ const ACCEPTED_NAMES = {
 
 module.exports = {
   ACCEPTED_NAMES,
+  companyName,
   pick,
   supabaseUrl,
   supabaseAnonKey,

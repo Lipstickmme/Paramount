@@ -133,7 +133,7 @@ async function appendById(id, messages, opts = {}) {
 }
 
 /**
- * True once a member of the studio has answered, so the canned responder can
+ * True once a member of staff has answered, so the canned responder can
  * step aside rather than talking over them. It is its own column because a
  * trigger returns `status` to 'new' every time the visitor speaks.
  */

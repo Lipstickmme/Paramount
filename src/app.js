@@ -37,7 +37,7 @@ app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
     const ms = Date.now() - start;
-    console.log(`[merkel] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${ms}ms)`);
+    console.log(`[paramount] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${ms}ms)`);
   });
   next();
 });
@@ -54,7 +54,7 @@ app.use(
   express.static(publicDir, {
     extensions: ['html'],
     setHeaders(res, filePath) {
-      // Long cache for static media (hero slides, logos); versioned per deploy.
+      // Long cache for static media (artwork, logos); versioned per deploy.
       if (/\.(webp|png|jpg|jpeg|svg|mp4|woff2?)$/i.test(filePath)) {
         res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
       }
@@ -66,12 +66,13 @@ app.use(
 const sendPage = (file) => (req, res) => res.sendFile(path.join(publicDir, file));
 
 app.get('/', sendPage('index.html'));
-app.get('/projects', sendPage('projects.html'));
-// Project detail pages resolve the id client-side from the path.
-app.get('/projects/:id', sendPage('project.html'));
+app.get('/track', sendPage('track.html'));
 app.get('/services', sendPage('services.html'));
 // Service detail pages resolve the id client-side from the path.
 app.get('/services/:id', sendPage('service.html'));
+app.get('/network', sendPage('network.html'));
+app.get('/about', sendPage('about.html'));
+app.get('/quote', sendPage('quote.html'));
 app.get('/careers', sendPage('careers.html'));
 app.get('/apply', sendPage('apply.html'));
 app.get('/contact', sendPage('contact.html'));

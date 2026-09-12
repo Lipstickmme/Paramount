@@ -6,7 +6,7 @@
  * Preferred path: the visitor is signed in anonymously and writes their own
  * rows to Supabase, so row level security grants them their own conversation
  * and nothing else. No token scheme of our own, no service key in the browser.
- * The studio answers from /admin and the reply appears here.
+ * The desk answers from /admin and the reply appears here.
  *
  * Fallback path: when Supabase is not configured, POST /api/chat/message,
  * where the server holds the service role. Same conversation either way, so a
@@ -23,12 +23,13 @@
   const input = document.getElementById('chat-input');
   const minBtn = document.getElementById('chat-min');
 
-  const KEY_SESSION = 'merkel_chat_supabase_session';
-  const KEY_TOKEN = 'merkel_chat_session';
+  const KEY_SESSION = 'pm_chat_supabase_session';
+  const KEY_TOKEN = 'pm_chat_session';
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const POLL_MS = 4000;
   const COLUMNS = 'id,created_at,sender,body';
-  const GREETING = "Hi, you're through to Merkel Constructions. What are you building, and how can we help?";
+  let GREETING =
+    "You're through to Paramount Logistics. Quote a tracking number and I'll tell you exactly where it is.";
 
   const store = {
     get(key) {
@@ -138,7 +139,7 @@
           { session_id: id, sender: 'visitor', body: text },
           COLUMNS
         );
-        // The studio hears about it, and the holding reply comes back from the
+        // The desk hears about it, and the holding reply comes back from the
         // server, which is what knows whether a human has taken over.
         fetch('/api/chat/notify', {
           method: 'POST',
@@ -190,6 +191,31 @@
 
   /* ---------------------------------------------------------- behaviour --- */
 
+  /**
+   * The greeting, the agent name and whether chat is on at all are settings the
+   * desk can change. Read once, before the panel is first opened, so the widget
+   * introduces itself the way the business has asked it to.
+   */
+  async function loadGreeting() {
+    try {
+      const res = await fetch('/api/chat', { headers: { Accept: 'application/json' } });
+      const cfg = await res.json();
+      if (cfg.greeting) GREETING = cfg.greeting;
+      if (cfg.agent) {
+        document.querySelectorAll('[data-chat-agent]').forEach((node) => {
+          node.textContent = cfg.agent;
+        });
+      }
+      // Switched off at the desk: the launcher goes away entirely rather than
+      // opening onto a conversation nobody is reading.
+      if (cfg.enabled === false) root.remove();
+    } catch (err) {
+      /* the built-in greeting stands */
+    }
+  }
+
+  loadGreeting();
+
   let transport = null;
   let ready = null;
   let timer = null;
@@ -200,9 +226,9 @@
       try {
         const res = await fetch('/api/public-config', { headers: { Accept: 'application/json' } });
         const cfg = await res.json();
-        if (cfg.chatEnabled && window.MerkelSupabase) {
-          const client = window.MerkelSupabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
-            storageKey: 'merkel-visitor-auth',
+        if (cfg.chatEnabled && window.ParamountSupabase) {
+          const client = window.ParamountSupabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+            storageKey: 'pm-visitor-auth',
           });
           await client.auth.signInAnonymously();
           return supabaseTransport(client);
@@ -210,7 +236,7 @@
       } catch (err) {
         // Most often anonymous sign-ins are switched off. The visitor should
         // not see that; the message says exactly where to fix it.
-        console.warn('[merkel] live chat falling back to the server:', err.message);
+        console.warn('[paramount] live chat falling back to the server:', err.message);
       }
       return serverTransport();
     })();
@@ -290,7 +316,7 @@
         }, 900);
       }
     } catch (err) {
-      const inbox = (window.MERKEL && window.MERKEL.site.email) || 'the studio';
+      const inbox = (window.PARAMOUNT && window.PARAMOUNT.site.email) || 'the desk';
       bubble('agent', `That message did not send. Please email ${inbox}.`);
     }
   });

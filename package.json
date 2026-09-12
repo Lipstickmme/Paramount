@@ -1,7 +1,7 @@
 {
-  "name": "merkel-constructions",
+  "name": "paramount-logistics",
   "version": "1.0.0",
-  "description": "Merkel Constructions corporate website and API server",
+  "description": "Paramount Logistics website, shipment tracking API and operations desk",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
@@ -17,11 +17,13 @@
     "node": ">=18"
   },
   "keywords": [
-    "engineering",
+    "logistics",
+    "freight",
+    "shipment-tracking",
     "express",
-    "website"
+    "supabase"
   ],
-  "author": "Merkel Constructions",
+  "author": "Paramount Logistics",
   "license": "UNLICENSED",
   "private": true,
   "dependencies": {

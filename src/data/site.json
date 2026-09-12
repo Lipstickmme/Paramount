@@ -1,7 +1,11 @@
 {
-  "_comment": "The studio's contact details. Address and telephone are blank by default and only appear on the site once they are set under Settings at /admin; email and hours are the values the pages are built with. Anything set at the desk reaches every page on the next load, with no rebuild.",
-  "address": "",
-  "email": "info@blueprinthavenltd.com",
-  "phone": "",
-  "hours": "Monday to Friday, 09:00 to 18:00 CET"
+  "company_name": "Paramount Logistics",
+  "tagline": "Freight that arrives where it said it would, when it said it would.",
+  "address": "Pier 9, Harbour Gateway, Rotterdam 3011 XB, Netherlands",
+  "email": "ops@paramountlogistics.com",
+  "phone": "+31 10 800 4400",
+  "support_phone": "+1 862 224 9080",
+  "emergency_phone": "+31 10 800 4411",
+  "whatsapp": "+31 6 1100 4400",
+  "hours": "Control tower staffed 24/7 · Desk Mon–Fri 07:00–19:00 CET"
 }

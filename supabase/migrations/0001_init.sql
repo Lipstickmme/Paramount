@@ -1,14 +1,18 @@
--- Merkel Constructions backend schema.
+-- Paramount Logistics: the base schema.
 --
 -- Safe to run more than once: every statement is guarded, so re-running the
 -- file after an edit updates what changed rather than erroring half way.
 --
 -- Five areas: the contact inbox (enquiries), job applications, a two-table
--- live chat, the admin list, and the studio's own contact details. Everything is behind row level security. The only writes the
--- browser makes directly are a visitor creating their own chat session and
--- posting into it. Contact submissions never touch the database from the
--- browser: they go through POST /api/contact, which holds the service role key
--- and also sends the notification email.
+-- live chat, the admin list, and the company's own contact details. The
+-- tracking product itself is 0003_shipments.sql, which builds on the
+-- item_status type and the is_admin() function defined here.
+--
+-- Everything is behind row level security. The only writes the browser makes
+-- directly are a visitor creating their own chat session and posting into it.
+-- Contact submissions never touch the database from the browser: they go
+-- through POST /api/contact, which holds the service role key and also sends
+-- the notification email.
 
 -- ---------------------------------------------------------------------------
 -- Admins
@@ -111,8 +115,9 @@ create policy "admins update enquiries"
 -- Site settings
 -- ---------------------------------------------------------------------------
 
--- The studio's contact details, so they can be changed from the dashboard and
--- take effect on the next page load rather than the next deploy. One row.
+-- The company's contact details, so they can be changed from the desk and take
+-- effect on the next page load rather than the next deploy. One row.
+-- 0004_settings.sql widens this into the email and chat settings too.
 create table if not exists public.site_settings (
   id         text primary key default 'default',
   updated_at timestamptz not null default now(),
@@ -192,7 +197,7 @@ create table if not exists public.chat_sessions (
   status          public.item_status not null default 'new'
 );
 
--- Set once a member of the studio answers, so the canned responder steps
+-- Set once a member of staff answers, so the canned responder steps
 -- aside and the visitor is not talked over. It cannot be read off `status`:
 -- the trigger below returns a thread to 'new' every time the visitor speaks.
 alter table public.chat_sessions

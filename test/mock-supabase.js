@@ -2,7 +2,7 @@
 
 /**
  * A deliberately strict stand-in for Supabase: PostgREST + GoTrue + the row
- * level security rules from supabase/migrations/0001_init.sql.
+ * level security rules and triggers from supabase/migrations/.
  *
  * Strict is the point. It rejects a column that is not in the table, exactly
  * as Postgres does, so code that writes `role`/`text` against a schema that
@@ -27,9 +27,20 @@ function schema() {
       rows: [],
     },
     site_settings: {
-      columns: ['id', 'updated_at', 'address', 'email', 'phone', 'hours'],
+      columns: [
+        'id', 'updated_at', 'address', 'email', 'phone', 'hours',
+        'company_name', 'tagline', 'support_phone', 'whatsapp', 'emergency_phone',
+        'notify_email', 'from_email', 'reply_to', 'email_signature',
+        'auto_reply', 'notify_on_shipment_update', 'notify_on_shipment_created',
+        'chat_enabled', 'chat_greeting', 'chat_notify', 'chat_agent_name', 'chat_away_message',
+      ],
       defaults: () => ({ id: 'default', updated_at: new Date().toISOString() }),
-      rows: [{ id: 'default', updated_at: new Date().toISOString(), address: null, email: null, phone: null, hours: null }],
+      rows: [{
+        id: 'default', updated_at: new Date().toISOString(),
+        address: null, email: null, phone: null, hours: null,
+        auto_reply: true, notify_on_shipment_update: true, notify_on_shipment_created: true,
+        chat_enabled: true, chat_notify: true,
+      }],
     },
     applications: {
       columns: ['id', 'created_at', 'name', 'email', 'phone', 'role_id', 'role_title', 'portfolio', 'experience', 'message', 'ip', 'status', 'notes'],
@@ -62,6 +73,55 @@ function schema() {
         }
         return null;
       },
+      rows: [],
+    },
+    shipments: {
+      columns: [
+        'id', 'created_at', 'updated_at', 'tracking_number', 'status', 'mode', 'service_level',
+        'shipper_name', 'shipper_company', 'shipper_email', 'shipper_phone', 'shipper_address',
+        'receiver_name', 'receiver_company', 'receiver_email', 'receiver_phone', 'receiver_address',
+        'origin_city', 'origin_country', 'origin_lat', 'origin_lng',
+        'destination_city', 'destination_country', 'destination_lat', 'destination_lng',
+        'current_location', 'current_lat', 'current_lng',
+        'package_type', 'pieces', 'weight_kg', 'volume_cbm', 'dimensions', 'contents',
+        'declared_value', 'currency', 'carrier', 'vessel_or_flight', 'container_no',
+        'payment_mode', 'payment_status', 'freight_cost', 'incoterms', 'reference',
+        'special_handling', 'instructions', 'internal_notes', 'signed_by',
+        'picked_up_at', 'departed_at', 'estimated_delivery', 'delivered_at', 'created_by',
+      ],
+      defaults: () => ({
+        id: uuid(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        status: 'pending',
+        mode: 'road_haulage',
+        pieces: 1,
+        currency: 'USD',
+      }),
+      notNull: ['tracking_number', 'shipper_name', 'receiver_name', 'origin_city', 'destination_city'],
+      // The unique index in 0003_shipments.sql is on upper(tracking_number).
+      unique: (row, rows) =>
+        rows.some((r) => r !== row && String(r.tracking_number).toUpperCase() === String(row.tracking_number).toUpperCase())
+          ? 'duplicate key value violates unique constraint "shipments_tracking_number_key"'
+          : null,
+      rows: [],
+    },
+    shipment_events: {
+      columns: ['id', 'created_at', 'shipment_id', 'occurred_at', 'status', 'location', 'lat', 'lng', 'note', 'internal', 'created_by'],
+      defaults: () => ({
+        id: uuid(),
+        created_at: new Date().toISOString(),
+        occurred_at: new Date().toISOString(),
+        internal: false,
+      }),
+      notNull: ['shipment_id', 'status'],
+      rows: [],
+    },
+    quote_requests: {
+      columns: ['id', 'created_at', 'name', 'email', 'phone', 'company', 'mode', 'origin', 'destination',
+        'cargo_type', 'weight_kg', 'dimensions', 'pieces', 'ready_date', 'incoterms', 'message', 'ip', 'status', 'notes'],
+      defaults: () => ({ id: uuid(), created_at: new Date().toISOString(), status: 'new' }),
+      notNull: ['name', 'email'],
       rows: [],
     },
     email_threads: {
@@ -117,6 +177,8 @@ function start({ tables, port = 0, drop = [] }) {
       const session = db.chat_sessions.rows.find((s) => s.id === row.session_id);
       return Boolean(session && session.visitor_id === who.user.id);
     }
+    // shipments, shipment_events and quote_requests are staff-only: a visitor
+    // reaches a consignment through /api/track, never through PostgREST.
     return false;
   }
 
@@ -150,7 +212,7 @@ function start({ tables, port = 0, drop = [] }) {
       res.writeHead(204, {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': '*',
-        'Access-Control-Allow-Methods': 'GET,POST,PATCH,OPTIONS',
+        'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
       });
       return res.end();
     }
@@ -237,11 +299,21 @@ function start({ tables, port = 0, drop = [] }) {
       return fail(res, 400, '42703', `column ${name}.${missing} does not exist`);
     }
 
+    /**
+     * PostgREST returns every column a select asks for, null included, rather
+     * than only the keys a row happens to carry. Code that asks "does this
+     * database have that column?" by looking at the keys it got back depends
+     * on that, so the projection fills the declared columns in.
+     */
     const project = (row) => {
-      if (!select || select.includes('*')) return { ...row };
+      const full = {};
+      table.columns.forEach((column) => {
+        full[column] = row[column] === undefined ? null : row[column];
+      });
+      if (!select || select.includes('*')) return full;
       const out = {};
       select.forEach((c) => {
-        out[c] = row[c];
+        out[c] = full[c];
       });
       return out;
     };
@@ -297,8 +369,30 @@ function start({ tables, port = 0, drop = [] }) {
           return fail(res, 409, '23505', `duplicate key value violates unique constraint "${name}_pkey"`);
         }
 
+        const collision = table.unique && table.unique(row, table.rows);
+        if (collision) return fail(res, 409, '23505', collision);
+
         table.rows.push(row);
         created.push(row);
+
+        // The roll-up trigger from 0003_shipments.sql: the newest public event
+        // becomes the shipment's own status and position.
+        if (name === 'shipment_events' && !row.internal) {
+          const shipment = db.shipments.rows.find((s) => s.id === row.shipment_id);
+          const newer = db.shipment_events.rows.some(
+            (e) => e !== row && e.shipment_id === row.shipment_id && !e.internal
+              && String(e.occurred_at) > String(row.occurred_at)
+          );
+          if (shipment && !newer) {
+            shipment.status = row.status;
+            if (row.location) shipment.current_location = row.location;
+            if (row.lat != null) shipment.current_lat = row.lat;
+            if (row.lng != null) shipment.current_lng = row.lng;
+            if (row.status === 'delivered') shipment.delivered_at = row.occurred_at;
+            if (row.status === 'picked_up' && !shipment.picked_up_at) shipment.picked_up_at = row.occurred_at;
+            shipment.updated_at = new Date().toISOString();
+          }
+        }
 
         // The touch trigger from the migration.
         if (name === 'chat_messages') {
@@ -326,6 +420,24 @@ function start({ tables, port = 0, drop = [] }) {
         Object.assign(row, body);
       }
       if (/return=representation/.test(prefer)) return json(res, 200, rows.map(project));
+      return json(res, 204);
+    }
+
+    if (req.method === 'DELETE') {
+      const doomed = table.rows.filter((row) => matches(row, filters) && canRead(name, row, who));
+      for (const row of doomed) {
+        if (!canWrite(name, row, who)) {
+          return fail(res, 403, '42501', `row violates row-level security policy for table "${name}"`);
+        }
+      }
+      db[name].rows = table.rows.filter((row) => !doomed.includes(row));
+      table.rows = db[name].rows;
+      // The foreign key from 0003_shipments.sql cascades.
+      if (name === 'shipments') {
+        const gone = new Set(doomed.map((r) => r.id));
+        db.shipment_events.rows = db.shipment_events.rows.filter((e) => !gone.has(e.shipment_id));
+      }
+      if (/return=representation/.test(prefer)) return json(res, 200, doomed.map(project));
       return json(res, 204);
     }
 

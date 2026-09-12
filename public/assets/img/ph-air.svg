@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900" role="img" aria-label="Placeholder artwork">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a0f24"/>
+      <stop offset="1" stop-color="#241a45"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.7" cy="0.25" r="0.8">
+      <stop offset="0" stop-color="#7c5cff" stop-opacity=".38"/>
+      <stop offset="1" stop-color="#7c5cff" stop-opacity="0"/>
+    </radialGradient>
+    
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0v48" fill="none" stroke="#7c5cff" stroke-opacity=".10" stroke-width="1"/>
+      <circle cx="0" cy="0" r="1.4" fill="#7c5cff" fill-opacity=".28"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="900" fill="url(#g)"/>
+  <rect width="1200" height="900" fill="url(#grid)"/>
+  <rect width="1200" height="900" fill="url(#glow)"/>
+  
+      <path d="M144 648 Q 600 162 1056 495.00000000000006"
+            fill="none" stroke="#7c5cff" stroke-opacity=".85" stroke-width="3" stroke-dasharray="14 10"/>
+      <circle cx="144" cy="648" r="13" fill="#7c5cff"/>
+      <circle cx="1056" cy="495.00000000000006" r="13" fill="none" stroke="#7c5cff" stroke-width="3"/>
+      <circle cx="600" cy="317.7" r="7" fill="#fff" fill-opacity=".9"/>
+  <g font-family="'Space Grotesk',Inter,system-ui,sans-serif" fill="#f8fafc">
+    <text x="64" y="804" font-size="22" letter-spacing="6" fill="#7c5cff" opacity=".95">AIR FREIGHT</text>
+    <text x="64" y="856" font-size="44" font-weight="600" opacity=".92">Placeholder artwork</text>
+  </g>
+  <rect x="1" y="1" width="1198" height="898" fill="none" stroke="#7c5cff" stroke-opacity=".22" stroke-width="2"/>
+</svg>

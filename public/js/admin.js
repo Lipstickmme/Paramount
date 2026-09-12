@@ -1,13 +1,18 @@
 'use strict';
 
 /**
- * Studio desk: the staff side of enquiries, live chat and studio mail.
+ * The desk: consignments, rate requests, enquiries, live chat and company mail.
  *
- * Everything on this page is read and written straight from the browser as
- * the signed-in user, so the policies in supabase/migrations decide what is
- * visible rather than a server route we would otherwise have to write and
- * protect twice. Being on the `admins` table is what grants it; revoking
- * someone is a row delete and takes effect on their next request.
+ * Most of this page is read and written straight from the browser as the
+ * signed-in user, so the policies in supabase/migrations decide what is visible
+ * rather than a server route we would otherwise have to write and protect
+ * twice. Being on the `admins` table is what grants it; revoking someone is a
+ * row delete and takes effect on their next request.
+ *
+ * Consignments are the exception. Creating one has to mint a tracking number
+ * and can email the customer, and recording a movement can too — neither of
+ * which the browser may do — so the shipment tabs go through /api/shipments,
+ * carrying this session's token for the server to check.
  */
 (function () {
   const POLL_MS = 5000;
@@ -58,13 +63,24 @@
 
   let client = null;
   const state = {
-    tab: 'enquiries',
+    tab: 'shipments',
+    shipments: [],
+    shipmentEvents: [],
+    shipmentQuery: '',
+    shipmentStatus: '',
+    shipmentsError: '',
+    editing: null,
+    // A one-shot confirmation. Re-rendering the detail pane destroys the form
+    // that raised it, so the message has to outlive the form to be read at all.
+    flash: null,
+    quotes: [],
+    quotesAvailable: true,
     enquiries: [],
     applications: [],
     applicationsSource: 'applications',
     sessions: [],
     threads: [],
-    active: { enquiries: null, applications: null, chat: null, email: null },
+    active: { shipments: null, quotes: null, enquiries: null, applications: null, chat: null, email: null },
     messages: [],
     mail: [],
     emailAvailable: true,
@@ -79,6 +95,143 @@
     ['in_progress', 'In progress'],
     ['closed', 'Closed'],
   ];
+
+  /* --------------------------------------------------------- consignments --- */
+
+  /**
+   * The stages, in the order the customer reads them. Kept in step with
+   * src/utils/tracking.js; the server is the authority and rejects anything
+   * else, so a drift here is a wrong label rather than a wrong record.
+   */
+  const SHIPMENT_STATUSES = [
+    ['pending', 'Booking registered'],
+    ['picked_up', 'Collected'],
+    ['in_transit', 'In transit'],
+    ['at_facility', 'At facility'],
+    ['customs', 'Customs clearance'],
+    ['out_for_delivery', 'Out for delivery'],
+    ['delivered', 'Delivered'],
+    ['on_hold', 'On hold'],
+    ['exception', 'Exception'],
+    ['cancelled', 'Cancelled'],
+  ];
+
+  const MODES = [
+    ['air_freight', 'Air freight'],
+    ['ocean_freight', 'Ocean freight'],
+    ['road_haulage', 'Road haulage'],
+    ['rail_freight', 'Rail freight'],
+    ['express_courier', 'Express courier'],
+    ['warehousing', 'Warehousing & fulfilment'],
+  ];
+
+  const TONE = {
+    delivered: 'done',
+    cancelled: 'bad',
+    exception: 'bad',
+    on_hold: 'warn',
+    customs: 'wait',
+    pending: 'wait',
+  };
+
+  const statusLabel = (id) => (SHIPMENT_STATUSES.find(([key]) => key === id) || [id, id])[1];
+  const modeLabel = (id) => (MODES.find(([key]) => key === id) || [id, id || '—'])[1];
+
+  /**
+   * Every field on a consignment, as the form renders it.
+   * [name, label, type, options] — `group` starts a new fieldset.
+   */
+  const SHIPMENT_FIELDS = [
+    { group: 'Service' },
+    ['mode', 'Mode', 'select', MODES],
+    ['service_level', 'Service level', 'text'],
+    ['carrier', 'Carrier / partner', 'text'],
+    ['vessel_or_flight', 'Vessel or flight', 'text'],
+    ['container_no', 'Container / ULD', 'text'],
+    ['reference', "Customer's reference", 'text'],
+
+    { group: 'Shipper' },
+    ['shipper_name', 'Shipper name *', 'text'],
+    ['shipper_company', 'Shipper company', 'text'],
+    ['shipper_email', 'Shipper email', 'email'],
+    ['shipper_phone', 'Shipper phone', 'tel'],
+    ['shipper_address', 'Shipper address', 'text'],
+
+    { group: 'Consignee' },
+    ['receiver_name', 'Consignee name *', 'text'],
+    ['receiver_company', 'Consignee company', 'text'],
+    ['receiver_email', 'Consignee email', 'email'],
+    ['receiver_phone', 'Consignee phone', 'tel'],
+    ['receiver_address', 'Consignee address', 'text'],
+
+    { group: 'Route' },
+    ['origin_city', 'Origin city *', 'text'],
+    ['origin_country', 'Origin country', 'text'],
+    ['origin_lat', 'Origin latitude', 'number'],
+    ['origin_lng', 'Origin longitude', 'number'],
+    ['destination_city', 'Destination city *', 'text'],
+    ['destination_country', 'Destination country', 'text'],
+    ['destination_lat', 'Destination latitude', 'number'],
+    ['destination_lng', 'Destination longitude', 'number'],
+
+    { group: 'Cargo' },
+    ['package_type', 'Package type', 'text'],
+    ['pieces', 'Pieces', 'number'],
+    ['weight_kg', 'Weight (kg)', 'number'],
+    ['volume_cbm', 'Volume (cbm)', 'number'],
+    ['dimensions', 'Dimensions', 'text'],
+    ['contents', 'Contents', 'text'],
+    ['declared_value', 'Declared value', 'number'],
+    ['currency', 'Currency', 'text'],
+    ['special_handling', 'Special handling', 'text'],
+
+    { group: 'Commercial' },
+    ['payment_mode', 'Payment mode', 'text'],
+    ['payment_status', 'Payment status', 'text'],
+    ['freight_cost', 'Freight cost', 'number'],
+    ['incoterms', 'Incoterms', 'text'],
+
+    { group: 'Dates' },
+    ['estimated_delivery', 'Estimated delivery', 'datetime-local'],
+    ['departed_at', 'Departed', 'datetime-local'],
+    ['picked_up_at', 'Collected', 'datetime-local'],
+
+    { group: 'Notes' },
+    ['instructions', 'Note shown to the customer', 'textarea'],
+    ['internal_notes', 'Internal notes (never shown)', 'textarea'],
+    ['signed_by', 'Signed for by', 'text'],
+  ];
+
+  /**
+   * A call to the server-side shipment routes, carrying this session's token.
+   *
+   * Errors are thrown with the server's own message, which is written for the
+   * person reading it rather than for a log.
+   */
+  async function api(method, path, body) {
+    const token = await client.auth.accessToken();
+    const res = await fetch(path, {
+      method,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || `Request failed (${res.status})`);
+    return data;
+  }
+
+  /** A datetime-local box wants 'YYYY-MM-DDTHH:mm' in the reader's own zone. */
+  function toLocalInput(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
 
   /* ------------------------------------------------------------ queries --- */
 
@@ -139,10 +292,28 @@
       `select=id,created_at,direction,from_email,from_name,to_email,subject,body_text&thread_id=eq.${id}&order=created_at.asc&limit=200`
     );
 
+  /* ------------------------------------------------- consignment queries --- */
+
+  const loadShipments = async () => {
+    const params = new URLSearchParams();
+    if (state.shipmentQuery) params.set('q', state.shipmentQuery);
+    if (state.shipmentStatus) params.set('status', state.shipmentStatus);
+    const data = await api('GET', `/api/shipments${params.toString() ? `?${params}` : ''}`);
+    return data.shipments || [];
+  };
+
+  const loadShipmentEvents = async (id) => (await api('GET', `/api/shipments/${id}/events`)).events || [];
+
+  const loadQuotes = () => client.select('quote_requests', 'select=*&order=created_at.desc&limit=200');
+
   /* ------------------------------------------------------------ render --- */
 
   function tallies() {
     const counts = {
+      // Not "new": a consignment needs the desk when it is stuck, not when it
+      // is young. Anything on hold or in exception is what should carry a dot.
+      shipments: state.shipments.filter((r) => r.status === 'on_hold' || r.status === 'exception').length,
+      quotes: state.quotes.filter((r) => r.status === 'new').length,
       enquiries: state.enquiries.filter((r) => r.status === 'new').length,
       applications: state.applications.filter((r) => r.status === 'new').length,
       chat: state.sessions.filter((r) => r.status === 'new').length,
@@ -255,7 +426,7 @@
       }
       facts.appendChild(dd);
     };
-    fact('Email', row.email, `mailto:${row.email}?subject=${encodeURIComponent('Re: your enquiry to Merkel Constructions')}`);
+    fact('Email', row.email, `mailto:${row.email}?subject=${encodeURIComponent('Re: your enquiry to Paramount Logistics')}`);
     fact('Company', row.company);
     fact('Discipline', row.service);
     fact('Received', when(row.created_at));
@@ -331,7 +502,7 @@
       facts.appendChild(dd);
     };
     fact('Role', row.role_title);
-    fact('Email', row.email, `mailto:${row.email}?subject=${encodeURIComponent(`Your application: ${row.role_title || 'Merkel Constructions'}`)}`);
+    fact('Email', row.email, `mailto:${row.email}?subject=${encodeURIComponent(`Your application: ${row.role_title || 'Paramount Logistics'}`)}`);
     fact('Phone', row.phone, row.phone ? `tel:${row.phone}` : null);
     fact('Experience', row.experience);
     fact('Portfolio', row.portfolio, row.portfolio);
@@ -570,14 +741,615 @@
     });
   }
 
+  /* ------------------------------------------------------ consignments --- */
+
+  /** One labelled control from a SHIPMENT_FIELDS entry. */
+  function buildField(spec, values) {
+    const [name, label, type, options] = spec;
+    const wrap = el('div', 'field');
+    const id = `ship-${name}`;
+    const lab = el('label', null, label);
+    lab.htmlFor = id;
+
+    let input;
+    if (type === 'select') {
+      input = el('select');
+      options.forEach(([value, text]) => {
+        const option = el('option', null, text);
+        option.value = value;
+        input.appendChild(option);
+      });
+    } else if (type === 'textarea') {
+      input = el('textarea');
+      input.rows = 3;
+    } else {
+      input = document.createElement('input');
+      input.type = type;
+      if (type === 'number') input.step = 'any';
+    }
+
+    input.id = id;
+    input.name = name;
+    const current = values ? values[name] : undefined;
+    input.value = type === 'datetime-local' ? toLocalInput(current) : current == null ? '' : String(current);
+
+    wrap.appendChild(lab);
+    wrap.appendChild(input);
+    return wrap;
+  }
+
+  /**
+   * The booking form, used for both creating and correcting a consignment.
+   *
+   * On create the server mints the tracking number; on edit it refuses a status
+   * change, because moving a consignment is an event, not a field.
+   */
+  function shipmentForm(existing) {
+    const form = el('form', 'admin-ship-form');
+    const values = existing || { mode: 'road_haulage', pieces: 1, currency: 'USD' };
+
+    SHIPMENT_FIELDS.forEach((spec) => {
+      if (spec.group) {
+        form.appendChild(el('h4', 'admin-form-group', spec.group));
+        return;
+      }
+      // Status belongs to the movement form, so it is not offered here.
+      if (existing && spec[0] === 'status') return;
+      form.appendChild(buildField(spec, values));
+    });
+
+    const status = el('div', 'form-status');
+    const actions = el('div', 'admin-form-actions');
+    const save = el('button', 'btn', existing ? 'Save changes' : 'Create consignment');
+    save.type = 'submit';
+    const cancel = el('button', 'btn ghost sm', 'Cancel');
+    cancel.type = 'button';
+    cancel.addEventListener('click', () => {
+      state.editing = null;
+      render();
+    });
+    actions.appendChild(save);
+    actions.appendChild(cancel);
+    form.appendChild(status);
+    form.appendChild(actions);
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      save.disabled = true;
+      status.className = 'form-status';
+      status.textContent = existing ? 'Saving…' : 'Creating and allocating a tracking number…';
+
+      const payload = {};
+      SHIPMENT_FIELDS.forEach((spec) => {
+        if (spec.group) return;
+        const [name, , type] = spec;
+        const node = form.elements.namedItem(name);
+        if (!node) return;
+        const raw = String(node.value || '').trim();
+        if (!raw) {
+          // An empty box on an edit clears the column; on a create it is simply
+          // a field the desk did not fill in.
+          payload[name] = existing ? null : undefined;
+          return;
+        }
+        payload[name] = type === 'datetime-local' ? new Date(raw).toISOString() : type === 'number' ? Number(raw) : raw;
+      });
+
+      try {
+        if (existing) {
+          const data = await api('PATCH', `/api/shipments/${existing.id}`, payload);
+          state.shipments = state.shipments.map((row) => (row.id === existing.id ? data.shipment : row));
+          state.flash = { tone: 'ok', text: 'Saved. The public tracking page reflects this immediately.' };
+        } else {
+          const data = await api('POST', '/api/shipments', payload);
+          state.shipments.unshift(data.shipment);
+          state.active.shipments = data.shipment.id;
+          const mailed = data.notified && data.notified.customer;
+          state.flash = {
+            tone: 'ok',
+            text: `Created ${data.shipment.tracking_number}.${mailed ? ' The shipper and consignee were emailed the number.' : ''}`,
+          };
+        }
+        state.editing = null;
+        await refreshShipmentDetail();
+        render();
+      } catch (err) {
+        status.className = 'form-status bad';
+        status.textContent = err.message;
+      } finally {
+        save.disabled = false;
+      }
+    });
+
+    return form;
+  }
+
+  /** The movement form: the only way a consignment's status changes. */
+  function movementForm(shipment) {
+    const form = el('form', 'admin-move-form');
+    form.appendChild(el('h4', 'admin-form-group', 'Record a movement'));
+
+    const row = el('div', 'admin-move-row');
+    const select = el('select');
+    SHIPMENT_STATUSES.forEach(([value, text]) => {
+      const option = el('option', null, text);
+      option.value = value;
+      select.appendChild(option);
+    });
+    // Default to the next stage rather than the one it is already in, since
+    // recording a movement usually means it has moved on.
+    const index = SHIPMENT_STATUSES.findIndex(([id]) => id === shipment.status);
+    select.value = SHIPMENT_STATUSES[Math.min(index + 1, 6)] ? SHIPMENT_STATUSES[Math.min(index + 1, 6)][0] : shipment.status;
+    select.name = 'status';
+
+    const location = document.createElement('input');
+    location.type = 'text';
+    location.name = 'location';
+    location.placeholder = 'Location, e.g. Algeciras, Spain';
+    location.value = '';
+
+    row.appendChild(select);
+    row.appendChild(location);
+    form.appendChild(row);
+
+    const coords = el('div', 'admin-move-row');
+    const lat = document.createElement('input');
+    lat.type = 'number';
+    lat.step = 'any';
+    lat.name = 'lat';
+    lat.placeholder = 'Latitude (optional)';
+    const lng = document.createElement('input');
+    lng.type = 'number';
+    lng.step = 'any';
+    lng.name = 'lng';
+    lng.placeholder = 'Longitude (optional)';
+    coords.appendChild(lat);
+    coords.appendChild(lng);
+    form.appendChild(coords);
+
+    const note = el('textarea');
+    note.name = 'note';
+    note.rows = 2;
+    note.placeholder = 'Note shown on the customer timeline';
+    form.appendChild(note);
+
+    const options = el('label', 'admin-check');
+    const internal = document.createElement('input');
+    internal.type = 'checkbox';
+    internal.name = 'internal';
+    options.appendChild(internal);
+    options.appendChild(document.createTextNode(' Internal only — not shown to the customer, and no email sent'));
+    form.appendChild(options);
+
+    const status = el('div', 'form-status');
+    const send = el('button', 'btn', 'Record movement');
+    send.type = 'submit';
+    form.appendChild(status);
+    form.appendChild(send);
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      send.disabled = true;
+      status.className = 'form-status';
+      status.textContent = 'Recording…';
+      try {
+        const data = await api('POST', `/api/shipments/${shipment.id}/events`, {
+          status: select.value,
+          location: location.value.trim() || null,
+          lat: lat.value === '' ? null : Number(lat.value),
+          lng: lng.value === '' ? null : Number(lng.value),
+          note: note.value.trim() || null,
+          internal: internal.checked,
+        });
+        state.shipments = state.shipments.map((row) => (row.id === shipment.id ? data.shipment : row));
+        state.shipmentEvents = await loadShipmentEvents(shipment.id);
+        const sent = data.notified && data.notified.ok;
+        state.flash = {
+          tone: 'ok',
+          text: sent
+            ? `Recorded: ${statusLabel(select.value)}. The customer was emailed (${data.notified.recipients} recipient(s)).`
+            : `Recorded: ${statusLabel(select.value)}. No customer email was sent.`,
+        };
+        location.value = '';
+        note.value = '';
+        render();
+      } catch (err) {
+        status.className = 'form-status bad';
+        status.textContent = err.message;
+      } finally {
+        send.disabled = false;
+      }
+    });
+
+    return form;
+  }
+
+  function renderShipments() {
+    const list = $('shipment-list');
+    const detail = $('shipment-detail');
+
+    /* -- the list, with its search box and status filter ------------------ */
+    list.textContent = '';
+
+    const tools = el('li', 'admin-tools');
+    const search = document.createElement('input');
+    search.type = 'search';
+    search.placeholder = 'Search number, party, city, reference…';
+    search.value = state.shipmentQuery;
+    search.addEventListener('input', () => {
+      state.shipmentQuery = search.value.trim();
+      clearTimeout(search._timer);
+      search._timer = setTimeout(refreshShipments, 260);
+    });
+
+    const filter = el('select');
+    [['', 'Every status'], ...SHIPMENT_STATUSES].forEach(([value, text]) => {
+      const option = el('option', null, text);
+      option.value = value;
+      filter.appendChild(option);
+    });
+    filter.value = state.shipmentStatus;
+    filter.addEventListener('change', () => {
+      state.shipmentStatus = filter.value;
+      refreshShipments();
+    });
+
+    const create = el('button', 'btn sm', 'New consignment');
+    create.type = 'button';
+    create.addEventListener('click', () => {
+      state.editing = 'new';
+      state.active.shipments = null;
+      render();
+    });
+
+    tools.appendChild(search);
+    tools.appendChild(filter);
+    tools.appendChild(create);
+    list.appendChild(tools);
+
+    if (state.shipmentsError) {
+      list.appendChild(el('li', 'admin-empty', state.shipmentsError));
+    } else if (!state.shipments.length) {
+      list.appendChild(
+        el('li', 'admin-empty', state.shipmentQuery || state.shipmentStatus
+          ? 'No consignment matches that.'
+          : 'No consignments yet. Create the first one to allocate a tracking number.')
+      );
+    }
+
+    state.shipments.forEach((row) => {
+      const li = el('li');
+      const btn = el('button', 'admin-row' + (row.id === state.active.shipments ? ' is-active' : ''));
+      btn.type = 'button';
+
+      const headRow = el('div', 'admin-row-head');
+      headRow.appendChild(el('strong', 'mono', row.tracking_number));
+      headRow.appendChild(el('span', `admin-chip tone-${TONE[row.status] || 'go'}`, statusLabel(row.status)));
+      btn.appendChild(headRow);
+      btn.appendChild(el('span', 'admin-row-sub', `${row.origin_city || '?'} → ${row.destination_city || '?'}`));
+      btn.appendChild(
+        el('span', 'admin-row-meta', `${modeLabel(row.mode)} · ${row.receiver_name || '—'} · ${when(row.updated_at || row.created_at)}`)
+      );
+
+      btn.addEventListener('click', async () => {
+        state.active.shipments = row.id;
+        state.editing = null;
+        state.flash = null;
+        render();
+        await refreshShipmentDetail();
+        render();
+      });
+
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+
+    /* -- the detail pane -------------------------------------------------- */
+    detail.textContent = '';
+
+    if (state.flash) {
+      detail.appendChild(el('p', `form-status ${state.flash.tone}`, state.flash.text));
+      // Shown once: it describes something that has already happened, and it
+      // should not still be on screen two consignments later.
+      state.flash = null;
+    }
+
+    if (state.editing === 'new') {
+      detail.appendChild(el('h2', null, 'New consignment'));
+      detail.appendChild(el('p', 'admin-sub',
+        'A tracking number is allocated on save. The shipper and consignee are emailed it when they have an address and the setting is on.'));
+      detail.appendChild(shipmentForm(null));
+      return;
+    }
+
+    const shipment = state.shipments.find((row) => row.id === state.active.shipments);
+    if (!shipment) {
+      detail.appendChild(el('p', 'admin-empty', 'Pick a consignment, or create one.'));
+      return;
+    }
+
+    if (state.editing === shipment.id) {
+      detail.appendChild(el('h2', 'mono', shipment.tracking_number));
+      detail.appendChild(el('p', 'admin-sub', 'Correcting the file. To move it, close this and record a movement instead.'));
+      detail.appendChild(shipmentForm(shipment));
+      return;
+    }
+
+    const head = el('div', 'admin-detail-head');
+    const title = el('div');
+    title.appendChild(el('h2', 'mono', shipment.tracking_number));
+    title.appendChild(el('span', 'admin-sub', `${shipment.origin_city || '?'} → ${shipment.destination_city || '?'} · ${modeLabel(shipment.mode)}`));
+    head.appendChild(title);
+    head.appendChild(el('span', `admin-chip tone-${TONE[shipment.status] || 'go'}`, statusLabel(shipment.status)));
+    detail.appendChild(head);
+
+    const actions = el('div', 'admin-form-actions');
+    const view = el('a', 'btn ghost sm', 'Open public tracking');
+    view.href = `/track?number=${encodeURIComponent(shipment.tracking_number)}`;
+    view.target = '_blank';
+    view.rel = 'noopener';
+    const edit = el('button', 'btn ghost sm', 'Edit details');
+    edit.type = 'button';
+    edit.addEventListener('click', () => {
+      state.editing = shipment.id;
+      render();
+    });
+    const copy = el('button', 'btn ghost sm', 'Copy number');
+    copy.type = 'button';
+    copy.addEventListener('click', () => {
+      if (!navigator.clipboard) return;
+      navigator.clipboard.writeText(shipment.tracking_number).then(() => {
+        copy.textContent = 'Copied';
+        setTimeout(() => (copy.textContent = 'Copy number'), 1500);
+      }, () => {});
+    });
+    const remove = el('button', 'btn ghost sm admin-danger', 'Delete');
+    remove.type = 'button';
+    remove.addEventListener('click', async () => {
+      // Deleting takes the customer's timeline with it, so it asks first.
+      if (!window.confirm(`Delete ${shipment.tracking_number} and its whole movement history? This cannot be undone.`)) return;
+      try {
+        await api('DELETE', `/api/shipments/${shipment.id}`);
+        state.shipments = state.shipments.filter((row) => row.id !== shipment.id);
+        state.active.shipments = null;
+        state.shipmentEvents = [];
+        render();
+      } catch (err) {
+        alertBar(err.message);
+      }
+    });
+    actions.appendChild(view);
+    actions.appendChild(edit);
+    actions.appendChild(copy);
+    actions.appendChild(remove);
+    detail.appendChild(actions);
+
+    detail.appendChild(movementForm(shipment));
+
+    /* -- the file, and the history ---------------------------------------- */
+    const facts = el('dl', 'admin-facts');
+    const fact = (key, value) => {
+      if (value == null || value === '') return;
+      facts.appendChild(el('dt', null, key));
+      facts.appendChild(el('dd', null, value));
+    };
+    fact('Shipper', [shipment.shipper_name, shipment.shipper_company].filter(Boolean).join(' · '));
+    fact('Shipper contact', [shipment.shipper_email, shipment.shipper_phone].filter(Boolean).join(' · '));
+    fact('Consignee', [shipment.receiver_name, shipment.receiver_company].filter(Boolean).join(' · '));
+    fact('Consignee contact', [shipment.receiver_email, shipment.receiver_phone].filter(Boolean).join(' · '));
+    fact('Delivery address', shipment.receiver_address);
+    fact('Now at', shipment.current_location);
+    fact('Cargo', [
+      shipment.pieces ? `${shipment.pieces} pc` : null,
+      shipment.weight_kg ? `${shipment.weight_kg} kg` : null,
+      shipment.package_type,
+      shipment.dimensions,
+    ].filter(Boolean).join(' · '));
+    fact('Contents', shipment.contents);
+    fact('Carrier', [shipment.carrier, shipment.vessel_or_flight, shipment.container_no].filter(Boolean).join(' · '));
+    fact('Commercial', [
+      shipment.payment_mode,
+      shipment.payment_status,
+      shipment.freight_cost ? `${shipment.freight_cost} ${shipment.currency || ''}`.trim() : null,
+      shipment.incoterms,
+    ].filter(Boolean).join(' · '));
+    fact('Reference', shipment.reference);
+    fact('Booked', when(shipment.created_at));
+    fact('Estimated delivery', when(shipment.estimated_delivery));
+    fact('Delivered', when(shipment.delivered_at));
+    fact('Signed by', shipment.signed_by);
+    fact('Customer note', shipment.instructions);
+    fact('Internal notes', shipment.internal_notes);
+    detail.appendChild(facts);
+
+    detail.appendChild(el('h4', 'admin-form-group', `Movement history (${state.shipmentEvents.length})`));
+    if (!state.shipmentEvents.length) {
+      detail.appendChild(el('p', 'admin-empty', 'No movements recorded yet.'));
+    } else {
+      const history = el('ol', 'admin-thread');
+      state.shipmentEvents.forEach((event) => {
+        const li = el('li', 'admin-bubble ' + (event.internal ? 'visitor' : 'agent'));
+        li.appendChild(el('strong', null, statusLabel(event.status) + (event.internal ? ' · internal' : '')));
+        if (event.location) li.appendChild(el('div', null, event.location));
+        if (event.note) li.appendChild(el('div', 'admin-note-text', event.note));
+        li.appendChild(el('time', null, when(event.occurred_at)));
+        history.appendChild(li);
+      });
+      detail.appendChild(history);
+    }
+  }
+
+  /* ------------------------------------------------------ rate requests --- */
+
+  function renderQuotes() {
+    const list = $('quote-list');
+    const detail = $('quote-detail');
+
+    if (!state.quotesAvailable) {
+      fill(list, [], 'This database has no quote_requests table. Run supabase/migrations/0003_shipments.sql to file rate requests here; until then they arrive by email only.');
+      detail.textContent = '';
+      detail.appendChild(el('p', 'admin-empty', 'Nothing to show.'));
+      return;
+    }
+
+    fill(
+      list,
+      state.quotes.map((row) =>
+        listRow({
+          id: row.id,
+          title: `${row.origin || '?'} → ${row.destination || '?'}`,
+          sub: `${row.name}${row.company ? ` · ${row.company}` : ''}`,
+          meta: `${modeLabel(row.mode)} · ${when(row.created_at)}`,
+          status: row.status,
+          activeId: state.active.quotes,
+          onPick: () => {
+            state.active.quotes = row.id;
+            render();
+          },
+        })
+      ),
+      'No rate requests yet.'
+    );
+
+    detail.textContent = '';
+    const row = state.quotes.find((r) => r.id === state.active.quotes);
+    if (!row) {
+      detail.appendChild(el('p', 'admin-empty', 'Pick a rate request to read it.'));
+      return;
+    }
+
+    const head = el('div', 'admin-detail-head');
+    const title = el('div');
+    title.appendChild(el('h2', null, `${row.origin || '?'} → ${row.destination || '?'}`));
+    title.appendChild(el('span', 'admin-sub', when(row.created_at)));
+    head.appendChild(title);
+    head.appendChild(
+      statusPicker(row.status, async (value) => {
+        await client.update('quote_requests', `id=eq.${row.id}`, { status: value });
+        row.status = value;
+        render();
+      })
+    );
+    detail.appendChild(head);
+
+    const facts = el('dl', 'admin-facts');
+    const fact = (key, value, href) => {
+      if (!value) return;
+      facts.appendChild(el('dt', null, key));
+      const dd = el('dd');
+      if (href) {
+        const a = el('a', null, value);
+        a.href = href;
+        dd.appendChild(a);
+      } else {
+        dd.textContent = value;
+      }
+      facts.appendChild(dd);
+    };
+    fact('Name', row.name);
+    fact('Company', row.company);
+    fact('Email', row.email, `mailto:${row.email}?subject=${encodeURIComponent(`Rates: ${row.origin || ''} to ${row.destination || ''}`)}`);
+    fact('Phone', row.phone, `tel:${String(row.phone || '').replace(/\s+/g, '')}`);
+    fact('Service', modeLabel(row.mode));
+    fact('Cargo', row.cargo_type);
+    fact('Weight', row.weight_kg ? `${row.weight_kg} kg` : '');
+    fact('Pieces', row.pieces ? String(row.pieces) : '');
+    fact('Dimensions', row.dimensions);
+    fact('Ready on', row.ready_date);
+    fact('Incoterms', row.incoterms);
+    detail.appendChild(facts);
+
+    if (row.message) detail.appendChild(el('p', 'admin-body-text', row.message));
+
+    const convert = el('button', 'btn sm', 'Book this as a consignment');
+    convert.type = 'button';
+    convert.addEventListener('click', () => {
+      // Carry what the customer already told us into the booking form, so the
+      // desk is not retyping a rate request it has just read.
+      state.tab = 'shipments';
+      state.editing = 'new';
+      state.active.shipments = null;
+      render();
+      const form = $('shipment-detail').querySelector('form');
+      if (!form) return;
+      const set = (name, value) => {
+        const node = form.elements.namedItem(name);
+        if (node && value) node.value = value;
+      };
+      set('shipper_name', row.name);
+      set('shipper_company', row.company);
+      set('shipper_email', row.email);
+      set('shipper_phone', row.phone);
+      set('origin_city', row.origin);
+      set('destination_city', row.destination);
+      set('mode', row.mode);
+      set('contents', row.cargo_type);
+      set('weight_kg', row.weight_kg);
+      set('pieces', row.pieces);
+      set('dimensions', row.dimensions);
+      set('incoterms', row.incoterms);
+    });
+    detail.appendChild(convert);
+  }
+
   /* ---------------------------------------------------------- settings --- */
 
-  const SETTINGS_FIELDS = [
-    ['address', 'Studio address', 'text'],
-    ['email', 'Email', 'email'],
-    ['phone', 'Telephone', 'tel'],
-    ['hours', 'Opening hours', 'text'],
+  /**
+   * Everything the desk can change without a deploy.
+   *
+   * Three sections, because they answer three different questions: what the
+   * public pages print, where our own mail goes, and how the chat widget
+   * behaves. A blank text box means "use the value the deployment was
+   * configured with", which is why none of them is required.
+   */
+  const SETTINGS_SECTIONS = [
+    {
+      title: 'Public contact details',
+      note: 'These appear in the footer, on the contact page and in the quote sidebar. A change reaches every page on its next load.',
+      fields: [
+        ['company_name', 'Company name', 'text'],
+        ['tagline', 'Tagline', 'text'],
+        ['address', 'Head office address', 'text'],
+        ['email', 'General email', 'email'],
+        ['phone', 'Switchboard', 'tel'],
+        ['support_phone', '24/7 support line', 'tel'],
+        ['emergency_phone', 'Cargo emergency line', 'tel'],
+        ['whatsapp', 'WhatsApp', 'tel'],
+        ['hours', 'Desk hours', 'text'],
+      ],
+    },
+    {
+      title: 'Email',
+      note: 'Where site notifications land and what customer mail goes out as. Leave a box blank to use the deployment\u2019s own environment setting (FORM_TO, FORM_FROM).',
+      fields: [
+        ['notify_email', 'Send notifications to', 'email'],
+        ['from_email', 'Send mail as', 'text'],
+        ['reply_to', 'Reply-To', 'email'],
+        ['email_signature', 'Signature on replies', 'textarea'],
+      ],
+      flags: [
+        ['auto_reply', 'Acknowledge web forms automatically'],
+        ['notify_on_shipment_created', 'Email the customer when a consignment is booked'],
+        ['notify_on_shipment_update', 'Email the customer on every movement'],
+      ],
+    },
+    {
+      title: 'Live chat',
+      note: 'How the widget introduces itself on the public pages, and whether the desk is alerted.',
+      fields: [
+        ['chat_agent_name', 'Name shown in the widget', 'text'],
+        ['chat_greeting', 'Opening message', 'textarea'],
+        ['chat_away_message', 'Out-of-hours message', 'textarea'],
+      ],
+      flags: [
+        ['chat_enabled', 'Show the chat widget on the site'],
+        ['chat_notify', 'Email the desk on every visitor message'],
+      ],
+    },
   ];
+
+  const SETTINGS_FLAGS = SETTINGS_SECTIONS.flatMap((section) => section.flags || []).map(([key]) => key);
+  const SETTINGS_TEXT = SETTINGS_SECTIONS.flatMap((section) => section.fields).map(([key]) => key);
 
   async function loadSettings() {
     // What the site is actually serving right now, stored value or built-in.
@@ -607,36 +1379,72 @@
     panel.textContent = '';
 
     const head = el('div', 'admin-detail-head');
-    head.appendChild(el('h2', null, 'Contact details'));
+    head.appendChild(el('h2', null, 'Settings'));
     panel.appendChild(head);
-    panel.appendChild(el('p', 'admin-sub',
-      'These appear in the footer, on the contact page and in the enquiry section of the home page. A change here reaches every page on its next load. No redeploy.'));
 
     if (!state.settingsEditable) {
       panel.appendChild(el('p', 'admin-empty',
-        'This database has no site_settings table, so the details stay as the site was built with. Run supabase/migrations/0001_init.sql in the Supabase SQL Editor and reload this page to edit them here.'));
+        'This database has no site_settings table, so the details stay as the site was built with. Run supabase/migrations/0001_init.sql and 0004_settings.sql in the Supabase SQL Editor, then reload this page.'));
       return;
     }
 
     const form = el('form', 'admin-settings-form');
     const inputs = {};
-    SETTINGS_FIELDS.forEach(([key, label, type]) => {
-      const field = el('div', 'field');
-      const id = `setting-${key}`;
-      const lab = el('label', null, label);
-      lab.htmlFor = id;
-      const input = document.createElement('input');
-      input.type = type;
-      input.id = id;
-      input.name = key;
-      // Show what is live, whether it came from this table or the build.
-      input.value = (state.settings && state.settings[key]) || (state.effective && state.effective[key]) || '';
-      input.placeholder = 'Leave blank to use the value the site was built with';
-      inputs[key] = input;
-      field.appendChild(lab);
-      field.appendChild(input);
-      form.appendChild(field);
+    const checks = {};
+    // Columns this database does not have. 0004_settings.sql adds most of
+    // them, so a deployment that has not run it gets an explanation rather
+    // than a save that silently fails.
+    const available = state.settings ? Object.keys(state.settings) : [];
+    const missing = [];
+
+    SETTINGS_SECTIONS.forEach((section) => {
+      form.appendChild(el('h4', 'admin-form-group', section.title));
+      form.appendChild(el('p', 'admin-sub', section.note));
+
+      section.fields.forEach(([key, label, type]) => {
+        if (available.length && !available.includes(key)) {
+          missing.push(key);
+          return;
+        }
+        const field = el('div', 'field');
+        const id = `setting-${key}`;
+        const lab = el('label', null, label);
+        lab.htmlFor = id;
+        const input = type === 'textarea' ? el('textarea') : document.createElement('input');
+        if (type !== 'textarea') input.type = type;
+        else input.rows = 3;
+        input.id = id;
+        input.name = key;
+        // Show what is live, whether it came from this table or the build.
+        input.value = (state.settings && state.settings[key]) || (state.effective && state.effective[key]) || '';
+        input.placeholder = 'Leave blank to use the deployment default';
+        inputs[key] = input;
+        field.appendChild(lab);
+        field.appendChild(input);
+        form.appendChild(field);
+      });
+
+      (section.flags || []).forEach(([key, label]) => {
+        if (available.length && !available.includes(key)) {
+          missing.push(key);
+          return;
+        }
+        const wrap = el('label', 'admin-check');
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.name = key;
+        box.checked = state.settings ? state.settings[key] !== false : true;
+        checks[key] = box;
+        wrap.appendChild(box);
+        wrap.appendChild(document.createTextNode(` ${label}`));
+        form.appendChild(wrap);
+      });
     });
+
+    if (missing.length) {
+      form.appendChild(el('p', 'admin-empty',
+        `This database is missing ${missing.length} newer setting column(s), so they are not shown. Run supabase/migrations/0004_settings.sql to add them.`));
+    }
 
     const status = el('div', 'form-status');
     const save = el('button', 'btn', 'Save changes');
@@ -648,16 +1456,19 @@
       event.preventDefault();
       save.disabled = true;
       status.className = 'form-status';
-      status.textContent = '';
+      status.textContent = 'Saving…';
       const patch = { updated_at: new Date().toISOString() };
-      SETTINGS_FIELDS.forEach(([key]) => {
-        patch[key] = inputs[key].value.trim() || null;
+      SETTINGS_TEXT.forEach((key) => {
+        if (inputs[key]) patch[key] = inputs[key].value.trim() || null;
+      });
+      SETTINGS_FLAGS.forEach((key) => {
+        if (checks[key]) patch[key] = checks[key].checked;
       });
       try {
         await client.update('site_settings', 'id=eq.default', patch);
         state.settings = Object.assign({}, state.settings, patch);
         status.className = 'form-status ok';
-        status.textContent = 'Saved. Every page picks these up on its next load.';
+        status.textContent = 'Saved. The site and every notification pick these up within a few seconds.';
       } catch (err) {
         status.className = 'form-status bad';
         status.textContent = err.message;
@@ -678,6 +1489,8 @@
       tab.classList.toggle('is-active', on);
       tab.setAttribute('aria-selected', String(on));
     });
+    if (state.tab === 'shipments') renderShipments();
+    if (state.tab === 'quotes') renderQuotes();
     if (state.tab === 'enquiries') renderEnquiries();
     if (state.tab === 'applications') renderApplications();
     if (state.tab === 'chat') renderChat();
@@ -687,6 +1500,31 @@
   }
 
   /* ------------------------------------------------------------- fetch --- */
+
+  /** Re-read the consignment list on its own, for the search box and filter. */
+  async function refreshShipments() {
+    try {
+      state.shipments = await loadShipments();
+      state.shipmentsError = '';
+    } catch (err) {
+      state.shipments = [];
+      state.shipmentsError = err.message;
+    }
+    render();
+  }
+
+  /** The open consignment's events, which the list does not carry. */
+  async function refreshShipmentDetail() {
+    if (!state.active.shipments) {
+      state.shipmentEvents = [];
+      return;
+    }
+    try {
+      state.shipmentEvents = await loadShipmentEvents(state.active.shipments);
+    } catch (err) {
+      state.shipmentEvents = [];
+    }
+  }
 
   async function refreshLists() {
     try {
@@ -711,6 +1549,24 @@
           state.threads = [];
         }
       }
+      try {
+        state.shipments = await loadShipments();
+        state.shipmentsError = '';
+      } catch (err) {
+        // Either the tables are missing or the session is not staff; the
+        // message says which, and the rest of the desk keeps working.
+        state.shipments = [];
+        state.shipmentsError = err.message;
+      }
+      if (state.quotesAvailable) {
+        try {
+          state.quotes = (await loadQuotes()) || [];
+        } catch (err) {
+          // quote_requests arrives with 0003_shipments.sql.
+          state.quotesAvailable = false;
+          state.quotes = [];
+        }
+      }
       if (state.settings === null && state.settingsEditable) await loadSettings();
       alertBar('');
     } catch (err) {
@@ -721,7 +1577,9 @@
 
   async function refreshThread() {
     try {
-      if (state.tab === 'chat' && state.active.chat) {
+      if (state.tab === 'shipments' && state.active.shipments) {
+        await refreshShipmentDetail();
+      } else if (state.tab === 'chat' && state.active.chat) {
         state.messages = (await loadMessages(state.active.chat)) || [];
       } else if (state.tab === 'email' && state.active.email && state.emailAvailable) {
         state.mail = (await loadMail(state.active.email)) || [];
@@ -854,10 +1712,10 @@
     }
     if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) return explainUnconfigured(cfg);
 
-    client = window.MerkelSupabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+    client = window.ParamountSupabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
       // Its own key, so a member of staff signing in here does not displace
       // the anonymous session the chat widget uses on the public pages.
-      storageKey: 'merkel-admin-auth',
+      storageKey: 'pm-admin-auth',
     });
 
     wire();

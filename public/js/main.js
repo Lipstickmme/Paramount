@@ -1,10 +1,14 @@
 'use strict';
 
 /* =========================================================================
-   Merkel Constructions shared frontend.
-   Exposes helpers on window.MERKEL for per-page scripts, drives shared UI
-   (nav, hero slideshow, reveals, counters, contact form) and hydrates the
-   home page. Data comes from the Express API with seed-data fallbacks.
+   Paramount Logistics — shared frontend runtime.
+
+   Owns the things every page has: the nav, the theme, scroll reveals, card
+   tilt, counters, the hero slideshow, and the two forms that post to the API.
+   Exposes a few helpers on window.PARAMOUNT for the per-page scripts.
+
+   Everything here is progressive: the pages are complete static HTML, so a
+   failure in this file costs motion and live values, never content.
    ========================================================================= */
 
 (function () {
@@ -12,382 +16,354 @@
   const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-  ));
+  const esc = (s) =>
+    String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
 
-  async function fetchJSON(url) {
-    const res = await fetch(url, { headers: { Accept: 'application/json' } });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return res.json();
-  }
-
-  const FALLBACK_SERVICES = [
-    { code: 'S-01', title: 'Structural Engineering', summary: 'Load-path analysis, seismic detailing and high-rise frame design that let architecture reach further with less material.', capabilities: ['Finite element analysis', 'Seismic & wind design', 'Steel, concrete & timber', 'Retrofit & assessment'] },
-    { code: 'S-02', title: 'Civil & Infrastructure', summary: 'Roads, bridges, drainage and site works engineered for a hundred-year horizon and a changing climate.', capabilities: ['Highway & transit', 'Stormwater & flood', 'Bridges & culverts', 'Land development'] },
-    { code: 'S-03', title: 'Mechanical Systems', summary: 'HVAC, process piping and thermal systems tuned for efficiency, redundancy and quiet, reliable operation.', capabilities: ['HVAC & ventilation', 'Process & plant', 'Energy modelling', 'Commissioning'] },
-    { code: 'S-04', title: 'Digital Engineering', summary: 'BIM coordination, parametric design and digital twins that keep every discipline working from one source of truth.', capabilities: ['BIM / VDC', 'Parametric design', 'Digital twins', 'Clash & 4D scheduling'] }
-  ];
-  const FALLBACK_PROJECTS = [
-    { id: 'helix-tower', name: 'Helix Tower', sector: 'Commercial', location: 'Hamburg, DE', year: 2025, metric: '184 m', metricLabel: 'structural height', image: '/assets/img/merkel3.webp', blurb: 'A diagrid super-structure that cut steel tonnage by 22 percent against a conventional frame.' },
-    { id: 'north-crossing', name: 'North Crossing', sector: 'Infrastructure', location: 'Aarhus, DK', year: 2024, metric: '410 m', metricLabel: 'cable-stayed span', image: '/assets/img/merkel1.webp', blurb: 'A twin-pylon bridge engineered for extreme fjord wind loading and marine durability.' },
-    { id: 'atlas-plant', name: 'Atlas Process Plant', sector: 'Industrial', location: 'Duisburg, DE', year: 2024, metric: '38%', metricLabel: 'energy reduction', image: '/assets/img/merkel4.webp', blurb: 'A heat-recovery redesign of a continuous process line, recommissioned with zero downtime.' },
-    { id: 'meridian-transit', name: 'Meridian Transit Hub', sector: 'Transit', location: 'Lyon, FR', year: 2023, metric: '60k / day', metricLabel: 'passenger capacity', image: '/assets/img/merkel2.webp', blurb: 'A long-span steel canopy and below-grade concourse delivered on a live rail corridor.' }
-  ];
-
-  function projectCard(p) {
-    return `
-      <a class="card" href="/projects/${esc(p.id)}" data-reveal>
-        <div class="thumb"><img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" /></div>
-        <div class="card-body">
-          <div class="meta"><span class="sector">${esc(p.sector)}</span><span>${esc(p.year)}</span></div>
-          <h3>${esc(p.name)}</h3>
-          <div class="loc">${esc(p.location)}</div>
-          <p>${esc(p.blurb)}</p>
-          <div class="metric"><b>${esc(p.metric)}</b><span>${esc(p.metricLabel)}</span></div>
-        </div>
-      </a>`;
-  }
-
-  /* Reveal on scroll (idempotent; safe to re-run after injecting content).
-     Siblings inside one section arrive in sequence rather than all at once,
-     which is the difference between a page that animates and one that lurches. */
-  function observeReveals() {
-    const els = $$('[data-reveal]:not(.in)');
-    if (reduceMotion || !('IntersectionObserver' in window)) {
-      els.forEach((el) => el.classList.add('in'));
-      return;
+  async function fetchJSON(url, options) {
+    const res = await fetch(url, {
+      ...options,
+      headers: { Accept: 'application/json', ...(options && options.headers) },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(data.message || `HTTP ${res.status}`);
+      err.status = res.status;
+      err.body = data;
+      throw err;
     }
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (!e.isIntersecting) return;
-        const el = e.target;
-        const section = el.closest('.chapter, section, header') || document.body;
-        const peers = $$('[data-reveal]', section);
-        const step = Math.min(peers.indexOf(el), 5);
-        el.style.setProperty('--reveal-delay', (step * 90) + 'ms');
-        el.classList.add('in');
-        io.unobserve(el);
-      });
-    }, { threshold: 0.06, rootMargin: '0px 0px -6% 0px' });
-    els.forEach((el) => io.observe(el));
+    return data;
   }
 
-  /* Studio contact details -------------------------------------------------
-     Pages are built with the values in src/data/site.json, so the static HTML
-     is already right. This only replaces them when the studio desk has changed
-     them, which is what lets an address change reach every page without a
-     deploy. */
-  const site = { email: '', phone: '', address: '', hours: '' };
+  /* ------------------------------------------------------------- theme --- */
 
-  const telHref = (value) => 'tel:' + String(value).replace(/[^+\d]/g, '');
+  const THEME_KEY = 'pm-theme';
 
-  function applySite(values) {
-    Object.assign(site, values);
-    $$('[data-site]').forEach((el) => {
-      const key = el.getAttribute('data-site');
-      const value = values[key];
-      if (!value) return;
-      el.textContent = value;
-      if (el.tagName === 'A') {
-        if (key === 'email') el.href = 'mailto:' + value;
-        if (key === 'phone') el.href = telHref(value);
+  function currentTheme() {
+    const set = document.documentElement.getAttribute('data-theme');
+    if (set) return set;
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch (e) {
+      /* private mode: the choice simply does not survive a reload */
+    }
+  }
+
+  const themeBtn = $('#theme-toggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      applyTheme(currentTheme() === 'light' ? 'dark' : 'light');
+    });
+  }
+
+  /* --------------------------------------------------------------- nav --- */
+
+  const nav = $('#nav');
+  const navLinks = $('#navlinks');
+  const navToggle = $('#navtoggle');
+
+  if (navToggle && navLinks) {
+    navToggle.addEventListener('click', () => {
+      const open = navLinks.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', String(open));
+    });
+    navLinks.addEventListener('click', (e) => {
+      if (e.target.closest('a')) {
+        navLinks.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
       }
     });
-    // The studio address and telephone are optional. A row appears only once
-    // there is something to put in it, so an unset detail is absent rather
-    // than an empty label.
-    $$('[data-site-row]').forEach((row) => {
-      const key = row.getAttribute('data-site-row');
-      const value = values[key];
-      row.hidden = !value;
-      if (!value) return;
-      const target = row.querySelector('[data-site="' + key + '"]') || row;
-      target.textContent = value;
-      const link = row.tagName === 'A' ? row : row.querySelector('a');
-      if (link && key === 'phone') link.href = telHref(value);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && navLinks.classList.contains('open')) {
+        navLinks.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+        navToggle.focus();
+      }
     });
   }
+
+  const progress = $('#progress');
+
+  function onScroll() {
+    const y = window.scrollY;
+    if (nav) nav.classList.toggle('stuck', y > 12);
+    if (progress) {
+      const height = document.documentElement.scrollHeight - window.innerHeight;
+      progress.style.width = `${height > 0 ? Math.min(100, (y / height) * 100) : 0}%`;
+    }
+  }
+
+  let ticking = false;
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        onScroll();
+        ticking = false;
+      });
+    },
+    { passive: true }
+  );
+  onScroll();
+
+  /* ------------------------------------------------------------ reveal --- */
+
+  /**
+   * Reveal on scroll, and count up any number inside the revealed block.
+   *
+   * One observer for both, because a counter that starts before its panel is
+   * on screen has finished by the time anyone sees it.
+   */
+  const revealed = new WeakSet();
+
+  function countUp(node) {
+    const target = Number(node.getAttribute('data-count'));
+    if (!Number.isFinite(target)) return;
+    const suffix = node.getAttribute('data-suffix') || '';
+    const duration = reduceMotion ? 0 : 1400;
+    const started = performance.now();
+
+    const format = (value) => {
+      const rounded = target >= 1000 ? Math.round(value) : Math.round(value * 10) / 10;
+      return rounded.toLocaleString('en-US') + suffix;
+    };
+
+    if (!duration) {
+      node.textContent = format(target);
+      return;
+    }
+
+    const tick = (now) => {
+      const t = Math.min(1, (now - started) / duration);
+      // Ease out, so the number settles rather than stopping dead.
+      node.textContent = format(target * (1 - Math.pow(1 - t, 3)));
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  function reveal(node) {
+    if (revealed.has(node)) return;
+    revealed.add(node);
+    node.classList.add('in');
+    $$('[data-count]', node).forEach(countUp);
+    if (node.hasAttribute('data-count')) countUp(node);
+  }
+
+  const revealTargets = () => $$('[data-reveal], [data-count]');
+
+  // The figures are written into the HTML as their final values, so the page is
+  // correct without a script. They are zeroed here, once, only because they are
+  // about to be animated back up.
+  if (!reduceMotion) {
+    $$('[data-count]').forEach((node) => {
+      node.textContent = '0';
+    });
+  }
+
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          reveal(entry.target);
+          io.unobserve(entry.target);
+        });
+      },
+      { rootMargin: '0px 0px -8% 0px', threshold: 0.08 }
+    );
+    revealTargets().forEach((node) => io.observe(node));
+
+    // Re-scan after content is injected (tracking results, service pages).
+    window.PARAMOUNT_OBSERVE = (root) => {
+      $$('[data-reveal], [data-count]', root || document).forEach((node) => {
+        if (!revealed.has(node)) io.observe(node);
+      });
+    };
+  } else {
+    revealTargets().forEach(reveal);
+    window.PARAMOUNT_OBSERVE = (root) => $$('[data-reveal], [data-count]', root || document).forEach(reveal);
+  }
+
+  /* -------------------------------------------------------------- tilt --- */
+
+  /**
+   * Pointer-driven 3D tilt, plus the lit edge on .card.
+   *
+   * Delegated from the document rather than bound per card, so cards added
+   * later (a tracking result, a service grid) tilt without being registered,
+   * and there is one listener instead of dozens.
+   */
+  const MAX_TILT = 7;
+
+  function onPointerMove(e) {
+    const card = e.target.closest('.card, .tilt');
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width;
+    const py = (e.clientY - rect.top) / rect.height;
+
+    // The lit edge follows the pointer on every card.
+    card.style.setProperty('--mx', `${px * 100}%`);
+    card.style.setProperty('--my', `${py * 100}%`);
+
+    if (reduceMotion || !card.hasAttribute('data-tilt')) return;
+    card.style.setProperty('--ry', `${(px - 0.5) * 2 * MAX_TILT}deg`);
+    card.style.setProperty('--rx', `${(0.5 - py) * 2 * MAX_TILT}deg`);
+  }
+
+  function onPointerLeave(e) {
+    const card = e.target.closest && e.target.closest('.card, .tilt');
+    if (!card) return;
+    card.style.setProperty('--rx', '0deg');
+    card.style.setProperty('--ry', '0deg');
+  }
+
+  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    document.addEventListener('pointermove', onPointerMove, { passive: true });
+    document.addEventListener('pointerout', onPointerLeave, { passive: true });
+  }
+
+  /* --------------------------------------------------------- hero slides --- */
+
+  const slides = $$('.hero-slide');
+  if (slides.length > 1 && !reduceMotion) {
+    let i = 0;
+    setInterval(() => {
+      slides[i].classList.remove('on');
+      i = (i + 1) % slides.length;
+      slides[i].classList.add('on');
+    }, 6000);
+  }
+
+  /* ------------------------------------------------------------- forms --- */
+
+  /**
+   * Submit a form as JSON and report back in its own status line.
+   *
+   * Shared by the enquiry, quote and application forms: they differ in where
+   * they post and what they say afterwards, not in how they behave.
+   */
+  function wireForm(form, { url, collect, success, validate }) {
+    if (!form) return;
+    const status = $('[data-form-status]', form);
+    const button = $('[data-submit]', form) || $('button[type=submit]', form);
+
+    const setStatus = (message, tone) => {
+      if (!status) return;
+      status.textContent = message;
+      status.className = `form-status${tone ? ` ${tone}` : ''}`;
+    };
+
+    const clearErrors = () => $$('[data-err]', form).forEach((node) => (node.textContent = ''));
+    const showErrors = (fields) => {
+      Object.entries(fields || {}).forEach(([key, message]) => {
+        const node = $(`[data-err="${key}"]`, form);
+        if (node) node.textContent = message;
+      });
+    };
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      clearErrors();
+
+      const payload = collect ? collect(form) : Object.fromEntries(new FormData(form).entries());
+      const local = validate ? validate(payload) : null;
+      if (local && Object.keys(local).length) {
+        showErrors(local);
+        setStatus('Please check the highlighted fields.', 'bad');
+        return;
+      }
+
+      const label = button ? button.innerHTML : '';
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Sending…';
+      }
+      setStatus('Sending…');
+
+      try {
+        const data = await fetchJSON(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        form.reset();
+        setStatus(data.message || success || 'Thank you.', 'ok');
+      } catch (err) {
+        if (err.body && err.body.fields) {
+          showErrors(err.body.fields);
+          setStatus('Please check the highlighted fields.', 'bad');
+        } else {
+          setStatus(err.message || 'That did not send. Please try again or email us directly.', 'bad');
+        }
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.innerHTML = label;
+        }
+      }
+    });
+  }
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  $$('[data-contact-form]').forEach((form) =>
+    wireForm(form, {
+      url: '/api/contact',
+      success: 'Thank you. Your enquiry is with the Paramount desk.',
+      validate: (v) => {
+        const errors = {};
+        if (!v.name || v.name.trim().length < 2) errors.name = 'Please enter your name.';
+        if (!EMAIL_RE.test(v.email || '')) errors.email = 'Please enter a valid email address.';
+        if (!v.message || v.message.trim().length < 10) errors.message = 'A little more detail, please.';
+        return errors;
+      },
+    })
+  );
+
+  /* ------------------------------------------------------- live settings --- */
+
+  /**
+   * Contact details come from the API so the desk can change them without a
+   * deploy. The page is already correct without this; it only overwrites a
+   * value the desk has actually set.
+   */
+  const site = {};
 
   async function hydrateSite() {
-    // Seed from the page itself, so a message that quotes the studio address
-    // is right even before the request comes back.
-    $$('[data-site]').forEach((el) => {
-      const key = el.getAttribute('data-site');
-      if (!site[key]) site[key] = el.textContent.trim();
-    });
     try {
-      applySite(await fetchJSON('/api/site'));
-    } catch (e) {
-      /* the built-in values stand */
-    }
-  }
-
-  window.MERKEL = { $, $$, esc, fetchJSON, reduceMotion, projectCard, observeReveals, FALLBACK_PROJECTS, site };
-
-  /* Nav, scroll progress, underlay parallax, chapter rail ----------------- */
-  const nav = $('#nav');
-  const progress = $('#progress');
-  const underlay = $('.underlay-img');
-  const chapters = $$('.chapter[data-chapter]');
-  let railLinks = [];
-  let ticking = false;
-
-  /* The underlay drifts across the whole document rather than with raw scroll,
-     so the travel is the same on a short page and a long one. */
-  const UNDERLAY_TRAVEL = 70;
-  const MEDIA_TRAVEL = 80;
-  const media = $$('.chapter-media');
-
-  function frame() {
-    ticking = false;
-    const doc = document.documentElement;
-    const scrolled = doc.scrollTop || window.scrollY || 0;
-    const pct = scrolled / (doc.scrollHeight - doc.clientHeight || 1);
-
-    if (nav) nav.classList.toggle('scrolled', scrolled > 24);
-    if (progress) progress.style.width = (pct * 100) + '%';
-    if (underlay && !reduceMotion) {
-      underlay.style.setProperty('--underlay-shift', (-UNDERLAY_TRAVEL * pct).toFixed(1) + 'px');
-    }
-
-    /* Artwork drifts against its section: at the top of the section the image
-       sits low, at the bottom it has risen, so the picture and the words are
-       never travelling at the same speed. */
-    if (!reduceMotion) {
-      for (let i = 0; i < media.length; i += 1) {
-        const layer = media[i];
-        const box = layer.parentElement.getBoundingClientRect();
-        if (box.bottom < -200 || box.top > window.innerHeight + 200) continue;
-        const progress = (window.innerHeight - box.top) / (window.innerHeight + box.height);
-        layer.style.setProperty('--media-shift', ((progress - 0.5) * MEDIA_TRAVEL).toFixed(1) + 'px');
+      const data = await fetchJSON('/api/site');
+      Object.assign(site, data);
+      $$('[data-site]').forEach((node) => {
+        const key = node.getAttribute('data-site');
+        const value = data[key];
+        if (!value) return;
+        node.textContent = value;
+        if (node.tagName === 'A') {
+          if (node.href.startsWith('mailto:')) node.href = `mailto:${value}`;
+          else if (node.href.startsWith('tel:')) node.href = `tel:${String(value).replace(/\s+/g, '')}`;
+        }
+      });
+      if (data.chat_agent_name) {
+        $$('[data-chat-agent]').forEach((node) => (node.textContent = data.chat_agent_name));
       }
-    }
-
-    if (railLinks.length) {
-      const middle = scrolled + window.innerHeight / 2;
-      let active = 0;
-      chapters.forEach((section, i) => {
-        const top = section.offsetTop;
-        if (middle >= top) active = i;
-      });
-      railLinks.forEach((a, i) => a.classList.toggle('is-active', i === active));
+    } catch (err) {
+      /* the built-in details stand */
     }
   }
 
-  const onScroll = () => {
-    if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(frame);
-  };
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll, { passive: true });
+  hydrateSite();
 
-  /* A restrained pointer tilt gives the glass surfaces physical depth without
-     changing layout. Touch and reduced-motion users keep the static view. */
-  if (!reduceMotion && window.matchMedia('(pointer: fine)').matches) {
-    const tiltTargets = $$('.hero-copy, .nav, .service, .project, .leadership-media');
-    tiltTargets.forEach((target) => {
-      target.addEventListener('pointermove', (event) => {
-        const box = target.getBoundingClientRect();
-        const x = (event.clientX - box.left) / box.width - 0.5;
-        const y = (event.clientY - box.top) / box.height - 0.5;
-        target.style.setProperty('--tilt-x', `${(-y * 3.5).toFixed(2)}deg`);
-        target.style.setProperty('--tilt-y', `${(x * 4.5).toFixed(2)}deg`);
-      });
-      target.addEventListener('pointerleave', () => {
-        target.style.setProperty('--tilt-x', '0deg');
-        target.style.setProperty('--tilt-y', '0deg');
-      });
-    });
-  }
+  /* ------------------------------------------------------------ exports --- */
 
-  /* Section artwork settles into place as its chapter arrives. */
-  function stageChapters() {
-    if (!chapters.length) return;
-    if (reduceMotion || !('IntersectionObserver' in window)) {
-      chapters.forEach((c) => c.classList.add('is-onstage'));
-      return;
-    }
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (e.isIntersecting) { e.target.classList.add('is-onstage'); io.unobserve(e.target); }
-      });
-    }, { threshold: 0.2 });
-    chapters.forEach((c) => io.observe(c));
-  }
-
-  /* The rail is built from the sections themselves, so adding a chapter to
-     src/site/pages.js adds its marker here with nothing else to update. */
-  function buildRail() {
-    const rail = $('#chapter-rail');
-    if (!rail || !chapters.length) return;
-    rail.innerHTML = chapters.map((section) => `
-      <a href="#${esc(section.id)}" title="${esc(section.dataset.chapter)}">
-        <span class="label">${esc(section.dataset.chapter)}</span>
-        <span class="tick"></span>
-      </a>`).join('');
-    railLinks = $$('a', rail);
-  }
-
-  const toggle = $('#navtoggle');
-  const links = $('#navlinks');
-  if (toggle && links) {
-    const setSheet = (open) => {
-      links.classList.toggle('open', open);
-      nav.classList.toggle('open-sheet', open);
-      // The page behind a full-screen sheet must not scroll under it.
-      document.body.classList.toggle('nav-open', open);
-      toggle.setAttribute('aria-expanded', String(open));
-      toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
-    };
-    toggle.addEventListener('click', () => setSheet(!links.classList.contains('open')));
-    $$('#navlinks a').forEach((a) => a.addEventListener('click', () => setSheet(false)));
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && links.classList.contains('open')) setSheet(false);
-    });
-  }
-
-  /* Hero slideshow ------------------------------------------------------- */
-  function setupSlides() {
-    const wrap = $('#hero-slides');
-    if (!wrap) return;
-    const slides = $$('.slide', wrap);
-    const dots = $$('#hero-dots .dot');
-    if (slides.length <= 1) return;
-    const DURATION = 5500;
-    let idx = 0, timer = null;
-    const go = (n) => {
-      idx = (n + slides.length) % slides.length;
-      slides.forEach((s, i) => s.classList.toggle('is-active', i === idx));
-      dots.forEach((d, i) => d.classList.toggle('is-active', i === idx));
-    };
-    const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
-    const start = () => { stop(); if (!reduceMotion) timer = setInterval(() => go(idx + 1), DURATION); };
-    dots.forEach((d) => d.addEventListener('click', () => { go(Number(d.dataset.slide)); start(); }));
-    document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
-    start();
-  }
-
-  /* Counters ------------------------------------------------------------- */
-  function runCounters() {
-    const nums = $$('[data-count]');
-    if (!nums.length) return;
-    const animate = (el) => {
-      const target = Number(el.dataset.count) || 0;
-      const suffix = el.dataset.suffix || '';
-      if (reduceMotion) { el.textContent = target + suffix; return; }
-      const dur = 1400, start = performance.now();
-      const step = (now) => {
-        const p = Math.min(1, (now - start) / dur);
-        el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3))) + suffix;
-        if (p < 1) requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
-    };
-    if (!('IntersectionObserver' in window)) { nums.forEach(animate); return; }
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) { animate(e.target); io.unobserve(e.target); } });
-    }, { threshold: 0.6 });
-    nums.forEach((el) => io.observe(el));
-  }
-
-  /* Home hydration: services + featured projects ------------------------- */
-  async function hydrateHome() {
-    const svcGrid = $('#services-grid');
-    if (svcGrid) {
-      let services = FALLBACK_SERVICES;
-      try { const d = await fetchJSON('/api/services'); services = d.services || services; } catch (e) {}
-      svcGrid.innerHTML = services.map((s, i) => `
-        <article class="service" data-reveal>
-          <div class="num">${String(i + 1).padStart(2, '0')}</div>
-          <div class="code">${esc(s.code || 'S-' + (i + 1))}</div>
-          <h3>${esc(s.title)}</h3>
-          <p>${esc(s.summary)}</p>
-          <ul>${(s.capabilities || []).map((c) => `<li>${esc(c)}</li>`).join('')}</ul>
-        </article>`).join('');
-    }
-    const featured = $('#featured-projects');
-    if (featured) {
-      let projects = FALLBACK_PROJECTS;
-      try { const d = await fetchJSON('/api/projects'); projects = d.projects || projects; } catch (e) {}
-      featured.innerHTML = projects.slice(0, 3).map(projectCard).join('');
-    }
-    observeReveals();
-  }
-
-  /* Contact form --------------------------------------------------------- */
-
-  /** Wire every enquiry form on the page. Both post to the same endpoint, so
-      both land in `enquiries` and appear on the studio desk at /admin. */
-  function setupForms() {
-    $$('[data-contact-form]').forEach(setupForm);
-  }
-
-  function setupForm(form) {
-    if (!form || form.dataset.wired) return;
-    form.dataset.wired = '1';
-    const statusEl = $('[data-form-status]', form);
-    const btn = $('[data-submit]', form);
-    // `form.elements.namedItem` rather than `form.name`, which is the form's
-    // own name attribute and would shadow the field of the same name.
-    const field = (n) => form.elements.namedItem(n);
-    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const setErr = (name, msg) => {
-      const errEl = form.querySelector(`[data-err="${name}"]`);
-      const field = errEl ? errEl.closest('.field') : null;
-      if (errEl) errEl.textContent = msg || '';
-      if (field) field.classList.toggle('invalid', !!msg);
-    };
-    const validate = () => {
-      let ok = true;
-      const name = field('name').value.trim(), email = field('email').value.trim(), message = field('message').value.trim();
-      if (name.length < 2) { setErr('name', 'Please enter your name.'); ok = false; } else setErr('name', '');
-      if (!EMAIL_RE.test(email)) { setErr('email', 'Enter a valid email.'); ok = false; } else setErr('email', '');
-      if (message.length < 10) { setErr('message', 'A little more detail, please.'); ok = false; } else setErr('message', '');
-      return ok;
-    };
-    ['name', 'email', 'message'].forEach((n) => {
-      field(n).addEventListener('blur', validate);
-      field(n).addEventListener('input', () => {
-        const errEl = form.querySelector(`[data-err="${n}"]`);
-        if (errEl && errEl.textContent) validate();
-      });
-    });
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      statusEl.className = 'form-status';
-      if (!validate()) { statusEl.className = 'form-status bad'; statusEl.textContent = 'Please correct the highlighted fields.'; return; }
-      const payload = {
-        name: field('name').value.trim(), email: field('email').value.trim(),
-        company: field('company').value.trim(), service: field('service').value,
-        message: field('message').value.trim(), website: field('website') ? field('website').value : ''
-      };
-      btn.disabled = true;
-      const original = btn.innerHTML;
-      btn.innerHTML = 'Sending';
-      try {
-        const res = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok) { form.reset(); statusEl.className = 'form-status ok'; statusEl.textContent = data.message || 'Thank you. Your enquiry has reached our engineers.'; }
-        else if (res.status === 422 && data.fields) { Object.entries(data.fields).forEach(([k, v]) => setErr(k, v)); statusEl.className = 'form-status bad'; statusEl.textContent = 'Please correct the highlighted fields.'; }
-        else if (res.status === 429) { statusEl.className = 'form-status bad'; statusEl.textContent = 'Too many attempts. Please wait a moment and try again.'; }
-        else { statusEl.className = 'form-status bad'; statusEl.textContent = data.message || `Something went wrong. Please email ${site.email}.`; }
-      } catch (err) { statusEl.className = 'form-status bad'; statusEl.textContent = `Network error. Please email ${site.email}.`; }
-      finally { btn.disabled = false; btn.innerHTML = original; }
-    });
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const yr = $('#year'); if (yr) yr.textContent = new Date().getFullYear();
-    hydrateSite();
-    buildRail();
-    stageChapters();
-    setupSlides();
-    runCounters();
-    setupForms();
-    hydrateHome();
-    observeReveals();
-    frame();
-  });
+  window.PARAMOUNT = { $, $$, esc, fetchJSON, wireForm, site, reduceMotion, EMAIL_RE };
 })();

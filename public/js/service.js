@@ -1,88 +1,72 @@
 'use strict';
 
-/* One discipline, resolved from the path so /services/steel is a real URL. */
+/**
+ * Service detail page.
+ *
+ * The id comes from the path (/services/air-freight), so one built page serves
+ * all six. Content is fetched from /api/services/:id; a service that no longer
+ * exists gets an honest message rather than an empty layout.
+ */
 (function () {
-  const M = window.MERKEL; if (!M) return;
-  const root = document.getElementById('service-detail');
-  if (!root) return;
-  const esc = M.esc;
+  const { $, $$, esc, fetchJSON } = window.PARAMOUNT || {};
+  const root = document.querySelector('[data-service-detail]');
+  if (!root || !fetchJSON) return;
 
   const id = decodeURIComponent(window.location.pathname.split('/').filter(Boolean).pop() || '');
+  const set = (key, html) => {
+    const node = root.querySelector(`[data-svc="${key}"]`);
+    if (node) node.innerHTML = html;
+  };
 
-  function render(s, projects) {
-    document.title = `${s.title} | Merkel Constructions`;
-    const related = projects.filter((p) => (p.services || []).includes(s.title)).slice(0, 3);
-
-    root.removeAttribute('data-loading');
-    root.innerHTML = `
-      <header class="page-header">
-        <div class="wrap page-header-grid">
-          <div class="page-header-copy">
-            <span class="eyebrow">${esc(s.code)} / Services</span>
-            <h1 data-reveal>${esc(s.title)}</h1>
-            <p data-reveal>${esc(s.lede || s.summary)}</p>
-          </div>
-          <figure class="figure page-header-figure" data-reveal>
-            <img src="${esc(s.image)}" alt="${esc(s.title)}" decoding="async" />
-          </figure>
-        </div>
-      </header>
-
-      <section class="section-pad">
-        <div class="wrap project-cols">
-          <div class="overview" data-reveal>
-            ${(s.body || [s.summary]).map((para) => `<p>${esc(para)}</p>`).join('')}
-          </div>
-          <aside data-reveal>
-            <div class="project-facts">
-              ${(s.deliverables || []).map((d) => `<div class="fact"><span class="k">Deliverable</span><span class="v">${esc(d)}</span></div>`).join('')}
-            </div>
-            <div class="project-services">
-              ${(s.capabilities || []).map((c) => `<span>${esc(c)}</span>`).join('')}
-            </div>
-          </aside>
-        </div>
-      </section>
-
-      ${related.length ? `
-      <section class="section-pad alt">
-        <div class="wrap">
-          <div class="section-head" data-reveal>
-            <span class="eyebrow">Where it shows</span>
-            <h2>Projects using this discipline.</h2>
-          </div>
-          <div class="cards-grid" data-reveal>${related.map(M.projectCard).join('')}</div>
-        </div>
-      </section>` : ''}
-
-      <section class="cta-band">
-        <div class="wrap cta-inner" data-reveal>
-          <h2>Need this on a project?</h2>
-          <p>Send the drawing set or a paragraph on the site and a principal engineer will come back to you.</p>
-          <a href="/contact" class="btn">Contact us <span class="arw">&rsaquo;</span></a>
-        </div>
-      </section>`;
-    M.observeReveals();
-  }
+  const check =
+    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>';
 
   (async () => {
     try {
-      const [service, list] = await Promise.all([
-        M.fetchJSON(`/api/services/${encodeURIComponent(id)}`),
-        M.fetchJSON('/api/projects').catch(() => ({ projects: [] })),
-      ]);
-      render(service, list.projects || []);
+      const svc = await fetchJSON(`/api/services/${encodeURIComponent(id)}`);
+
+      document.title = `${svc.title} | Paramount Logistics`;
+      set('title', esc(svc.title));
+      set('code', `${esc(svc.code)} · ${esc(svc.tagline)}`);
+      set('heading', esc(svc.title));
+      set('summary', esc(svc.summary));
+      set('detail', esc(svc.detail || svc.summary));
+      set('capabilities', (svc.capabilities || []).map((c) => `<li>${check}<span>${esc(c)}</span></li>`).join(''));
+      set(
+        'metrics',
+        (svc.metrics || [])
+          .map((m) => `<div class="stat"><b>${esc(m.value)}</b><span>${esc(m.label)}</span></div>`)
+          .join('')
+      );
+
+      const image = root.querySelector('[data-svc="image"]');
+      if (image) image.alt = svc.title;
+
+      const { services } = await fetchJSON('/api/services');
+      set(
+        'others',
+        services
+          .filter((s) => s.id !== svc.id)
+          .slice(0, 3)
+          .map(
+            (s, i) => `
+        <article class="card tilt step" data-tilt data-reveal style="--delay:${i * 60}ms">
+          <span class="n">${esc(s.code)}</span>
+          <h3>${esc(s.title)}</h3>
+          <p>${esc(s.summary)}</p>
+          <a class="link" href="/services/${esc(s.id)}">Explore <span class="arw">&rsaquo;</span></a>
+        </article>`
+          )
+          .join('')
+      );
+
+      if (window.PARAMOUNT_OBSERVE) window.PARAMOUNT_OBSERVE(root);
     } catch (err) {
-      root.removeAttribute('data-loading');
-      root.innerHTML = `
-        <section class="notfound">
-          <div class="wrap">
-            <span class="eyebrow">Not found</span>
-            <h1>No such service.</h1>
-            <p>That discipline is not one of ours, or the link has changed.</p>
-            <div class="hero-actions"><a href="/services" class="btn">All services <span class="arw">&rsaquo;</span></a></div>
-          </div>
-        </section>`;
+      set('heading', 'That service is not one of ours');
+      set(
+        'summary',
+        'The link may be out of date. <a class="link" href="/services">See every service we run</a>.'
+      );
     }
   })();
 })();

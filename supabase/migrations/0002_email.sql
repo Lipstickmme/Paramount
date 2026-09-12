@@ -1,6 +1,6 @@
 -- Email inbox for the admin dashboard.
 --
--- Mail addressed to the studio mailbox arrives through Resend Inbound, which
+-- Mail addressed to the company mailbox arrives through Resend Inbound, which
 -- holds the MX records and posts an `email.received` webhook to
 -- /api/inbound/resend. Replies are sent from the dashboard through Resend and
 -- recorded here alongside the inbound side, so a thread reads as one
