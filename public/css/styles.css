@@ -1,115 +1,167 @@
 /* ==========================================================================
    Paramount Logistics — design system
 
-   A control-tower aesthetic: near-black ground, glass panels lit from behind,
-   and one gradient (cyan -> teal -> violet) used sparingly so it still means
-   something when it appears. Everything is a custom property, so the light
-   theme is a token swap rather than a second stylesheet.
+   Taken from the emblem: navy, white, and an oxide red held back for signals.
+   Light by default, because that is where the mark lives; the dark theme is a
+   token swap rather than a second stylesheet.
 
    Order: tokens, reset, primitives, layout, components, pages, motion.
    ========================================================================== */
 
 /* ------------------------------------------------------------------ tokens */
 
+/*
+ * The palette is taken from the emblem: deep navy line-work, an oxide-red
+ * waterline, white. Navy is the primary and does the work buttons and headings
+ * used to do with a gradient; the red is rationed to the things that genuinely
+ * signal — a live position, an exception, an alert — so it keeps its meaning.
+ */
+
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
   /* Ground */
-  --bg: #04070f;
-  --bg-2: #070d1a;
-  --panel: rgba(17, 27, 46, 0.62);
-  --panel-solid: #0c1526;
-  --panel-2: rgba(11, 19, 34, 0.86);
-  --line: rgba(148, 176, 214, 0.14);
-  --line-strong: rgba(148, 176, 214, 0.28);
+  --bg: #f2f5fa;
+  --bg-2: #e6ebf3;
+  --panel: rgba(255, 255, 255, 0.82);
+  --panel-solid: #ffffff;
+  --panel-2: rgba(255, 255, 255, 0.94);
+  --line: rgba(12, 31, 61, 0.13);
+  --line-strong: rgba(12, 31, 61, 0.26);
 
   /* Ink */
-  --ink: #eef4ff;
-  --ink-2: #a8b8d4;
-  --ink-3: #6d7f9e;
+  --ink: #0c1f3d;
+  --ink-2: #44566f;
+  --ink-3: #6e8098;
 
-  /* Accent */
-  --accent: #22d3ee;
-  --accent-2: #12e0c4;
-  --accent-3: #7c5cff;
-  --accent-ink: #04070f;
-  --grad: linear-gradient(100deg, var(--accent), var(--accent-2) 45%, var(--accent-3));
-  --grad-soft: linear-gradient(100deg, rgba(34, 211, 238, 0.18), rgba(124, 92, 255, 0.18));
+  /* Brand */
+  --navy: #0c1f3d;
+  --accent: #0c1f3d;
+  --accent-2: #1a6ea8;
+  --accent-ink: #ffffff;
+  --signal: #a33a22;
+
+  /* The one gradient left, and it only fills progress. */
+  --grad: linear-gradient(90deg, var(--accent), var(--accent-2));
+  --grad-soft: rgba(26, 110, 168, 0.1);
 
   /* Status */
-  --go: #34d399;
-  --wait: #fbbf24;
-  --warn: #fb923c;
-  --bad: #fb7185;
-  --done: #22d3ee;
+  --go: #1d7f5c;
+  --wait: #9a6b14;
+  --warn: #a8551b;
+  --bad: #a33a22;
+  --done: #1a6ea8;
+
+  /* Vessel classes, soft enough to sit under type on a map */
+  --v-container: #2f6fa8;
+  --v-bulk: #96702f;
+  --v-tanker: #9c4b3a;
+  --v-reefer: #2f7f6e;
+  --v-roro: #5b58a0;
+  --v-general: #5c6f89;
 
   /* Shape */
-  --r-sm: 10px;
-  --r: 16px;
-  --r-lg: 24px;
-  --r-xl: 32px;
-  --shadow: 0 24px 60px -28px rgba(0, 0, 0, 0.9);
-  --shadow-lift: 0 40px 90px -40px rgba(4, 10, 22, 0.95);
+  --r-sm: 8px;
+  --r: 12px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --shadow: 0 18px 44px -26px rgba(12, 31, 61, 0.42);
+  --shadow-lift: 0 30px 70px -38px rgba(12, 31, 61, 0.5);
+  /* The soft outer glow the search field and the drawer use. Present enough to
+     find at a glance, dim enough not to look like a toy. */
+  --glow: 0 0 0 1px rgba(26, 110, 168, 0.22), 0 10px 30px -14px rgba(12, 31, 61, 0.35);
+  --glow-strong: 0 0 0 1px rgba(26, 110, 168, 0.5), 0 0 0 5px rgba(26, 110, 168, 0.12),
+    0 14px 34px -16px rgba(12, 31, 61, 0.45);
 
   /* Rhythm */
   --gut: clamp(20px, 4vw, 56px);
-  --section: clamp(72px, 10vw, 148px);
-  --maxw: 1280px;
+  --section: clamp(64px, 8vw, 116px);
+  --maxw: 1320px;
+  --nav-h: 68px;
 
-  /* Type */
-  --display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  --body: 'Inter', system-ui, -apple-system, sans-serif;
-  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+  /* Type: a grotesque for headings, a neutral workhorse for text, and a mono
+     that keeps coordinates and tracking numbers unambiguous. */
+  --display: 'Archivo', 'Helvetica Neue', system-ui, sans-serif;
+  --body: 'Public Sans', system-ui, -apple-system, sans-serif;
+  --mono: 'Roboto Mono', ui-monospace, 'SF Mono', monospace;
 
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-/* The light theme is the same design with the ground inverted: the accent and
-   every radius, shadow and spacing token is unchanged, so nothing shifts. */
-/* Someone whose system is set to light gets the light theme without touching
-   the toggle; the guard means an explicit dark choice still wins. */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme='dark']) {
-  color-scheme: light;
-  --bg: #f6f8fc;
-  --bg-2: #eef2f9;
-  --panel: rgba(255, 255, 255, 0.78);
-  --panel-solid: #ffffff;
-  --panel-2: rgba(255, 255, 255, 0.9);
-  --line: rgba(15, 33, 62, 0.1);
-  --line-strong: rgba(15, 33, 62, 0.2);
-  --ink: #0b1628;
-  --ink-2: #46587a;
-  --ink-3: #74849f;
-  --accent: #0891b2;
-  --accent-2: #0d9488;
-  --accent-3: #6d4dfb;
-  --accent-ink: #ffffff;
-  --shadow: 0 24px 50px -30px rgba(13, 32, 63, 0.45);
-  --shadow-lift: 0 40px 80px -44px rgba(13, 32, 63, 0.5);
+/* The dark theme is the same design at night: navy deepens into the ground, so
+   the harbour blue takes over as the primary and the red brightens a shade to
+   stay readable against it. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #061020;
+    --bg-2: #0a1830;
+    --panel: rgba(17, 32, 57, 0.72);
+    --panel-solid: #0e1d35;
+    --panel-2: rgba(10, 22, 42, 0.9);
+    --line: rgba(150, 178, 215, 0.16);
+    --line-strong: rgba(150, 178, 215, 0.32);
+    --ink: #e9eff9;
+    --ink-2: #a7b8d0;
+    --ink-3: #74869f;
+    --accent: #2f86c8;
+    --accent-2: #63aee2;
+    --accent-ink: #04101f;
+    --signal: #d4593c;
+    --grad-soft: rgba(47, 134, 200, 0.16);
+    --go: #3fbf8e;
+    --wait: #d6a63f;
+    --warn: #d98442;
+    --bad: #d4593c;
+    --done: #63aee2;
+    --v-container: #6fb0e0;
+    --v-bulk: #d7ad63;
+    --v-tanker: #d08069;
+    --v-reefer: #6fc0ae;
+    --v-roro: #9b98d8;
+    --v-general: #93a5bd;
+    --shadow: 0 20px 50px -26px rgba(0, 0, 0, 0.8);
+    --shadow-lift: 0 34px 76px -36px rgba(0, 0, 0, 0.9);
+    --glow: 0 0 0 1px rgba(99, 174, 226, 0.22), 0 10px 30px -14px rgba(0, 0, 0, 0.7);
+    --glow-strong: 0 0 0 1px rgba(99, 174, 226, 0.5), 0 0 0 5px rgba(99, 174, 226, 0.14),
+      0 14px 34px -16px rgba(0, 0, 0, 0.8);
   }
 }
 
-/* And the toggle wins in both directions. */
-[data-theme='light'] {
-  color-scheme: light;
-  --bg: #f6f8fc;
-  --bg-2: #eef2f9;
-  --panel: rgba(255, 255, 255, 0.78);
-  --panel-solid: #ffffff;
-  --panel-2: rgba(255, 255, 255, 0.9);
-  --line: rgba(15, 33, 62, 0.1);
-  --line-strong: rgba(15, 33, 62, 0.2);
-  --ink: #0b1628;
-  --ink-2: #46587a;
-  --ink-3: #74849f;
-  --accent: #0891b2;
-  --accent-2: #0d9488;
-  --accent-3: #6d4dfb;
-  --accent-ink: #ffffff;
-  --shadow: 0 24px 50px -30px rgba(13, 32, 63, 0.45);
-  --shadow-lift: 0 40px 80px -44px rgba(13, 32, 63, 0.5);
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #061020;
+  --bg-2: #0a1830;
+  --panel: rgba(17, 32, 57, 0.72);
+  --panel-solid: #0e1d35;
+  --panel-2: rgba(10, 22, 42, 0.9);
+  --line: rgba(150, 178, 215, 0.16);
+  --line-strong: rgba(150, 178, 215, 0.32);
+  --ink: #e9eff9;
+  --ink-2: #a7b8d0;
+  --ink-3: #74869f;
+  --accent: #2f86c8;
+  --accent-2: #63aee2;
+  --accent-ink: #04101f;
+  --signal: #d4593c;
+  --grad-soft: rgba(47, 134, 200, 0.16);
+  --go: #3fbf8e;
+  --wait: #d6a63f;
+  --warn: #d98442;
+  --bad: #d4593c;
+  --done: #63aee2;
+  --v-container: #6fb0e0;
+  --v-bulk: #d7ad63;
+  --v-tanker: #d08069;
+  --v-reefer: #6fc0ae;
+  --v-roro: #9b98d8;
+  --v-general: #93a5bd;
+  --shadow: 0 20px 50px -26px rgba(0, 0, 0, 0.8);
+  --shadow-lift: 0 34px 76px -36px rgba(0, 0, 0, 0.9);
+  --glow: 0 0 0 1px rgba(99, 174, 226, 0.22), 0 10px 30px -14px rgba(0, 0, 0, 0.7);
+  --glow-strong: 0 0 0 1px rgba(99, 174, 226, 0.5), 0 0 0 5px rgba(99, 174, 226, 0.14),
+    0 14px 34px -16px rgba(0, 0, 0, 0.8);
 }
 
 /* ------------------------------------------------------------------- reset */
@@ -144,7 +196,7 @@ img, svg, video { max-width: 100%; display: block; }
 [hidden] { display: none !important; }
 a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; color: inherit; }
-h1, h2, h3, h4, h5 { font-family: var(--display); font-weight: 600; line-height: 1.06; letter-spacing: -0.02em; margin: 0; }
+h1, h2, h3, h4, h5 { font-family: var(--display); font-weight: 700; line-height: 1.08; letter-spacing: -0.018em; margin: 0; }
 p { margin: 0; }
 ul, ol { margin: 0; padding: 0; list-style: none; }
 
@@ -201,7 +253,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   content: '';
   width: 26px;
   height: 1px;
-  background: var(--grad);
+  background: var(--accent-2);
 }
 
 h1, .h1 { font-size: clamp(2.6rem, 6.4vw, 5rem); }
@@ -218,12 +270,10 @@ h3, .h3 { font-size: clamp(1.35rem, 2.2vw, 1.9rem); }
 .muted { color: var(--ink-2); }
 .mono { font-family: var(--mono); }
 
-.grad-text {
-  background: var(--grad);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+/* Was gradient text. A heading is the last place a gradient earns its keep, so
+   the emphasised words are simply the accent colour now. The class name stays
+   because it is what the pages say. */
+.grad-text { color: var(--accent-2); }
 
 .section-head {
   display: grid;
@@ -245,7 +295,7 @@ h3, .h3 { font-size: clamp(1.35rem, 2.2vw, 1.9rem); }
 /* Buttons ------------------------------------------------------------------ */
 
 .btn {
-  --btn-bg: var(--grad);
+  --btn-bg: var(--accent);
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -257,13 +307,13 @@ h3, .h3 { font-size: clamp(1.35rem, 2.2vw, 1.9rem); }
   color: var(--accent-ink);
   font-family: var(--display);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   letter-spacing: 0.01em;
   cursor: pointer;
   overflow: hidden;
   isolation: isolate;
   transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease), filter 0.3s;
-  box-shadow: 0 12px 30px -14px rgba(34, 211, 238, 0.65);
+  box-shadow: 0 8px 20px -10px rgba(12, 31, 61, 0.42);
 }
 .btn::after {
   content: '';
@@ -274,7 +324,7 @@ h3, .h3 { font-size: clamp(1.35rem, 2.2vw, 1.9rem); }
   transition: transform 0.7s var(--ease);
   z-index: -1;
 }
-.btn:hover { transform: translateY(-2px); box-shadow: 0 20px 40px -16px rgba(34, 211, 238, 0.7); }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 14px 28px -12px rgba(12, 31, 61, 0.5); }
 .btn:hover::after { transform: translateX(120%); }
 .btn:active { transform: translateY(0); }
 .btn[disabled] { opacity: 0.55; cursor: not-allowed; transform: none; }
@@ -286,12 +336,15 @@ h3, .h3 { font-size: clamp(1.35rem, 2.2vw, 1.9rem); }
   box-shadow: none;
   backdrop-filter: blur(8px);
 }
-.btn.ghost:hover { border-color: var(--accent); box-shadow: 0 14px 34px -22px rgba(34, 211, 238, 0.8); }
+.btn.ghost:hover { border-color: var(--accent); box-shadow: var(--glow); }
 
 .btn.sm { padding: 10px 18px; font-size: 0.86rem; }
 .btn.block { width: 100%; justify-content: center; }
 
 .arw { transition: transform 0.35s var(--ease); display: inline-block; }
+.btn svg, .link svg { transition: transform 0.35s var(--ease); }
+.btn:hover svg, .link:hover svg { transform: translateX(3px); }
+.nav-track-go:hover svg { transform: none; }
 .btn:hover .arw, .link:hover .arw { transform: translateX(4px); }
 
 .link {
@@ -327,7 +380,7 @@ h3, .h3 { font-size: clamp(1.35rem, 2.2vw, 1.9rem); }
   height: 7px;
   border-radius: 50%;
   background: var(--go);
-  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.16);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--go) 18%, transparent);
 }
 
 .tag {
@@ -364,8 +417,8 @@ h3, .h3 { font-size: clamp(1.35rem, 2.2vw, 1.9rem); }
   padding: 1px;
   background: radial-gradient(
     420px circle at var(--mx, 50%) var(--my, 0%),
-    rgba(34, 211, 238, 0.75),
-    rgba(124, 92, 255, 0.35) 40%,
+    color-mix(in srgb, var(--accent-2) 55%, transparent),
+    color-mix(in srgb, var(--accent-2) 18%, transparent) 45%,
     transparent 70%
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -427,7 +480,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-3); }
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.14);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-2) 20%, transparent);
 }
 textarea { min-height: 138px; resize: vertical; line-height: 1.6; }
 select {
@@ -501,8 +554,7 @@ form { display: grid; gap: 18px; }
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(900px circle at 12% -5%, rgba(34, 211, 238, 0.14), transparent 60%),
-    radial-gradient(800px circle at 88% 8%, rgba(124, 92, 255, 0.13), transparent 62%),
+    radial-gradient(900px circle at 12% -5%, color-mix(in srgb, var(--accent-2) 10%, transparent), transparent 62%),
     linear-gradient(180deg, transparent, var(--bg) 78%);
 }
 
@@ -512,87 +564,171 @@ form { display: grid; gap: 18px; }
   position: sticky;
   top: 0;
   z-index: 100;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 20px;
-  padding: 14px var(--gut);
-  transition: background 0.35s, border-color 0.35s, backdrop-filter 0.35s, padding 0.35s;
+  gap: clamp(10px, 1.6vw, 22px);
+  min-height: var(--nav-h);
+  padding: 8px var(--gut);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
   border-bottom: 1px solid transparent;
+  transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
 }
 .nav.stuck {
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: blur(16px) saturate(150%);
   border-bottom-color: var(--line);
-  padding-block: 10px;
+  box-shadow: 0 10px 30px -24px rgba(12, 31, 61, 0.6);
 }
 
-.brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-.brand-logo { height: 40px; width: auto; }
+/* The menu trigger. It reads as a button rather than three anonymous bars,
+   because it is now the only way to the rest of the site. */
+.nav-menu {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 14px 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.86rem;
+  transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+}
+.nav-menu:hover { border-color: var(--line-strong); box-shadow: var(--glow); }
+.nav-menu > span:not(.nav-menu-word) {
+  display: block;
+  width: 16px;
+  height: 1.8px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 0.35s var(--ease), opacity 0.2s;
+}
+.nav-menu > span:nth-child(1) { margin-bottom: -4.4px; }
+.nav-menu > span:nth-child(2) { margin-bottom: -4.4px; width: 11px; }
+.nav-menu-word { letter-spacing: 0.01em; }
+@media (max-width: 560px) {
+  .nav-menu { padding: 9px 11px; }
+  .nav-menu-word { display: none; }
+}
+
+.brand { display: flex; align-items: center; gap: 11px; flex-shrink: 0; }
+.brand-logo { display: block; }
+.brand-logo img { height: 56px; width: auto; display: block; }
+.footer-logo img { height: 74px; }
+.drawer-logo img { height: 54px; }
+
+/* The header takes the ship on its own with the name set beside it: the
+   emblem's wordmark is stacked under the hull, and at header height it is a
+   smudge. Everywhere with vertical room keeps the full lockup. */
+.nav .brand-logo img { height: 34px; }
+.brand-name { display: grid; line-height: 1; }
+.brand-name b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.02rem;
+  letter-spacing: 0.055em;
+  color: var(--ink);
+}
+.brand-name span {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.6rem;
+  letter-spacing: 0.34em;
+  color: var(--ink-3);
+  margin-top: 3px;
+}
+@media (max-width: 720px) {
+  .brand-name b { font-size: 0.86rem; letter-spacing: 0.04em; }
+  .brand-name span { font-size: 0.5rem; letter-spacing: 0.26em; }
+  .nav .brand-logo img { height: 28px; }
+}
+@media (max-width: 400px) { .brand-name span { display: none; } }
 
 /* The wordmark ships in two colourways, and exactly one must be visible.
-   Stated the same way as the tokens — dark by default, the media query for a
-   system preference, the attribute so the toggle wins — because deriving one
-   from "hide the other" leaves both showing when neither rule matches. */
-.brand-logo.on-dark { display: block; }
-.brand-logo.on-light { display: none; }
+   Stated the same way as the tokens — light by default, the media query for a
+   system preference, the attribute so the toggle wins in both directions. */
+.brand-logo.on-light { display: block; }
+.brand-logo.on-dark { display: none; }
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme='dark']) .brand-logo.on-dark { display: none; }
-  :root:not([data-theme='dark']) .brand-logo.on-light { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .brand-logo.on-light { display: none; }
+  :root:not([data-theme='light']) .brand-logo.on-dark { display: block; }
 }
 
-[data-theme='light'] .brand-logo.on-dark { display: none; }
-[data-theme='light'] .brand-logo.on-light { display: block; }
-[data-theme='dark'] .brand-logo.on-dark { display: block; }
 [data-theme='dark'] .brand-logo.on-light { display: none; }
+[data-theme='dark'] .brand-logo.on-dark { display: block; }
+[data-theme='light'] .brand-logo.on-light { display: block; }
+[data-theme='light'] .brand-logo.on-dark { display: none; }
 
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-}
-.nav-links a {
+/* The tracking field, in the header on every page.
+   The glow is the point of it: a soft ring and a low, wide shadow so the eye
+   lands here first, with none of the neon that would make it look like a toy.
+   It brightens on focus rather than pulsing at you. */
+.nav-track {
   position: relative;
-  padding: 9px 14px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  max-width: 460px;
+  width: 100%;
+  justify-self: center;
+  padding: 5px 5px 5px 14px;
+  border: 1px solid var(--line-strong);
   border-radius: 999px;
-  font-size: 0.92rem;
-  font-weight: 500;
-  color: var(--ink-2);
-  transition: color 0.25s, background 0.25s;
+  background: var(--panel-2);
+  box-shadow: var(--glow);
+  transition: box-shadow 0.35s var(--ease), border-color 0.25s, background 0.25s;
 }
-.nav-links a:hover { color: var(--ink); background: var(--panel); }
-.nav-links a.is-active { color: var(--ink); }
-.nav-links a.is-active::after {
-  content: '';
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 3px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--grad);
+.nav-track:hover { box-shadow: var(--glow-strong); }
+.nav-track:focus-within {
+  border-color: var(--accent-2);
+  box-shadow: var(--glow-strong);
+}
+.nav-track-icon { display: grid; place-items: center; color: var(--ink-3); }
+.nav-track input {
+  border: 0;
+  background: transparent;
+  padding: 7px 0;
+  font-family: var(--mono);
+  font-size: 0.84rem;
+  letter-spacing: 0.02em;
+  box-shadow: none;
+}
+.nav-track input:focus { outline: none; box-shadow: none; }
+.nav-track input::placeholder {
+  font-family: var(--body);
+  letter-spacing: 0;
+  color: var(--ink-3);
+}
+.nav-track-go {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  cursor: pointer;
+  transition: transform 0.25s var(--ease), filter 0.25s;
+}
+.nav-track-go:hover { transform: translateX(1px); filter: brightness(1.08); }
+
+@media (max-width: 1080px) {
+  .nav { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .nav-track { grid-column: 1 / -1; grid-row: 2; max-width: none; margin-bottom: 4px; }
+  .nav { padding-bottom: 10px; }
 }
 
-.nav-end { display: flex; align-items: center; gap: 10px; }
-
-.nav-portal {
-  padding: 9px 14px;
-  border-radius: 999px;
-  font-size: 0.92rem;
-  font-weight: 500;
-  color: var(--ink-2);
-  transition: color 0.25s, background 0.25s;
-}
-.nav-portal:hover, .nav-portal.is-active { color: var(--ink); background: var(--panel); }
-
-/* Shown only once the row collapses into the menu, where there is room for it
-   to be spelled out. */
-.only-compact { display: none; }
+.nav-end { display: flex; align-items: center; gap: 8px; }
 
 .theme-toggle {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -600,60 +736,121 @@ form { display: grid; gap: 18px; }
   background: var(--panel);
   cursor: pointer;
   color: var(--ink-2);
-  transition: color 0.25s, border-color 0.25s, transform 0.3s var(--ease);
+  transition: color 0.25s, border-color 0.25s;
 }
-.theme-toggle:hover { color: var(--ink); border-color: var(--accent); transform: rotate(18deg); }
+.theme-toggle:hover { color: var(--ink); border-color: var(--line-strong); }
 .theme-toggle .i-sun { display: none; }
-[data-theme='light'] .theme-toggle .i-sun { display: block; }
-[data-theme='light'] .theme-toggle .i-moon { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .theme-toggle .i-sun { display: block; }
+  :root:not([data-theme='light']) .theme-toggle .i-moon { display: none; }
+}
+[data-theme='dark'] .theme-toggle .i-sun { display: block; }
+[data-theme='dark'] .theme-toggle .i-moon { display: none; }
+[data-theme='light'] .theme-toggle .i-sun { display: none; }
+[data-theme='light'] .theme-toggle .i-moon { display: block; }
 
-.nav-toggle {
-  display: none;
-  width: 42px;
-  height: 38px;
+.nav-portal {
+  padding: 9px 14px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  transition: color 0.25s, background 0.25s;
+}
+.nav-portal:hover, .nav-portal.is-active { color: var(--ink); background: var(--panel); }
+
+@media (max-width: 860px) { .nav-portal { display: none; } }
+@media (max-width: 680px) { .nav-cta { display: none; } }
+
+/* Drawer -------------------------------------------------------------------- */
+
+.drawer-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  background: rgba(6, 16, 32, 0.5);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity 0.35s var(--ease);
+}
+.drawer-scrim.open { opacity: 1; }
+
+.drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 140;
+  width: min(92vw, 344px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 16px 22px;
+  background: var(--panel-solid);
+  border-right: 1px solid var(--line);
+  box-shadow: 30px 0 70px -40px rgba(12, 31, 61, 0.6);
+  transform: translateX(-102%);
+  transition: transform 0.4s var(--ease);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.drawer.open { transform: none; }
+
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.drawer-close {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  background: var(--panel);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-2);
   cursor: pointer;
-  padding: 10px 9px;
+  transition: color 0.25s, border-color 0.25s;
 }
-.nav-toggle span {
-  display: block;
-  height: 1.5px;
-  background: var(--ink);
-  border-radius: 2px;
-  transition: transform 0.35s var(--ease), opacity 0.2s;
-}
-.nav-toggle span + span { margin-top: 5px; }
-.nav-toggle[aria-expanded='true'] span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
-.nav-toggle[aria-expanded='true'] span:nth-child(2) { opacity: 0; }
-.nav-toggle[aria-expanded='true'] span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+.drawer-close:hover { color: var(--ink); border-color: var(--line-strong); }
 
-@media (max-width: 1020px) {
-  .nav-cta, .nav-portal { display: none; }
-  .nav-toggle { display: block; }
-  .only-compact { display: block; }
-  .nav-links {
-    position: fixed;
-    inset: 68px 12px auto 12px;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 2px;
-    padding: 14px;
-    border-radius: var(--r-lg);
-    border: 1px solid var(--line);
-    background: color-mix(in srgb, var(--bg-2) 96%, transparent);
-    backdrop-filter: blur(20px);
-    box-shadow: var(--shadow-lift);
-    transform: translateY(-12px) scale(0.98);
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s var(--ease);
-  }
-  .nav-links.open { transform: none; opacity: 1; visibility: visible; }
-  .nav-links a { padding: 13px 16px; font-size: 1rem; }
-  .nav-links a.is-active::after { display: none; }
+.drawer-links { display: grid; gap: 2px; }
+.drawer-links a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px;
+  border-radius: var(--r);
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.98rem;
+  color: var(--ink-2);
+  transition: color 0.2s, background 0.2s, transform 0.25s var(--ease);
 }
+.drawer-links a:hover { color: var(--ink); background: var(--grad-soft); transform: translateX(3px); }
+.drawer-links a.is-active { color: var(--accent-2); background: var(--grad-soft); }
+.drawer-links.secondary a { font-size: 0.92rem; font-weight: 500; }
+.drawer-icon { display: grid; place-items: center; color: var(--ink-3); }
+.drawer-links a:hover .drawer-icon,
+.drawer-links a.is-active .drawer-icon { color: var(--accent-2); }
+
+.drawer-split { height: 1px; background: var(--line); margin: 12px 0; }
+
+.drawer-foot { margin-top: auto; padding-top: 18px; display: grid; gap: 4px; }
+.drawer-call {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--ink);
+}
+.drawer-call:hover { color: var(--accent-2); }
+.drawer-foot p { font-size: 0.84rem; }
 
 /* Footer ------------------------------------------------------------------- */
 
@@ -714,15 +911,23 @@ form { display: grid; gap: 18px; }
   overflow: hidden;
 }
 
+/* Copy on the left, the calls to action and the headline figures on the right,
+   and the chart full width beneath: the tracker is the argument, so it gets the
+   whole measure rather than half of it. */
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: clamp(32px, 5vw, 72px);
-  align-items: center;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: clamp(24px, 3.4vw, 56px);
+  align-items: end;
+  margin-bottom: clamp(24px, 3vw, 40px);
 }
-@media (max-width: 1020px) {
-  .hero-grid { grid-template-columns: 1fr; }
+@media (max-width: 960px) {
+  .hero-grid { grid-template-columns: 1fr; align-items: start; }
 }
+.hero-copy h1 { font-size: clamp(2.2rem, 4.6vw, 3.6rem); }
+.hero-aside { display: grid; gap: 26px; }
+.hero-aside .hero-actions { margin-top: 0; }
+.hero-aside .hero-proof { margin-top: 0; padding-top: 22px; }
 
 .hero h1 { margin-block: 20px 22px; }
 .hero h1 .line { display: block; overflow: hidden; }
@@ -828,7 +1033,7 @@ form { display: grid; gap: 18px; }
   inset: -1px;
   border-radius: inherit;
   padding: 1px;
-  background: var(--grad);
+  background: linear-gradient(140deg, color-mix(in srgb, var(--accent-2) 70%, transparent), transparent 55%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -1059,7 +1264,7 @@ form { display: grid; gap: 18px; }
 .milestone.current i {
   border-color: var(--accent);
   background: var(--accent);
-  box-shadow: 0 0 0 5px rgba(34, 211, 238, 0.2);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent-2) 22%, transparent);
   transform: scale(1.25);
 }
 .milestone.current { color: var(--ink); }
@@ -1133,7 +1338,7 @@ form { display: grid; gap: 18px; }
 }
 .timeline li:first-child .bead {
   border-color: var(--accent);
-  box-shadow: 0 0 0 5px rgba(34, 211, 238, 0.12);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent-2) 16%, transparent);
 }
 .timeline li:first-child .bead b { background: var(--accent); }
 .timeline .when {
@@ -1256,7 +1461,7 @@ form { display: grid; gap: 18px; }
   width: 7px;
   height: 7px;
   border-radius: 2px;
-  background: var(--grad);
+  background: var(--accent-2);
 }
 .svc-card .link { margin-top: auto; padding-top: 8px; }
 
@@ -1291,14 +1496,12 @@ form { display: grid; gap: 18px; }
 }
 .stat b {
   font-family: var(--display);
-  font-size: clamp(1.9rem, 4vw, 3rem);
-  font-weight: 600;
+  font-size: clamp(1.9rem, 4vw, 2.8rem);
+  font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1;
-  background: var(--grad);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--accent-2);
+  font-variant-numeric: tabular-nums;
 }
 .stat span {
   font-size: 0.86rem;
@@ -1476,8 +1679,7 @@ form { display: grid; gap: 18px; }
   border-radius: var(--r-xl);
   border: 1px solid var(--line-strong);
   background:
-    radial-gradient(700px circle at 15% 0%, rgba(34, 211, 238, 0.16), transparent 60%),
-    radial-gradient(600px circle at 85% 100%, rgba(124, 92, 255, 0.18), transparent 60%),
+    radial-gradient(760px circle at 12% 0%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 62%),
     var(--panel-2);
   padding: clamp(32px, 5vw, 68px);
   overflow: hidden;
@@ -1565,21 +1767,76 @@ form { display: grid; gap: 18px; }
    Live chat widget
    ========================================================================= */
 
-.chat { position: fixed; right: 20px; bottom: 20px; z-index: 140; }
+.chat { position: fixed; right: 20px; bottom: 20px; z-index: 120; }
 .chat-toggle {
-  width: 56px;
-  height: 56px;
+  position: relative;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
-  border: 0;
-  background: var(--grad);
+  border: 1px solid color-mix(in srgb, var(--accent-ink) 22%, transparent);
+  background: var(--accent);
   color: var(--accent-ink);
   display: grid;
   place-items: center;
   cursor: pointer;
-  box-shadow: 0 18px 40px -16px rgba(34, 211, 238, 0.8);
-  transition: transform 0.4s var(--ease);
+  box-shadow: 0 14px 30px -12px rgba(12, 31, 61, 0.55);
+  transition: transform 0.4s var(--ease), box-shadow 0.3s;
 }
-.chat-toggle:hover { transform: scale(1.06) translateY(-2px); }
+.chat-toggle:hover { transform: translateY(-2px); box-shadow: 0 18px 36px -14px rgba(12, 31, 61, 0.65); }
+.chat-toggle .i-open { display: grid; place-items: center; }
+
+/* One slow ring on the launcher. It says "someone is there" without the
+   permanent bouncing a support widget usually does. */
+.chat-ping {
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  opacity: 0;
+  animation: ping 4.5s var(--ease-in-out) infinite;
+  pointer-events: none;
+}
+@keyframes ping {
+  0% { transform: scale(1); opacity: 0.55; }
+  35%, 100% { transform: scale(1.5); opacity: 0; }
+}
+.chat.open .chat-ping { display: none; }
+
+/* The label sits beside the button until the panel opens. */
+.chat-label {
+  position: absolute;
+  right: 70px;
+  bottom: 18px;
+  white-space: nowrap;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel-solid);
+  box-shadow: var(--shadow);
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--ink);
+  opacity: 0;
+  transform: translateX(6px);
+  transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+  pointer-events: none;
+}
+.chat:hover .chat-label { opacity: 1; transform: none; }
+.chat.open .chat-label { opacity: 0; }
+@media (max-width: 560px) { .chat-label { display: none; } }
+
+.chat-avatar {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--grad-soft);
+  color: var(--accent-2);
+}
+.chat-head small { display: flex; align-items: center; gap: 6px; }
 .chat-toggle .i-close { display: none; }
 .chat.open .chat-toggle .i-open { display: none; }
 .chat.open .chat-toggle .i-close { display: block; }
@@ -1616,7 +1873,7 @@ form { display: grid; gap: 18px; }
   width: 9px; height: 9px;
   border-radius: 50%;
   background: var(--go);
-  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.18);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--go) 20%, transparent);
 }
 .chat-head strong { font-family: var(--display); font-size: 0.98rem; display: block; }
 .chat-head small { color: var(--ink-3); font-size: 0.76rem; }
@@ -1656,7 +1913,7 @@ form { display: grid; gap: 18px; }
 }
 .chat-msg.user {
   justify-self: end;
-  background: var(--grad);
+  background: var(--accent);
   color: var(--accent-ink);
   border-bottom-right-radius: 5px;
 }
@@ -1679,7 +1936,7 @@ form { display: grid; gap: 18px; }
   width: 42px;
   border: 0;
   border-radius: var(--r-sm);
-  background: var(--grad);
+  background: var(--accent);
   color: var(--accent-ink);
   display: grid;
   place-items: center;
@@ -1704,10 +1961,8 @@ form { display: grid; gap: 18px; }
   font-family: var(--mono);
   font-size: clamp(4rem, 16vw, 10rem);
   line-height: 0.9;
-  background: var(--grad);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--accent-2);
+  opacity: 0.85;
 }
 
 /* =========================================================================
@@ -1888,3 +2143,364 @@ form { display: grid; gap: 18px; }
   border-color: color-mix(in srgb, var(--bad) 40%, transparent);
 }
 .admin-danger:hover { border-color: var(--bad); }
+
+/* =========================================================================
+   Fleet tracker
+   ========================================================================= */
+
+.fleet {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  background: var(--panel-solid);
+  box-shadow: var(--shadow-lift);
+  overflow: hidden;
+}
+
+.fleet-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: clamp(16px, 2vw, 22px) clamp(18px, 2.2vw, 26px);
+  border-bottom: 1px solid var(--line);
+}
+.fleet-head h2 { font-size: clamp(1.15rem, 1.9vw, 1.5rem); margin-top: 8px; }
+.fleet-head-end { display: flex; align-items: center; gap: 14px; }
+.fleet-count { font-size: 0.82rem; white-space: nowrap; }
+
+.fleet-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--signal) 40%, transparent);
+  background: color-mix(in srgb, var(--signal) 10%, transparent);
+  color: var(--signal);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.fleet-live .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2.4s var(--ease-in-out) infinite;
+}
+
+.fleet-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 27%, 380px);
+  align-items: stretch;
+}
+@media (max-width: 900px) {
+  .fleet-body { grid-template-columns: 1fr; }
+}
+
+/* The chart --------------------------------------------------------------- */
+
+.fleet-chart {
+  position: relative;
+  min-height: clamp(320px, 34vw, 470px);
+  border-right: 1px solid var(--line);
+}
+@media (max-width: 900px) {
+  .fleet-chart { border-right: 0; border-bottom: 1px solid var(--line); min-height: 300px; }
+}
+.fleet-chart svg { display: block; width: 100%; height: 100%; }
+
+/* Sea and land are set here rather than in the markup so the theme swap
+   reaches inside the generated chart. */
+.sea-lit { stop-color: #dfe8f3; }
+.sea-deep { stop-color: #cdd9e9; }
+.fleet-land { fill: #eef2f7; stroke: #b9c7da; stroke-width: 0.5; }
+.fleet-graticule { stroke: rgba(12, 31, 61, 0.09); stroke-width: 0.6; fill: none; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .sea-lit { stop-color: #0d2138; }
+  :root:not([data-theme='light']) .sea-deep { stop-color: #071526; }
+  :root:not([data-theme='light']) .fleet-land { fill: #16283f; stroke: #2a415c; }
+  :root:not([data-theme='light']) .fleet-graticule { stroke: rgba(150, 178, 215, 0.11); }
+}
+[data-theme='dark'] .sea-lit { stop-color: #0d2138; }
+[data-theme='dark'] .sea-deep { stop-color: #071526; }
+[data-theme='dark'] .fleet-land { fill: #16283f; stroke: #2a415c; }
+[data-theme='dark'] .fleet-graticule { stroke: rgba(150, 178, 215, 0.11); }
+
+.fleet-lane {
+  fill: none;
+  stroke: var(--ink-3);
+  stroke-width: 0.7;
+  stroke-opacity: 0.3;
+  stroke-dasharray: 3 5;
+}
+.fleet-track {
+  fill: none;
+  stroke: var(--accent-2);
+  stroke-width: 1.6;
+  stroke-opacity: 0.9;
+  stroke-linecap: round;
+}
+.fleet-port { fill: var(--ink-3); opacity: 0.55; }
+.fleet-track-port { fill: var(--accent-2); }
+.fleet-track-label {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  fill: var(--ink-2);
+  paint-order: stroke;
+  stroke: var(--bg-2);
+  stroke-width: 2.4px;
+  stroke-linejoin: round;
+}
+
+/* Vessel markers: a hull turned to the course, filled by class. Soft colours —
+   six saturated ones on a chart is a video game, not an operations picture. */
+.fleet-vessel { cursor: pointer; }
+.fleet-hit { fill: transparent; }
+.fleet-hull {
+  fill: var(--v-general);
+  stroke: var(--panel-solid);
+  stroke-width: 0.8;
+  transition: transform 0.9s linear;
+}
+.fleet-vessel.tone-container .fleet-hull { fill: var(--v-container); }
+.fleet-vessel.tone-bulk .fleet-hull { fill: var(--v-bulk); }
+.fleet-vessel.tone-tanker .fleet-hull { fill: var(--v-tanker); }
+.fleet-vessel.tone-reefer .fleet-hull { fill: var(--v-reefer); }
+.fleet-vessel.tone-roro .fleet-hull { fill: var(--v-roro); }
+.fleet-vessel.is-berthed .fleet-hull { opacity: 0.6; }
+.fleet-vessel:hover .fleet-hull { stroke-width: 1.4; }
+.fleet-vessel:focus-visible { outline: none; }
+.fleet-vessel:focus-visible .fleet-halo,
+.fleet-vessel:focus-visible .fleet-hit {
+  fill: color-mix(in srgb, var(--accent-2) 22%, transparent);
+}
+.fleet-halo {
+  fill: color-mix(in srgb, var(--accent-2) 16%, transparent);
+  stroke: var(--accent-2);
+  stroke-width: 0.9;
+}
+.fleet-vessel.is-on .fleet-hull { stroke: var(--accent-2); stroke-width: 1.2; }
+
+/* The panel ---------------------------------------------------------------- */
+
+.fleet-panel {
+  padding: clamp(16px, 2vw, 22px);
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  background: var(--panel-solid);
+  max-height: 560px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.fleet-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fleet-panel-head h3 { font-size: 1.25rem; margin-top: 6px; }
+.fleet-voyage { font-size: 0.76rem; color: var(--ink-3); margin-top: 4px; }
+
+.fleet-class {
+  display: inline-flex;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--v-general);
+  border: 1px solid currentColor;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.fleet-class.tone-container { color: var(--v-container); }
+.fleet-class.tone-bulk { color: var(--v-bulk); }
+.fleet-class.tone-tanker { color: var(--v-tanker); }
+.fleet-class.tone-reefer { color: var(--v-reefer); }
+.fleet-class.tone-roro { color: var(--v-roro); }
+
+.fleet-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.fleet-state .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.fleet-state.is-underway { color: var(--go); }
+.fleet-state.is-berthed { color: var(--ink-3); }
+
+.fleet-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.fleet-facts > div { background: var(--panel-solid); padding: 9px 12px; }
+.fleet-facts dt {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.fleet-facts dd { margin: 3px 0 0; font-size: 0.86rem; font-weight: 500; }
+.fleet-position > div { background: var(--grad-soft); }
+.fleet-position dd { font-size: 0.92rem; }
+
+.fleet-leg { display: grid; gap: 7px; }
+.fleet-leg-ends,
+.fleet-leg-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: var(--ink-2);
+}
+.fleet-leg-ends { font-weight: 600; color: var(--ink); }
+.fleet-leg-meta { color: var(--ink-3); }
+
+.fleet-cargo { font-size: 0.86rem; color: var(--ink-2); }
+.fleet-cargo strong { color: var(--ink); display: block; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; font-family: var(--mono); margin-bottom: 3px; }
+
+/* Legend and the vessel strip ---------------------------------------------- */
+
+.fleet-foot {
+  display: grid;
+  gap: 12px;
+  padding: 14px clamp(18px, 2.2vw, 26px) 16px;
+  border-top: 1px solid var(--line);
+  background: var(--bg-2);
+}
+
+.fleet-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.fleet-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.74rem;
+  color: var(--ink-2);
+}
+.fleet-key i {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--v-general);
+}
+.fleet-key.tone-container i { background: var(--v-container); }
+.fleet-key.tone-bulk i { background: var(--v-bulk); }
+.fleet-key.tone-tanker i { background: var(--v-tanker); }
+.fleet-key.tone-reefer i { background: var(--v-reefer); }
+.fleet-key.tone-roro i { background: var(--v-roro); }
+
+.fleet-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+.fleet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+  padding: 8px 14px 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-solid);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s var(--ease);
+}
+.fleet-chip:hover { transform: translateY(-1px); border-color: var(--line-strong); }
+.fleet-chip.is-on { border-color: var(--accent-2); box-shadow: var(--glow); }
+.fleet-chip-mark {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--v-general);
+  flex-shrink: 0;
+}
+.fleet-chip.tone-container .fleet-chip-mark { background: var(--v-container); }
+.fleet-chip.tone-bulk .fleet-chip-mark { background: var(--v-bulk); }
+.fleet-chip.tone-tanker .fleet-chip-mark { background: var(--v-tanker); }
+.fleet-chip.tone-reefer .fleet-chip-mark { background: var(--v-reefer); }
+.fleet-chip.tone-roro .fleet-chip-mark { background: var(--v-roro); }
+.fleet-chip-body { display: grid; }
+.fleet-chip-body strong { font-family: var(--display); font-size: 0.82rem; white-space: nowrap; }
+.fleet-chip-body span { font-size: 0.7rem; color: var(--ink-3); white-space: nowrap; }
+
+/* The page keeps its scrollbar while the drawer is open — hiding it shifts
+   every fixed element sideways, which is worse than a scrollbar. */
+body.drawer-open { overflow: hidden; }
+@media (min-width: 900px) { body.drawer-open { overflow: auto; } }
+
+/* The network chart: the same coastlines the tracker uses, without the ships. */
+.net-lane {
+  fill: none;
+  stroke: var(--ink-3);
+  stroke-width: 1.3;
+  stroke-opacity: 0.55;
+  stroke-dasharray: 5 6;
+}
+.net-hub circle { fill: var(--accent-2); }
+.net-hub-ring { fill: none; stroke: var(--accent-2); stroke-width: 1.1; }
+.net-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  fill: var(--ink-2);
+  paint-order: stroke;
+  stroke: var(--bg-2);
+  stroke-width: 2.6px;
+  stroke-linejoin: round;
+}
+
+/* The time-lapse switch. It says which mode it is in rather than what it will
+   do, because the chart behind it changes and the label has to match. */
+.fleet-lapse {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 13px 5px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink-2);
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.76rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.25s, border-color 0.25s, box-shadow 0.25s, background 0.25s;
+}
+.fleet-lapse:hover { color: var(--ink); border-color: var(--accent-2); }
+.fleet-lapse.is-on {
+  color: var(--accent-2);
+  border-color: var(--accent-2);
+  background: var(--grad-soft);
+  box-shadow: var(--glow);
+}
+.fleet-lapse.is-on svg { animation: sweep 2.6s linear infinite; }
+@keyframes sweep { to { transform: rotate(360deg); } }
+
+/* Markers ease between ticks in real time; under a time-lapse they are redrawn
+   often enough that a transition would smear them. */
+.fleet-vessel { transition: transform 1s linear; }
+.fleet.is-lapsing .fleet-vessel { transition: transform 0.12s linear; }

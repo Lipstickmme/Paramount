@@ -1,0 +1,939 @@
+{
+  "_comment": "The vessels the tracker draws. Positions are not stored: src/utils/fleet.js works each one out from the wall clock, so the map moves on its own and never goes stale. `route` is the ordered track, built from ports and from the sea waypoints below \u2014 a great circle straight from one port to the next sails over continents, so every leg is short enough to be honest water. `calls` is the subset where cargo is actually worked. A voyage takes as long as its route and the vessel's service speed say it does, so the speed on screen is the speed the marker travels, plus a turnaround alongside (turnaroundDays); `phase` spreads the fleet across that cycle. To drive this from a live AIS feed instead, replace the body of fleet.readFleet(): the shape it returns is the contract.",
+  "ports": {
+    "RTM": {
+      "name": "Rotterdam",
+      "country": "Netherlands",
+      "lat": 51.95,
+      "lng": 4.06
+    },
+    "HAM": {
+      "name": "Hamburg",
+      "country": "Germany",
+      "lat": 53.53,
+      "lng": 9.93
+    },
+    "ALG": {
+      "name": "Algeciras",
+      "country": "Spain",
+      "lat": 36.13,
+      "lng": -5.44
+    },
+    "SUZ": {
+      "name": "Suez",
+      "country": "Egypt",
+      "lat": 29.93,
+      "lng": 32.55
+    },
+    "JEA": {
+      "name": "Jebel Ali",
+      "country": "United Arab Emirates",
+      "lat": 25.01,
+      "lng": 55.06
+    },
+    "SIN": {
+      "name": "Singapore",
+      "country": "Singapore",
+      "lat": 1.26,
+      "lng": 103.83
+    },
+    "SHA": {
+      "name": "Shanghai",
+      "country": "China",
+      "lat": 30.63,
+      "lng": 122.07
+    },
+    "NSA": {
+      "name": "Ningbo",
+      "country": "China",
+      "lat": 29.87,
+      "lng": 121.95
+    },
+    "BUS": {
+      "name": "Busan",
+      "country": "South Korea",
+      "lat": 35.06,
+      "lng": 129.09
+    },
+    "LOS": {
+      "name": "Lagos",
+      "country": "Nigeria",
+      "lat": 6.44,
+      "lng": 3.35
+    },
+    "DUR": {
+      "name": "Durban",
+      "country": "South Africa",
+      "lat": -29.87,
+      "lng": 31.03
+    },
+    "SSZ": {
+      "name": "Santos",
+      "country": "Brazil",
+      "lat": -23.99,
+      "lng": -46.3
+    },
+    "NYC": {
+      "name": "Newark",
+      "country": "United States",
+      "lat": 40.67,
+      "lng": -74.14
+    },
+    "SAV": {
+      "name": "Savannah",
+      "country": "United States",
+      "lat": 32.09,
+      "lng": -81.1
+    },
+    "LAX": {
+      "name": "Los Angeles",
+      "country": "United States",
+      "lat": 33.73,
+      "lng": -118.26
+    },
+    "GOT": {
+      "name": "Gothenburg",
+      "country": "Sweden",
+      "lat": 57.69,
+      "lng": 11.86
+    },
+    "VAL": {
+      "name": "Valencia",
+      "country": "Spain",
+      "lat": 39.44,
+      "lng": -0.31
+    },
+    "COL": {
+      "name": "Colombo",
+      "country": "Sri Lanka",
+      "lat": 6.94,
+      "lng": 79.84
+    },
+    "MEL": {
+      "name": "Melbourne",
+      "country": "Australia",
+      "lat": -37.83,
+      "lng": 144.92
+    },
+    "PAN": {
+      "name": "Balboa",
+      "country": "Panama",
+      "lat": 8.95,
+      "lng": -79.57
+    }
+  },
+  "waypoints": {
+    "ECS": {
+      "name": "East China Sea",
+      "lat": 29.0,
+      "lng": 124.5
+    },
+    "LUZ": {
+      "name": "Luzon Strait",
+      "lat": 20.5,
+      "lng": 121.0
+    },
+    "SCS": {
+      "name": "South China Sea",
+      "lat": 11.0,
+      "lng": 112.5
+    },
+    "MAL": {
+      "name": "Malacca Strait",
+      "lat": 3.2,
+      "lng": 100.3
+    },
+    "AND": {
+      "name": "Andaman Sea",
+      "lat": 6.0,
+      "lng": 94.0
+    },
+    "LAK": {
+      "name": "Laccadive Sea",
+      "lat": 7.0,
+      "lng": 74.0
+    },
+    "IND": {
+      "name": "Indian Ocean",
+      "lat": 8.0,
+      "lng": 78.0
+    },
+    "ARB": {
+      "name": "Arabian Sea",
+      "lat": 14.0,
+      "lng": 60.0
+    },
+    "OMA": {
+      "name": "Gulf of Oman",
+      "lat": 24.5,
+      "lng": 59.5
+    },
+    "HOR": {
+      "name": "Strait of Hormuz",
+      "lat": 26.5,
+      "lng": 56.3
+    },
+    "GOA": {
+      "name": "Gulf of Aden",
+      "lat": 12.6,
+      "lng": 46.5
+    },
+    "BAB": {
+      "name": "Bab el-Mandeb",
+      "lat": 12.6,
+      "lng": 43.4
+    },
+    "RED": {
+      "name": "Red Sea",
+      "lat": 20.0,
+      "lng": 38.3
+    },
+    "PSD": {
+      "name": "Port Said",
+      "lat": 31.3,
+      "lng": 32.3
+    },
+    "EMD": {
+      "name": "Eastern Mediterranean",
+      "lat": 33.5,
+      "lng": 27.0
+    },
+    "CMD": {
+      "name": "Central Mediterranean",
+      "lat": 36.6,
+      "lng": 13.0
+    },
+    "WMD": {
+      "name": "Western Mediterranean",
+      "lat": 37.2,
+      "lng": 2.0
+    },
+    "GIB": {
+      "name": "Strait of Gibraltar",
+      "lat": 35.95,
+      "lng": -5.6
+    },
+    "POR": {
+      "name": "Off Portugal",
+      "lat": 39.5,
+      "lng": -9.8
+    },
+    "BIS": {
+      "name": "Bay of Biscay",
+      "lat": 45.0,
+      "lng": -9.0
+    },
+    "USH": {
+      "name": "Ushant",
+      "lat": 48.4,
+      "lng": -5.6
+    },
+    "DOV": {
+      "name": "Dover Strait",
+      "lat": 50.9,
+      "lng": 1.5
+    },
+    "GBI": {
+      "name": "German Bight",
+      "lat": 54.2,
+      "lng": 7.2
+    },
+    "SKA": {
+      "name": "Skagerrak",
+      "lat": 57.6,
+      "lng": 8.5
+    },
+    "IRE": {
+      "name": "Western Approaches",
+      "lat": 50.0,
+      "lng": -11.0
+    },
+    "NAT": {
+      "name": "North Atlantic",
+      "lat": 45.0,
+      "lng": -40.0
+    },
+    "NWA": {
+      "name": "North-west Atlantic",
+      "lat": 40.0,
+      "lng": -60.0
+    },
+    "HAT": {
+      "name": "Off Cape Hatteras",
+      "lat": 35.2,
+      "lng": -74.5
+    },
+    "FLO": {
+      "name": "Florida Strait",
+      "lat": 25.0,
+      "lng": -79.4
+    },
+    "WIN": {
+      "name": "Windward Passage",
+      "lat": 18.5,
+      "lng": -76.5
+    },
+    "CRB": {
+      "name": "Caribbean Sea",
+      "lat": 12.5,
+      "lng": -78.5
+    },
+    "CRI": {
+      "name": "Cristobal",
+      "lat": 9.4,
+      "lng": -79.9
+    },
+    "CAN": {
+      "name": "Off the Canaries",
+      "lat": 27.5,
+      "lng": -16.5
+    },
+    "WAF": {
+      "name": "Off West Africa",
+      "lat": 11.0,
+      "lng": -18.0
+    },
+    "GUI": {
+      "name": "Gulf of Guinea",
+      "lat": 4.5,
+      "lng": -3.0
+    },
+    "ATN": {
+      "name": "Off Natal",
+      "lat": -5.0,
+      "lng": -33.0
+    },
+    "ATB": {
+      "name": "Off Brazil",
+      "lat": -16.0,
+      "lng": -37.5
+    },
+    "ATM": {
+      "name": "Mid-Atlantic",
+      "lat": 8.0,
+      "lng": -26.0
+    },
+    "ATC": {
+      "name": "Central Atlantic",
+      "lat": 18.0,
+      "lng": -22.0
+    },
+    "MOZ": {
+      "name": "Off Mozambique",
+      "lat": -27.0,
+      "lng": 40.0
+    },
+    "SIO": {
+      "name": "Southern Indian Ocean",
+      "lat": -20.0,
+      "lng": 70.0
+    },
+    "SIE": {
+      "name": "Indian Ocean, east",
+      "lat": -8.0,
+      "lng": 86.0
+    },
+    "KUR": {
+      "name": "Off the Kurils",
+      "lat": 41.0,
+      "lng": 148.0
+    },
+    "NPW": {
+      "name": "North Pacific, west",
+      "lat": 46.0,
+      "lng": 172.0
+    },
+    "NPD": {
+      "name": "North Pacific, dateline",
+      "lat": 47.0,
+      "lng": -172.0
+    },
+    "NPE": {
+      "name": "North Pacific, east",
+      "lat": 42.0,
+      "lng": -140.0
+    },
+    "SOC": {
+      "name": "Southern California Bight",
+      "lat": 33.5,
+      "lng": -121.0
+    },
+    "PHS": {
+      "name": "Philippine Sea",
+      "lat": 14.0,
+      "lng": 128.0
+    },
+    "CEL": {
+      "name": "Celebes Sea",
+      "lat": 3.0,
+      "lng": 125.0
+    },
+    "BAN": {
+      "name": "Banda Sea",
+      "lat": -6.0,
+      "lng": 127.0
+    },
+    "SOL": {
+      "name": "Solomon Sea",
+      "lat": -10.0,
+      "lng": 148.0
+    },
+    "COR": {
+      "name": "Coral Sea",
+      "lat": -20.0,
+      "lng": 155.0
+    },
+    "TAS": {
+      "name": "Off New South Wales",
+      "lat": -34.0,
+      "lng": 152.0
+    },
+    "BAS": {
+      "name": "Bass Strait",
+      "lat": -39.2,
+      "lng": 148.0
+    },
+    "PAC": {
+      "name": "Eastern Pacific",
+      "lat": 4.0,
+      "lng": -95.0
+    },
+    "PCM": {
+      "name": "Central Pacific",
+      "lat": 2.0,
+      "lng": -125.0
+    },
+    "PCW": {
+      "name": "Pacific, west of the line",
+      "lat": 4.0,
+      "lng": -160.0
+    },
+    "PDL": {
+      "name": "Pacific dateline",
+      "lat": 5.0,
+      "lng": 175.0
+    },
+    "PWP": {
+      "name": "Western Pacific",
+      "lat": 3.0,
+      "lng": 145.0
+    },
+    "NSC": {
+      "name": "Natuna Sea",
+      "lat": 2.0,
+      "lng": 108.0
+    }
+  },
+  "vessels": [
+    {
+      "id": "aurora",
+      "name": "PMT Aurora",
+      "type": "container",
+      "imo": "9812447",
+      "mmsi": "244113000",
+      "callsign": "PBAU",
+      "flag": "Netherlands",
+      "flagCode": "NL",
+      "built": 2019,
+      "class": "Post-Panamax container",
+      "capacityTeu": 14220,
+      "dwt": 152400,
+      "loa": 366,
+      "beam": 51,
+      "draught": 14.2,
+      "serviceSpeed": 19.4,
+      "voyage": "PM-2609E",
+      "from": "SHA",
+      "to": "RTM",
+      "cargo": "Mixed containerised freight",
+      "master": "Capt. H. Nakamura",
+      "turnaroundDays": 3,
+      "phase": 0.333,
+      "route": [
+        "SHA",
+        "ECS",
+        "LUZ",
+        "SCS",
+        "SIN",
+        "MAL",
+        "AND",
+        "IND",
+        "ARB",
+        "GOA",
+        "BAB",
+        "RED",
+        "SUZ",
+        "PSD",
+        "EMD",
+        "CMD",
+        "WMD",
+        "ALG",
+        "POR",
+        "BIS",
+        "USH",
+        "DOV",
+        "RTM"
+      ],
+      "calls": [
+        "SHA",
+        "SIN",
+        "SUZ",
+        "ALG",
+        "RTM"
+      ]
+    },
+    {
+      "id": "meridian",
+      "name": "PMT Meridian",
+      "type": "container",
+      "imo": "9744192",
+      "mmsi": "563088000",
+      "callsign": "9V7421",
+      "flag": "Singapore",
+      "flagCode": "SG",
+      "built": 2021,
+      "class": "Neo-Panamax container",
+      "capacityTeu": 11340,
+      "dwt": 128900,
+      "loa": 335,
+      "beam": 48.2,
+      "draught": 13.6,
+      "serviceSpeed": 20.1,
+      "voyage": "PM-2612W",
+      "from": "SIN",
+      "to": "LAX",
+      "cargo": "Electronics, general cargo",
+      "master": "Capt. L. Fernandes",
+      "turnaroundDays": 2,
+      "phase": 0.4,
+      "route": [
+        "SIN",
+        "NSC",
+        "SCS",
+        "LUZ",
+        "ECS",
+        "BUS",
+        "KUR",
+        "NPW",
+        "NPD",
+        "NPE",
+        "SOC",
+        "LAX"
+      ],
+      "calls": [
+        "SIN",
+        "BUS",
+        "LAX"
+      ]
+    },
+    {
+      "id": "kestrel",
+      "name": "PMT Kestrel",
+      "type": "reefer",
+      "imo": "9683107",
+      "mmsi": "255806000",
+      "callsign": "CQLK",
+      "flag": "Portugal",
+      "flagCode": "PT",
+      "built": 2017,
+      "class": "Refrigerated cargo",
+      "dwt": 21400,
+      "loa": 172,
+      "beam": 26.4,
+      "draught": 9.8,
+      "serviceSpeed": 17.8,
+      "voyage": "PM-2621N",
+      "from": "SSZ",
+      "to": "RTM",
+      "cargo": "Citrus, controlled atmosphere 4\u00b0C",
+      "master": "Capt. R. Oliveira",
+      "turnaroundDays": 1.5,
+      "phase": 0.583,
+      "route": [
+        "SSZ",
+        "ATB",
+        "ATN",
+        "ATM",
+        "ATC",
+        "CAN",
+        "POR",
+        "BIS",
+        "USH",
+        "DOV",
+        "RTM"
+      ],
+      "calls": [
+        "SSZ",
+        "RTM"
+      ]
+    },
+    {
+      "id": "northwind",
+      "name": "PMT Northwind",
+      "type": "bulk",
+      "imo": "9601233",
+      "mmsi": "538007612",
+      "callsign": "V7NW2",
+      "flag": "Marshall Islands",
+      "flagCode": "MH",
+      "built": 2014,
+      "class": "Kamsarmax bulk carrier",
+      "dwt": 82100,
+      "loa": 229,
+      "beam": 32.3,
+      "draught": 14.4,
+      "serviceSpeed": 14.2,
+      "voyage": "PM-2634S",
+      "from": "DUR",
+      "to": "NSA",
+      "cargo": "Manganese ore, 78,400 t",
+      "master": "Capt. S. Pillay",
+      "turnaroundDays": 2.5,
+      "phase": 0.611,
+      "route": [
+        "DUR",
+        "MOZ",
+        "SIO",
+        "SIE",
+        "AND",
+        "MAL",
+        "SIN",
+        "NSC",
+        "SCS",
+        "LUZ",
+        "ECS",
+        "NSA"
+      ],
+      "calls": [
+        "DUR",
+        "SIN",
+        "NSA"
+      ]
+    },
+    {
+      "id": "harmattan",
+      "name": "PMT Harmattan",
+      "type": "container",
+      "imo": "9567811",
+      "mmsi": "657119400",
+      "callsign": "5NHM",
+      "flag": "Nigeria",
+      "flagCode": "NG",
+      "built": 2016,
+      "class": "Feeder container",
+      "capacityTeu": 2780,
+      "dwt": 38600,
+      "loa": 209,
+      "beam": 30,
+      "draught": 11.2,
+      "serviceSpeed": 17.5,
+      "voyage": "PM-2640S",
+      "from": "ALG",
+      "to": "LOS",
+      "cargo": "Project cargo, spares, consolidated boxes",
+      "master": "Capt. A. Balogun",
+      "turnaroundDays": 1.5,
+      "phase": 0.571,
+      "route": [
+        "ALG",
+        "GIB",
+        "CAN",
+        "WAF",
+        "GUI",
+        "LOS"
+      ],
+      "calls": [
+        "ALG",
+        "LOS"
+      ]
+    },
+    {
+      "id": "tramontane",
+      "name": "PMT Tramontane",
+      "type": "tanker",
+      "imo": "9492118",
+      "mmsi": "241087000",
+      "callsign": "SVTM",
+      "flag": "Greece",
+      "flagCode": "GR",
+      "built": 2012,
+      "class": "MR product tanker",
+      "dwt": 49900,
+      "loa": 183,
+      "beam": 32.2,
+      "draught": 12.7,
+      "serviceSpeed": 14.6,
+      "voyage": "PM-2648E",
+      "from": "JEA",
+      "to": "VAL",
+      "cargo": "Base oils, IMO II segregated",
+      "master": "Capt. D. Stavrou",
+      "turnaroundDays": 2,
+      "phase": 0.667,
+      "route": [
+        "JEA",
+        "HOR",
+        "OMA",
+        "ARB",
+        "GOA",
+        "BAB",
+        "RED",
+        "SUZ",
+        "PSD",
+        "EMD",
+        "CMD",
+        "WMD",
+        "VAL"
+      ],
+      "calls": [
+        "JEA",
+        "SUZ",
+        "VAL"
+      ]
+    },
+    {
+      "id": "pathfinder",
+      "name": "PMT Pathfinder",
+      "type": "roro",
+      "imo": "9776729",
+      "mmsi": "236488000",
+      "callsign": "ZDPF",
+      "flag": "Gibraltar",
+      "flagCode": "GI",
+      "built": 2020,
+      "class": "Ro-Ro vehicle carrier",
+      "dwt": 21800,
+      "loa": 200,
+      "beam": 32.3,
+      "draught": 9.4,
+      "serviceSpeed": 18.9,
+      "voyage": "PM-2655W",
+      "from": "HAM",
+      "to": "SAV",
+      "cargo": "4,100 CEU rolling stock",
+      "master": "Capt. M. Lindqvist",
+      "turnaroundDays": 1.5,
+      "phase": 0.556,
+      "route": [
+        "HAM",
+        "GBI",
+        "DOV",
+        "USH",
+        "IRE",
+        "NAT",
+        "NWA",
+        "HAT",
+        "SAV"
+      ],
+      "calls": [
+        "HAM",
+        "SAV"
+      ]
+    },
+    {
+      "id": "southerly",
+      "name": "PMT Southerly",
+      "type": "container",
+      "imo": "9840236",
+      "mmsi": "477995100",
+      "callsign": "VRSY",
+      "flag": "Hong Kong",
+      "flagCode": "HK",
+      "built": 2022,
+      "class": "Panamax container",
+      "capacityTeu": 5060,
+      "dwt": 67800,
+      "loa": 260,
+      "beam": 32.2,
+      "draught": 12.5,
+      "serviceSpeed": 18.2,
+      "voyage": "PM-2663S",
+      "from": "BUS",
+      "to": "MEL",
+      "cargo": "Machinery, consolidated boxes",
+      "master": "Capt. Y. Cheung",
+      "turnaroundDays": 1.5,
+      "phase": 0.75,
+      "route": [
+        "BUS",
+        "ECS",
+        "LUZ",
+        "PHS",
+        "CEL",
+        "BAN",
+        "SOL",
+        "COR",
+        "TAS",
+        "BAS",
+        "MEL"
+      ],
+      "calls": [
+        "BUS",
+        "MEL"
+      ]
+    },
+    {
+      "id": "polaris",
+      "name": "PMT Polaris",
+      "type": "bulk",
+      "imo": "9455114",
+      "mmsi": "215622000",
+      "callsign": "9HPL9",
+      "flag": "Malta",
+      "flagCode": "MT",
+      "built": 2011,
+      "class": "Supramax bulk carrier",
+      "dwt": 56800,
+      "loa": 190,
+      "beam": 32.3,
+      "draught": 12.8,
+      "serviceSpeed": 13.8,
+      "voyage": "PM-2671W",
+      "from": "SAV",
+      "to": "GOT",
+      "cargo": "Wood pellets, 52,900 t",
+      "master": "Capt. E. Haugen",
+      "turnaroundDays": 2,
+      "phase": 0.545,
+      "route": [
+        "SAV",
+        "HAT",
+        "NWA",
+        "NAT",
+        "IRE",
+        "USH",
+        "DOV",
+        "GBI",
+        "SKA",
+        "GOT"
+      ],
+      "calls": [
+        "SAV",
+        "GOT"
+      ]
+    },
+    {
+      "id": "levanter",
+      "name": "PMT Levanter",
+      "type": "container",
+      "imo": "9723461",
+      "mmsi": "636020411",
+      "callsign": "D5LV",
+      "flag": "Liberia",
+      "flagCode": "LR",
+      "built": 2018,
+      "class": "Neo-Panamax container",
+      "capacityTeu": 9420,
+      "dwt": 112500,
+      "loa": 300,
+      "beam": 48.2,
+      "draught": 13.1,
+      "serviceSpeed": 19,
+      "voyage": "PM-2688E",
+      "from": "NYC",
+      "to": "SIN",
+      "cargo": "Pharmaceutical, GDP lane",
+      "master": "Capt. T. Abara",
+      "turnaroundDays": 3,
+      "phase": 0.455,
+      "route": [
+        "NYC",
+        "HAT",
+        "FLO",
+        "WIN",
+        "CRB",
+        "CRI",
+        "PAN",
+        "PAC",
+        "PCM",
+        "PCW",
+        "PDL",
+        "PWP",
+        "CEL",
+        "NSC",
+        "SIN"
+      ],
+      "calls": [
+        "NYC",
+        "PAN",
+        "SIN"
+      ]
+    },
+    {
+      "id": "sirocco",
+      "name": "PMT Sirocco",
+      "type": "container",
+      "imo": "9701998",
+      "mmsi": "249884000",
+      "callsign": "9HSR7",
+      "flag": "Malta",
+      "flagCode": "MT",
+      "built": 2015,
+      "class": "Feeder container",
+      "capacityTeu": 1740,
+      "dwt": 23100,
+      "loa": 172,
+      "beam": 27.2,
+      "draught": 9.9,
+      "serviceSpeed": 16.4,
+      "voyage": "PM-2694N",
+      "from": "VAL",
+      "to": "RTM",
+      "cargo": "Consolidated LCL boxes",
+      "master": "Capt. I. Marchetti",
+      "turnaroundDays": 1,
+      "phase": 0.6,
+      "route": [
+        "VAL",
+        "WMD",
+        "GIB",
+        "POR",
+        "BIS",
+        "USH",
+        "DOV",
+        "RTM"
+      ],
+      "calls": [
+        "VAL",
+        "RTM"
+      ]
+    },
+    {
+      "id": "monsoon",
+      "name": "PMT Monsoon",
+      "type": "container",
+      "imo": "9866452",
+      "mmsi": "419001450",
+      "callsign": "ATMN",
+      "flag": "India",
+      "flagCode": "IN",
+      "built": 2023,
+      "class": "Neo-Panamax container",
+      "capacityTeu": 8800,
+      "dwt": 103200,
+      "loa": 300,
+      "beam": 45.6,
+      "draught": 12.9,
+      "serviceSpeed": 19.6,
+      "voyage": "PM-2702W",
+      "from": "COL",
+      "to": "JEA",
+      "cargo": "Textiles, general cargo",
+      "master": "Capt. P. Raghavan",
+      "turnaroundDays": 1,
+      "phase": 0.5,
+      "route": [
+        "COL",
+        "LAK",
+        "ARB",
+        "OMA",
+        "HOR",
+        "JEA"
+      ],
+      "calls": [
+        "COL",
+        "JEA"
+      ]
+    }
+  ]
+}

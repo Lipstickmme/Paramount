@@ -15,6 +15,45 @@ const site = require('../data/site.json');
 
 const YEAR = new Date().getFullYear();
 
+/**
+ * The icon set.
+ *
+ * Drawn on a 24-unit grid in a single stroke weight so they sit together, and
+ * chosen from the trade rather than from a generic UI kit: a container, an
+ * anchor, a life ring, a radar sweep. They inherit colour, so a theme swap
+ * needs nothing here.
+ */
+const icons = {
+  search:
+    '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>',
+  arrow:
+    '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>',
+  compass:
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2 5.2-5.2 2 2-5.2z"/></svg>',
+  radar:
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.6"/><path d="M12 12l6-4.4"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg>',
+  container:
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="1.2"/><path d="M7.5 7v10M12 7v10M16.5 7v10"/></svg>',
+  globe:
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>',
+  anchor:
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="5" r="2.2"/><path d="M12 7.2V21M8 11h8M4 15a8 8 0 0 0 16 0"/></svg>',
+  crew:
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>',
+  buoy:
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.4"/><path d="M6 6l3.6 3.6M18 6l-3.6 3.6M6 18l3.6-3.6M18 18l-3.6-3.6"/></svg>',
+  clipboard:
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M9 4h6v3H9z"/><path d="M15 5.5h2.5A1.5 1.5 0 0 1 19 7v12.5A1.5 1.5 0 0 1 17.5 21h-11A1.5 1.5 0 0 1 5 19.5V7a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M8.5 12h7M8.5 16h4.5"/></svg>',
+  tag:
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12.6 3H21v8.4L11.4 21 3 12.6z"/><circle cx="17" cy="7" r="1.4"/></svg>',
+  /* The chat launcher: a headset, because the person behind it is the point. */
+  support:
+    '<svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><path d="M4 13h1.8A1.2 1.2 0 0 1 7 14.2v3.6A1.2 1.2 0 0 1 5.8 19H5a1 1 0 0 1-1-1z"/><path d="M20 13h-1.8a1.2 1.2 0 0 0-1.2 1.2v3.6a1.2 1.2 0 0 0 1.2 1.2H19a1 1 0 0 0 1-1z"/><path d="M18 19v.4a2.6 2.6 0 0 1-2.6 2.6H13"/></svg>',
+  ship:
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M3 17l1.6-5.2a1 1 0 0 1 .96-.7H18.4a1 1 0 0 1 .96.7L21 17"/><path d="M6 11V7h6l2 4"/><path d="M12 4v3"/><path d="M2.6 17.4c1.6 0 1.6 1.6 3.2 1.6s1.6-1.6 3.2-1.6 1.6 1.6 3.2 1.6 1.6-1.6 3.2-1.6 1.6 1.6 3.2 1.6 1.6-1.6 3.2-1.6"/></svg>',
+};
+
+
 const esc = (s) =>
   String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
@@ -65,7 +104,7 @@ function tracker({ id = 'tracker', autofocus = false, compact = false } = {}) {
               ${autofocus ? 'autofocus' : ''}
               required />
             <button type="submit" class="btn" data-track-submit>
-              Track <span class="arw">&rsaquo;</span>
+              Track ${icons.arrow}
             </button>
           </div>
           <div class="tracker-hint">
@@ -109,7 +148,7 @@ function contactForm(id = 'contact-form') {
         <div class="field"><label for="${id}-message">How can we help?</label><textarea id="${id}-message" name="message" placeholder="Tell us the lane, the cargo and when it needs to land." required></textarea><div class="err" data-err="message"></div></div>
         <div class="honeypot" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
         <div class="form-status" data-form-status role="status" aria-live="polite"></div>
-        <button type="submit" class="btn" data-submit>Send enquiry <span class="arw">&rsaquo;</span></button>
+        <button type="submit" class="btn" data-submit>Send enquiry ${icons.arrow}</button>
       </form>`;
 }
 
@@ -121,16 +160,22 @@ function head({ title, description, noindex = false, styles = [] }) {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${esc(title)}</title>
   <meta name="description" content="${esc(description)}" />${noindex ? '\n  <meta name="robots" content="noindex, nofollow" />' : ''}
-  <meta name="theme-color" content="#04070f" />
+  <meta name="theme-color" content="#0c1f3d" />
   <meta property="og:title" content="${esc(title)}" />
   <meta property="og:description" content="${esc(description)}" />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="${images.og}" />
+  <meta property="og:site_name" content="Paramount Shipping" />
+  <meta property="og:image" content="/assets/img/paramount-og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <meta name="twitter:image" content="/assets/img/paramount-og.png" />
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/favicon.png" sizes="64x64" type="image/png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/styles.css" />
   ${styles.map((href) => `<link rel="stylesheet" href="${href}" />`).join('\n  ')}
   <script>
@@ -150,45 +195,123 @@ function head({ title, description, noindex = false, styles = [] }) {
 </head>`;
 }
 
+/**
+ * The wordmark, in whichever colourway the theme calls for.
+ *
+ * The emblem is navy line-work on transparency, so it needs a light-ink twin
+ * for the dark theme. WebP first: the artwork is full of soft shading, which
+ * PNG stores at three times the size.
+ */
+function mark(className = 'brand-logo') {
+  return `
+      <picture class="${className} on-dark">
+        <source srcset="/assets/brand/paramount-mark-light.webp" type="image/webp" />
+        <img src="/assets/brand/paramount-mark-light.png" alt="" width="360" height="124" />
+      </picture>
+      <picture class="${className} on-light">
+        <source srcset="/assets/brand/paramount-mark.webp" type="image/webp" />
+        <img src="/assets/brand/paramount-mark.png" alt="" width="360" height="124" />
+      </picture>`;
+}
+
+function logo(className = 'brand-logo') {
+  return `
+      <picture class="${className} on-dark">
+        <source srcset="/assets/brand/paramount-logo-light.webp" type="image/webp" />
+        <img src="/assets/brand/paramount-logo-light.png" alt="Paramount Shipping" width="560" height="383" />
+      </picture>
+      <picture class="${className} on-light">
+        <source srcset="/assets/brand/paramount-logo.webp" type="image/webp" />
+        <img src="/assets/brand/paramount-logo.png" alt="Paramount Shipping" width="560" height="383" />
+      </picture>`;
+}
+
+/**
+ * The header, and the drawer it opens.
+ *
+ * The menu is a left-hand drawer rather than a row of links, which leaves the
+ * header to do the one thing visitors come here for: the tracking box sits in
+ * it, on every page, lit just enough to find without shouting.
+ */
 function nav(active = '') {
-  const link = (href, label, key) =>
-    `<a href="${href}"${key === active ? ' class="is-active"' : ''}>${label}</a>`;
+  const link = (href, label, key, icon) => `
+        <a href="${href}"${key === active ? ' class="is-active" aria-current="page"' : ''}>
+          <span class="drawer-icon">${icon}</span>${label}
+        </a>`;
+
   return `
   <header class="nav" id="nav">
-    <a class="brand" href="/" aria-label="Paramount Logistics home">
-      <img class="brand-logo on-dark" src="/assets/brand/paramount-wordmark.svg" alt="Paramount Logistics" width="520" height="96" />
-      <img class="brand-logo on-light" src="/assets/brand/paramount-wordmark-dark.svg" alt="Paramount Logistics" width="520" height="96" />
+    <button class="nav-menu" id="navtoggle" aria-label="Open the menu" aria-expanded="false" aria-controls="drawer">
+      <span></span><span></span><span></span>
+      <span class="nav-menu-word">Menu</span>
+    </button>
+
+    <a class="brand" href="/" aria-label="Paramount Shipping home">${mark()}
+      <span class="brand-name"><b>PARAMOUNT</b><span>SHIPPING</span></span>
     </a>
-    <nav class="nav-links" id="navlinks">
-      ${link('/track', 'Track', 'track')}
-      ${link('/services', 'Services', 'services')}
-      ${link('/network', 'Network', 'network')}
-      ${link('/about', 'About', 'about')}
-      ${link('/careers', 'Careers', 'careers')}
-      ${link('/contact', 'Contact', 'contact')}
-      <a href="/portal" class="only-compact${active === 'portal' ? ' is-active' : ''}">My consignments</a>
-    </nav>
+
+    <form class="nav-track" data-track-form role="search" novalidate>
+      <span class="nav-track-icon">${icons.search}</span>
+      <label class="sr-only" for="nav-track-number">Tracking number</label>
+      <input type="text" id="nav-track-number" name="number" autocomplete="off" spellcheck="false"
+             maxlength="32" placeholder="Track a consignment — PMT-${YEAR}-4F7K2QX9" />
+      <button type="submit" class="nav-track-go" data-track-submit aria-label="Track">
+        ${icons.arrow}
+      </button>
+      <span class="err sr-only" data-track-error role="alert"></span>
+      <span class="sr-only" data-track-recent hidden></span>
+    </form>
+
     <div class="nav-end">
       <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch between light and dark">
         <svg class="i-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         <svg class="i-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
       </button>
       <a href="/portal" class="nav-portal${active === 'portal' ? ' is-active' : ''}">Sign in</a>
-      <a href="/quote" class="btn sm nav-cta">Get a quote <span class="arw">&rsaquo;</span></a>
-      <button class="nav-toggle" id="navtoggle" aria-label="Open menu" aria-expanded="false" aria-controls="navlinks">
-        <span></span><span></span><span></span>
+      <a href="/quote" class="btn sm nav-cta">Get a quote</a>
+    </div>
+  </header>
+
+  <div class="drawer-scrim" id="drawer-scrim" hidden></div>
+  <aside class="drawer" id="drawer" aria-label="Site menu" aria-hidden="true">
+    <div class="drawer-head">
+      <a class="brand" href="/" aria-label="Paramount Shipping home">${logo('brand-logo drawer-logo')}
+      </a>
+      <button class="drawer-close" id="drawer-close" type="button" aria-label="Close the menu">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
-  </header>`;
+
+    <nav class="drawer-links">
+      ${link('/', 'Home', 'home', icons.compass)}
+      ${link('/track', 'Track a consignment', 'track', icons.radar)}
+      ${link('/services', 'Services', 'services', icons.container)}
+      ${link('/network', 'Global network', 'network', icons.globe)}
+      ${link('/about', 'About us', 'about', icons.anchor)}
+      ${link('/careers', 'Careers', 'careers', icons.crew)}
+      ${link('/contact', 'Contact', 'contact', icons.buoy)}
+    </nav>
+
+    <div class="drawer-split"></div>
+
+    <nav class="drawer-links secondary">
+      ${link('/portal', 'My consignments', 'portal', icons.clipboard)}
+      ${link('/quote', 'Request a quote', 'quote', icons.tag)}
+    </nav>
+
+    <div class="drawer-foot">
+      <span class="eyebrow">Control tower</span>
+      <a class="drawer-call" href="tel:${esc(site.support_phone).replace(/\s+/g, '')}" data-site="support_phone">${esc(site.support_phone)}</a>
+      <p class="muted">Staffed 24/7, every day of the year.</p>
+    </div>
+  </aside>`;
 }
 
 function footer() {
   return `
   <footer class="footer">
     <div class="wrap footer-top">
-      <div class="footer-brand">
-        <img class="brand-logo on-dark" src="/assets/brand/paramount-wordmark.svg" alt="Paramount Logistics" width="520" height="96" />
-        <img class="brand-logo on-light" src="/assets/brand/paramount-wordmark-dark.svg" alt="Paramount Logistics" width="520" height="96" />
+      <div class="footer-brand">${logo('brand-logo footer-logo')}
         <p>${esc(site.tagline)}</p>
       </div>
       <div class="col">
@@ -226,17 +349,19 @@ function footer() {
 function chatWidget() {
   return `
   <div class="chat" id="chat" aria-live="polite">
-    <button class="chat-toggle" id="chat-toggle" aria-label="Open live chat" aria-expanded="false">
-      <svg class="i-open" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg>
+    <button class="chat-toggle" id="chat-toggle" aria-label="Talk to customer care" aria-expanded="false">
+      <span class="i-open">${icons.support}</span>
       <svg class="i-close" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      <span class="chat-ping" aria-hidden="true"></span>
     </button>
+    <span class="chat-label" aria-hidden="true">Customer care</span>
     <div class="chat-panel" id="chat-panel" hidden>
       <div class="chat-head">
         <div class="chat-head-id">
-          <span class="dot"></span>
+          <span class="chat-avatar">${icons.support}</span>
           <div>
-            <strong data-chat-agent>Paramount Control</strong>
-            <small>Quote a tracking number for a live answer</small>
+            <strong data-chat-agent>Customer care</strong>
+            <small><span class="dot"></span>Quote a tracking number for a live answer</small>
           </div>
         </div>
         <button class="chat-min" id="chat-min" aria-label="Minimise chat">&minus;</button>
@@ -297,4 +422,4 @@ function page(opts) {
   ].join('\n');
 }
 
-module.exports = { page, nav, footer, chatWidget, head, contactForm, tracker, underlay, esc, YEAR };
+module.exports = { page, nav, footer, chatWidget, head, contactForm, tracker, underlay, logo, mark, icons, esc, YEAR };

@@ -5,16 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Paramount Logistics — track every consignment, end to end</title>
   <meta name="description" content="Global freight forwarding and contract logistics. Air, ocean, road, rail, express and warehousing, with live consignment tracking on one number." />
-  <meta name="theme-color" content="#04070f" />
+  <meta name="theme-color" content="#0c1f3d" />
   <meta property="og:title" content="Paramount Logistics — track every consignment, end to end" />
   <meta property="og:description" content="Global freight forwarding and contract logistics. Air, ocean, road, rail, express and warehousing, with live consignment tracking on one number." />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="/assets/img/ph-og.svg" />
+  <meta property="og:site_name" content="Paramount Shipping" />
+  <meta property="og:image" content="/assets/img/paramount-og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <meta name="twitter:image" content="/assets/img/paramount-og.png" />
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/favicon.png" sizes="64x64" type="image/png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/styles.css" />
   
   <script>
@@ -43,93 +49,169 @@
   </div>
 
   <header class="nav" id="nav">
-    <a class="brand" href="/" aria-label="Paramount Logistics home">
-      <img class="brand-logo on-dark" src="/assets/brand/paramount-wordmark.svg" alt="Paramount Logistics" width="520" height="96" />
-      <img class="brand-logo on-light" src="/assets/brand/paramount-wordmark-dark.svg" alt="Paramount Logistics" width="520" height="96" />
+    <button class="nav-menu" id="navtoggle" aria-label="Open the menu" aria-expanded="false" aria-controls="drawer">
+      <span></span><span></span><span></span>
+      <span class="nav-menu-word">Menu</span>
+    </button>
+
+    <a class="brand" href="/" aria-label="Paramount Shipping home">
+      <picture class="brand-logo on-dark">
+        <source srcset="/assets/brand/paramount-mark-light.webp" type="image/webp" />
+        <img src="/assets/brand/paramount-mark-light.png" alt="" width="360" height="124" />
+      </picture>
+      <picture class="brand-logo on-light">
+        <source srcset="/assets/brand/paramount-mark.webp" type="image/webp" />
+        <img src="/assets/brand/paramount-mark.png" alt="" width="360" height="124" />
+      </picture>
+      <span class="brand-name"><b>PARAMOUNT</b><span>SHIPPING</span></span>
     </a>
-    <nav class="nav-links" id="navlinks">
-      <a href="/track">Track</a>
-      <a href="/services">Services</a>
-      <a href="/network">Network</a>
-      <a href="/about">About</a>
-      <a href="/careers">Careers</a>
-      <a href="/contact">Contact</a>
-      <a href="/portal" class="only-compact">My consignments</a>
-    </nav>
+
+    <form class="nav-track" data-track-form role="search" novalidate>
+      <span class="nav-track-icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></span>
+      <label class="sr-only" for="nav-track-number">Tracking number</label>
+      <input type="text" id="nav-track-number" name="number" autocomplete="off" spellcheck="false"
+             maxlength="32" placeholder="Track a consignment — PMT-2026-4F7K2QX9" />
+      <button type="submit" class="nav-track-go" data-track-submit aria-label="Track">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+      </button>
+      <span class="err sr-only" data-track-error role="alert"></span>
+      <span class="sr-only" data-track-recent hidden></span>
+    </form>
+
     <div class="nav-end">
       <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch between light and dark">
         <svg class="i-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         <svg class="i-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
       </button>
       <a href="/portal" class="nav-portal">Sign in</a>
-      <a href="/quote" class="btn sm nav-cta">Get a quote <span class="arw">&rsaquo;</span></a>
-      <button class="nav-toggle" id="navtoggle" aria-label="Open menu" aria-expanded="false" aria-controls="navlinks">
-        <span></span><span></span><span></span>
-      </button>
+      <a href="/quote" class="btn sm nav-cta">Get a quote</a>
     </div>
   </header>
 
+  <div class="drawer-scrim" id="drawer-scrim" hidden></div>
+  <aside class="drawer" id="drawer" aria-label="Site menu" aria-hidden="true">
+    <div class="drawer-head">
+      <a class="brand" href="/" aria-label="Paramount Shipping home">
+      <picture class="brand-logo drawer-logo on-dark">
+        <source srcset="/assets/brand/paramount-logo-light.webp" type="image/webp" />
+        <img src="/assets/brand/paramount-logo-light.png" alt="Paramount Shipping" width="560" height="383" />
+      </picture>
+      <picture class="brand-logo drawer-logo on-light">
+        <source srcset="/assets/brand/paramount-logo.webp" type="image/webp" />
+        <img src="/assets/brand/paramount-logo.png" alt="Paramount Shipping" width="560" height="383" />
+      </picture>
+      </a>
+      <button class="drawer-close" id="drawer-close" type="button" aria-label="Close the menu">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <nav class="drawer-links">
+      
+        <a href="/" class="is-active" aria-current="page">
+          <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2 5.2-5.2 2 2-5.2z"/></svg></span>Home
+        </a>
+      
+        <a href="/track">
+          <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.6"/><path d="M12 12l6-4.4"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg></span>Track a consignment
+        </a>
+      
+        <a href="/services">
+          <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="1.2"/><path d="M7.5 7v10M12 7v10M16.5 7v10"/></svg></span>Services
+        </a>
+      
+        <a href="/network">
+          <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></span>Global network
+        </a>
+      
+        <a href="/about">
+          <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="5" r="2.2"/><path d="M12 7.2V21M8 11h8M4 15a8 8 0 0 0 16 0"/></svg></span>About us
+        </a>
+      
+        <a href="/careers">
+          <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span>Careers
+        </a>
+      
+        <a href="/contact">
+          <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.4"/><path d="M6 6l3.6 3.6M18 6l-3.6 3.6M6 18l3.6-3.6M18 18l-3.6-3.6"/></svg></span>Contact
+        </a>
+    </nav>
+
+    <div class="drawer-split"></div>
+
+    <nav class="drawer-links secondary">
+      
+        <a href="/portal">
+          <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M9 4h6v3H9z"/><path d="M15 5.5h2.5A1.5 1.5 0 0 1 19 7v12.5A1.5 1.5 0 0 1 17.5 21h-11A1.5 1.5 0 0 1 5 19.5V7a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M8.5 12h7M8.5 16h4.5"/></svg></span>My consignments
+        </a>
+      
+        <a href="/quote">
+          <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12.6 3H21v8.4L11.4 21 3 12.6z"/><circle cx="17" cy="7" r="1.4"/></svg></span>Request a quote
+        </a>
+    </nav>
+
+    <div class="drawer-foot">
+      <span class="eyebrow">Control tower</span>
+      <a class="drawer-call" href="tel:+18622249080" data-site="support_phone">+1 862 224 9080</a>
+      <p class="muted">Staffed 24/7, every day of the year.</p>
+    </div>
+  </aside>
+
   <main id="main">
     <section class="hero">
-      <div class="wrap hero-grid">
-        <div>
-          <span class="eyebrow" data-reveal>Freight forwarding &amp; contract logistics</span>
-          <h1>
-            <span class="line"><span>Every consignment,</span></span>
-            <span class="line"><span class="grad-text">accounted for.</span></span>
-          </h1>
-          <p class="lede" data-reveal>Freight that arrives where it said it would, when it said it would. Air, ocean, road, rail and warehousing on one file, one number and one honest timeline.</p>
-          <div class="hero-actions" data-reveal>
-            <a class="btn" href="/quote">Get a rate <span class="arw">&rsaquo;</span></a>
-            <a class="btn ghost" href="/services">See what we move</a>
+      <div class="wrap">
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <span class="eyebrow" data-reveal>Freight forwarding &amp; contract logistics</span>
+            <h1>
+              <span class="line"><span>Every consignment,</span></span>
+              <span class="line"><span class="grad-text">accounted for.</span></span>
+            </h1>
+            <p class="lede" data-reveal>Freight that arrives where it said it would, when it said it would. Air, ocean, road, rail and warehousing on one file, one number and one honest timeline.</p>
           </div>
-          <div class="hero-proof" data-reveal>
-            <div><strong data-count="2400000" data-suffix="+">2,400,000+</strong><span>Consignments moved each year</span></div>
-            <div><strong data-count="172" data-suffix="">172</strong><span>Countries served</span></div>
-            <div><strong data-count="98" data-suffix="%">98%</strong><span>On-time delivery</span></div>
+
+          <div class="hero-aside">
+            <div class="hero-actions" data-reveal>
+              <a class="btn" href="/quote">Get a rate <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
+              <a class="btn ghost" href="/services">See what we move</a>
+            </div>
+            <div class="hero-proof" data-reveal>
+              <div><strong data-count="2400000" data-suffix="+">2,400,000+</strong><span>Consignments moved each year</span></div>
+              <div><strong data-count="172" data-suffix="">172</strong><span>Countries served</span></div>
+              <div><strong data-count="98" data-suffix="%">98%</strong><span>On-time delivery</span></div>
+            </div>
           </div>
         </div>
 
-        <div class="hero-side">
-          <div class="hero-media" data-reveal>
-            <div class="hero-slide on" style="background-image:url('/assets/img/ph-hero-1.svg')"></div>
-            <div class="hero-slide" style="background-image:url('/assets/img/ph-hero-2.svg')"></div>
-            <div class="hero-slide" style="background-image:url('/assets/img/ph-hero-3.svg')"></div>
-            <span class="pill hero-media-tag"><span class="dot"></span>Live network</span>
+        
+      <section class="fleet" id="fleet" aria-label="Live fleet tracker">
+        <header class="fleet-head">
+          <div>
+            <span class="eyebrow">Live fleet</span>
+            <h2>Every vessel, where it actually is.</h2>
           </div>
-          
-      <div class="tracker" id="hero-tracker" data-tracker data-reveal>
-        <div class="tracker-head">
-          <h2>Track a consignment</h2>
-          <span class="pill"><span class="dot"></span>Live</span>
-        </div>
-        <form class="tracker-form" data-track-form novalidate>
-          <div class="tracker-input">
-            <label class="sr-only" for="hero-tracker-number">Tracking number</label>
-            <input
-              type="text"
-              id="hero-tracker-number"
-              name="number"
-              inputmode="latin"
-              autocomplete="off"
-              spellcheck="false"
-              maxlength="32"
-              placeholder="e.g. PMT-2026-4F7K2QX9"
-              
-              required />
-            <button type="submit" class="btn" data-track-submit>
-              Track <span class="arw">&rsaquo;</span>
+          <div class="fleet-head-end">
+            <span class="fleet-live"><span class="dot"></span>Live positions</span>
+            <button type="button" class="fleet-lapse" data-fleet-lapse aria-pressed="false"
+                    title="Wind the clock forward to watch the fleet move">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.6"/><path d="M12 12l6-4.4"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg><span> Live</span>
             </button>
+            <span class="fleet-count muted" data-fleet-count></span>
           </div>
-          <div class="tracker-hint">
-            <span>Air, ocean, road, rail and express all share one number.</span>
-            <span class="tracker-recent" data-track-recent hidden></span>
-          </div>
-          <div class="err" data-track-error role="alert"></div>
-        </form>
-      </div>
-      
+        </header>
+
+        <div class="fleet-body">
+          <div class="fleet-chart" data-fleet-chart></div>
+          <aside class="fleet-panel" data-fleet-panel>
+            <p class="muted">Loading the fleet&hellip;</p>
+          </aside>
         </div>
+
+        <div class="fleet-foot">
+          <div class="fleet-legend" data-fleet-legend></div>
+          <div class="fleet-list" data-fleet-list></div>
+        </div>
+      </section>
       </div>
     </section>
 
@@ -148,7 +230,7 @@
           <h2 style="margin-top:14px">Six services, one consignment file.</h2>
           <p class="lede" style="margin-top:16px">Mode is a routing decision, not a separate company. A booking can change mode mid-journey and keep the same tracking number, the same paperwork and the same person answering the phone.</p>
         </div>
-        <div><a class="btn ghost" href="/services">All services <span class="arw">&rsaquo;</span></a></div>
+        <div><a class="btn ghost" href="/services">All services <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a></div>
       </div>
         <div class="grid three">
           
@@ -161,7 +243,7 @@
           <p class="tagline">When the delivery window is measured in hours.</p>
           <p>Consolidated, back-to-back and full-charter airlift on 40+ carriers, with priority uplift for aerospace, pharma and semiconductor cargo.</p>
           <ul><li>Next-flight-out &amp; hand-carry</li><li>Temperature-controlled pharma lanes</li><li>Dangerous goods (IATA DGR)</li><li>Full and part charter</li></ul>
-          <a class="link" href="/services/air-freight">Explore air freight <span class="arw">&rsaquo;</span></a>
+          <a class="link" href="/services/air-freight">Explore air freight <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
         </article>
 
         <article class="card tilt svc-card" data-tilt data-reveal style="--delay:70ms">
@@ -173,7 +255,7 @@
           <p class="tagline">FCL, LCL and project cargo across every major trade lane.</p>
           <p>Fixed-allocation FCL, weekly LCL consolidations and heavy-lift project moves, with customs and inland haulage carried on the same file.</p>
           <ul><li>FCL with contracted allocation</li><li>Weekly LCL consolidation boxes</li><li>Reefer &amp; controlled atmosphere</li><li>Break-bulk and out-of-gauge</li></ul>
-          <a class="link" href="/services/ocean-freight">Explore ocean freight <span class="arw">&rsaquo;</span></a>
+          <a class="link" href="/services/ocean-freight">Explore ocean freight <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
         </article>
 
         <article class="card tilt svc-card" data-tilt data-reveal style="--delay:140ms">
@@ -185,7 +267,7 @@
           <p class="tagline">Groupage, part-load and dedicated vehicles across the continent.</p>
           <p>A vetted carrier network with our own trunking fleet on the dense lanes, covering groupage through to dedicated temperature-controlled trailers.</p>
           <ul><li>Overnight trunking</li><li>Dedicated &amp; double-manned</li><li>ADR dangerous goods</li><li>Tail-lift and white-glove delivery</li></ul>
-          <a class="link" href="/services/road-haulage">Explore road haulage <span class="arw">&rsaquo;</span></a>
+          <a class="link" href="/services/road-haulage">Explore road haulage <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
         </article>
 
         <article class="card tilt svc-card" data-tilt data-reveal style="--delay:210ms">
@@ -197,7 +279,7 @@
           <p class="tagline">The middle path: faster than sea, a fraction of the carbon of air.</p>
           <p>Block trains and wagon-group services on the Eurasian corridors and intra-European intermodal network.</p>
           <ul><li>China–Europe block trains</li><li>Intermodal rail-road legs</li><li>Bonded rail terminals</li><li>Carbon reporting per consignment</li></ul>
-          <a class="link" href="/services/rail-freight">Explore rail freight <span class="arw">&rsaquo;</span></a>
+          <a class="link" href="/services/rail-freight">Explore rail freight <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
         </article>
 
         <article class="card tilt svc-card" data-tilt data-reveal style="--delay:280ms">
@@ -209,7 +291,7 @@
           <p class="tagline">Door to door, same day to next day, tracked end to end.</p>
           <p>Time-definite parcel and envelope movement with live milestone tracking, proof of delivery and a signature captured on every drop.</p>
           <ul><li>Same-day city courier</li><li>Next-day international</li><li>Time-definite before 09:00</li><li>Signature &amp; photo proof of delivery</li></ul>
-          <a class="link" href="/services/express-courier">Explore express courier <span class="arw">&rsaquo;</span></a>
+          <a class="link" href="/services/express-courier">Explore express courier <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
         </article>
 
         <article class="card tilt svc-card" data-tilt data-reveal style="--delay:350ms">
@@ -221,7 +303,7 @@
           <p class="tagline">Bonded, temperature-controlled and e-commerce-ready storage.</p>
           <p>Contract logistics from 200 to 40,000 pallet positions, with pick-and-pack, kitting, returns and customs-bonded space.</p>
           <ul><li>Customs-bonded storage</li><li>Ambient, chilled &amp; frozen</li><li>Pick, pack, kit and label</li><li>Returns processing &amp; refurbishment</li></ul>
-          <a class="link" href="/services/warehousing">Explore warehousing &amp; fulfilment <span class="arw">&rsaquo;</span></a>
+          <a class="link" href="/services/warehousing">Explore warehousing &amp; fulfilment <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
         </article>
         </div>
       </div>
@@ -273,113 +355,9 @@
           <h2 style="margin-top:14px">Eight control hubs. One hundred and seventy-two countries.</h2>
           <p class="lede" style="margin-top:16px">Our own people at the gateways that matter, and vetted partners everywhere else — with the same event standard applied to both.</p>
         </div>
-        <div><a class="btn ghost" href="/network">Explore the network <span class="arw">&rsaquo;</span></a></div>
+        <div><a class="btn ghost" href="/network">Explore the network <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a></div>
       </div>
-        
-      <div class="network-map" data-reveal>
-        <svg viewBox="0 0 1000 460" role="img" aria-label="Paramount hubs and trade lanes">
-          <defs>
-            <linearGradient id="lane" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stop-color="var(--accent)" />
-              <stop offset="1" stop-color="var(--accent-3)" />
-            </linearGradient>
-            <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse">
-              <circle cx="1.4" cy="1.4" r="1.1" fill="currentColor" opacity=".13" />
-            </pattern>
-          </defs>
-          <rect width="1000" height="460" fill="url(#dots)" color="var(--ink-2)" />
-          <g opacity=".55"><line x1="64" y1="348.5" x2="936" y2="348.5" stroke="var(--line)" stroke-width="1" /><line x1="64" y1="280.4" x2="936" y2="280.4" stroke="var(--line)" stroke-width="1" /><line x1="64" y1="212.3" x2="936" y2="212.3" stroke="var(--line)" stroke-width="1" /><line x1="64" y1="144.2" x2="936" y2="144.2" stroke="var(--line)" stroke-width="1" /><line x1="64" y1="76.1" x2="936" y2="76.1" stroke="var(--line)" stroke-width="1" /><line x1="167.9" y1="64" x2="167.9" y2="396" stroke="var(--line)" stroke-width="1" /><line x1="287.0" y1="64" x2="287.0" y2="396" stroke="var(--line)" stroke-width="1" /><line x1="406.1" y1="64" x2="406.1" y2="396" stroke="var(--line)" stroke-width="1" /><line x1="525.2" y1="64" x2="525.2" y2="396" stroke="var(--line)" stroke-width="1" /><line x1="644.3" y1="64" x2="644.3" y2="396" stroke="var(--line)" stroke-width="1" /><line x1="763.4" y1="64" x2="763.4" y2="396" stroke="var(--line)" stroke-width="1" /><line x1="882.5" y1="64" x2="882.5" y2="396" stroke="var(--line)" stroke-width="1" /></g>
-          <path class="dash" d="M888.4 174.0 Q 656.1 18.6 423.9 103.6"
-        fill="none" stroke="url(#lane)" stroke-width="1.6" opacity=".85"><title>Shanghai → Rotterdam · 28 days</title></path>
-        <path class="dash" d="M888.4 174.0 Q 667.1 20.7 445.8 98.0"
-        fill="none" stroke="url(#lane)" stroke-width="1.6" opacity=".85"><title>Shanghai → Hamburg · 18 days</title></path>
-        <path class="dash" d="M423.9 103.6 Q 421.7 162.1 419.6 258.4"
-        fill="none" stroke="url(#lane)" stroke-width="1.6" opacity=".85"><title>Rotterdam → Lagos · 19 days</title></path>
-        <path class="dash" d="M625.9 194.4 Q 368.8 37.0 111.6 141.8"
-        fill="none" stroke="url(#lane)" stroke-width="1.6" opacity=".85"><title>Dubai → Newark · 36 hours</title></path>
-        <path class="dash" d="M818.3 275.8 Q 722.1 174.8 625.9 194.4"
-        fill="none" stroke="url(#lane)" stroke-width="1.6" opacity=".85"><title>Singapore → Dubai · 11 days</title></path>
-        <path class="dash" d="M111.6 141.8 Q 166.9 209.6 222.2 362.0"
-        fill="none" stroke="url(#lane)" stroke-width="1.6" opacity=".85"><title>Newark → Santos · 16 days</title></path>
-          <g><circle class="hub-dot" cx="423.9" cy="103.6" r="5.5" fill="var(--accent-2)">
-          <title>Rotterdam (RTM) — Global HQ &amp; ocean gateway</title>
-        </circle>
-        <circle cx="423.9" cy="103.6" r="5.5" fill="none" stroke="var(--accent-2)" stroke-width="1.2" opacity=".5">
-          <animate attributeName="r" values="5.5;16" dur="2.6s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values=".5;0" dur="2.6s" repeatCount="indefinite" />
-        </circle>
-        <text x="423.9" y="122.6" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">RTM</text>
-        <text x="423.9" y="135.6" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="var(--ink-3)" opacity=".62">Rotterdam</text></g>
-        <g><circle class="hub-dot" cx="818.3" cy="275.8" r="5.5" fill="var(--accent-2)">
-          <title>Singapore (SIN) — Asia-Pacific control tower</title>
-        </circle>
-        <circle cx="818.3" cy="275.8" r="5.5" fill="none" stroke="var(--accent-2)" stroke-width="1.2" opacity=".5">
-          <animate attributeName="r" values="5.5;16" dur="2.6s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values=".5;0" dur="2.6s" repeatCount="indefinite" />
-        </circle>
-        <text x="818.3" y="294.8" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">SIN</text>
-        <text x="818.3" y="307.8" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="var(--ink-3)" opacity=".62">Singapore</text></g>
-        <g><circle class="hub-dot" cx="625.9" cy="194.4" r="5.5" fill="var(--accent-2)">
-          <title>Dubai (DXB) — Middle East &amp; Africa hub</title>
-        </circle>
-        <circle cx="625.9" cy="194.4" r="5.5" fill="none" stroke="var(--accent-2)" stroke-width="1.2" opacity=".5">
-          <animate attributeName="r" values="5.5;16" dur="2.6s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values=".5;0" dur="2.6s" repeatCount="indefinite" />
-        </circle>
-        <text x="625.9" y="213.4" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">DXB</text>
-        <text x="625.9" y="226.4" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="var(--ink-3)" opacity=".62">Dubai</text></g>
-        <g><circle class="hub-dot" cx="111.6" cy="141.8" r="5.5" fill="var(--accent-2)">
-          <title>Newark (EWR) — North America gateway</title>
-        </circle>
-        <circle cx="111.6" cy="141.8" r="5.5" fill="none" stroke="var(--accent-2)" stroke-width="1.2" opacity=".5">
-          <animate attributeName="r" values="5.5;16" dur="2.6s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values=".5;0" dur="2.6s" repeatCount="indefinite" />
-        </circle>
-        <text x="111.6" y="160.8" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">EWR</text>
-        <text x="111.6" y="173.8" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="var(--ink-3)" opacity=".62">Newark</text></g>
-        <g><circle class="hub-dot" cx="888.4" cy="174.0" r="5.5" fill="var(--accent-2)">
-          <title>Shanghai (PVG) — Origin consolidation</title>
-        </circle>
-        <circle cx="888.4" cy="174.0" r="5.5" fill="none" stroke="var(--accent-2)" stroke-width="1.2" opacity=".5">
-          <animate attributeName="r" values="5.5;16" dur="2.6s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values=".5;0" dur="2.6s" repeatCount="indefinite" />
-        </circle>
-        <text x="888.4" y="193.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">PVG</text>
-        <text x="888.4" y="206.0" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="var(--ink-3)" opacity=".62">Shanghai</text></g>
-        <g><circle class="hub-dot" cx="419.6" cy="258.4" r="5.5" fill="var(--accent-2)">
-          <title>Lagos (LOS) — West Africa distribution</title>
-        </circle>
-        <circle cx="419.6" cy="258.4" r="5.5" fill="none" stroke="var(--accent-2)" stroke-width="1.2" opacity=".5">
-          <animate attributeName="r" values="5.5;16" dur="2.6s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values=".5;0" dur="2.6s" repeatCount="indefinite" />
-        </circle>
-        <text x="419.6" y="277.4" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">LOS</text>
-        <text x="419.6" y="290.4" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="var(--ink-3)" opacity=".62">Lagos</text></g>
-        <g><circle class="hub-dot" cx="445.8" cy="98.0" r="5.5" fill="var(--accent-2)">
-          <title>Hamburg (HAM) — Rail &amp; intermodal</title>
-        </circle>
-        <circle cx="445.8" cy="98.0" r="5.5" fill="none" stroke="var(--accent-2)" stroke-width="1.2" opacity=".5">
-          <animate attributeName="r" values="5.5;16" dur="2.6s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values=".5;0" dur="2.6s" repeatCount="indefinite" />
-        </circle>
-        <text x="445.8" y="85.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">HAM</text>
-        <text x="445.8" y="72.0" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="var(--ink-3)" opacity=".62">Hamburg</text></g>
-        <g><circle class="hub-dot" cx="222.2" cy="362.0" r="5.5" fill="var(--accent-2)">
-          <title>Santos (SSZ) — South America gateway</title>
-        </circle>
-        <circle cx="222.2" cy="362.0" r="5.5" fill="none" stroke="var(--accent-2)" stroke-width="1.2" opacity=".5">
-          <animate attributeName="r" values="5.5;16" dur="2.6s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values=".5;0" dur="2.6s" repeatCount="indefinite" />
-        </circle>
-        <text x="222.2" y="381.0" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">SSZ</text>
-        <text x="222.2" y="394.0" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="var(--ink-3)" opacity=".62">Santos</text></g>
-        </svg>
-        <div class="map-legend">
-          <span><i style="background:var(--accent-2)"></i>Hub</span>
-          <span><i style="background:var(--accent-3)"></i>Active lane</span>
-        </div>
-      </div>
-        <div class="stats" data-reveal style="margin-top:26px">
+        <div class="stats" data-reveal>
           <div class="stat"><b data-count="2400000" data-suffix="+">2,400,000+</b><span>Consignments moved each year</span></div><div class="stat"><b data-count="172" data-suffix="">172</b><span>Countries served</span></div><div class="stat"><b data-count="98" data-suffix="%">98%</b><span>On-time delivery</span></div><div class="stat"><b data-count="610000" data-suffix="">610,000</b><span>Warehouse floor, m²</span></div>
         </div>
       </div>
@@ -408,7 +386,7 @@
             <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg><span>Carbon reported per consignment, not per invoice.</span></li>
             <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg><span>Cargo insurance arranged and claims handled on your behalf.</span></li>
           </ul>
-          <div class="hero-actions"><a class="btn" href="/about">About Paramount <span class="arw">&rsaquo;</span></a></div>
+          <div class="hero-actions"><a class="btn" href="/about">About Paramount <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a></div>
         </div>
       </div>
     </section>
@@ -467,7 +445,7 @@
           <h2>Tell us the lane. We will tell you the truth about it.</h2>
           <p>Rates, transit times and the constraints nobody mentions until week three — from a specialist who actually runs the corridor.</p>
           <div class="cta-actions">
-            <a class="btn" href="/quote">Request a quote <span class="arw">&rsaquo;</span></a>
+            <a class="btn" href="/quote">Request a quote <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
             <a class="btn ghost" href="/contact">Talk to the desk</a>
           </div>
         </div>
@@ -478,8 +456,14 @@
   <footer class="footer">
     <div class="wrap footer-top">
       <div class="footer-brand">
-        <img class="brand-logo on-dark" src="/assets/brand/paramount-wordmark.svg" alt="Paramount Logistics" width="520" height="96" />
-        <img class="brand-logo on-light" src="/assets/brand/paramount-wordmark-dark.svg" alt="Paramount Logistics" width="520" height="96" />
+      <picture class="brand-logo footer-logo on-dark">
+        <source srcset="/assets/brand/paramount-logo-light.webp" type="image/webp" />
+        <img src="/assets/brand/paramount-logo-light.png" alt="Paramount Shipping" width="560" height="383" />
+      </picture>
+      <picture class="brand-logo footer-logo on-light">
+        <source srcset="/assets/brand/paramount-logo.webp" type="image/webp" />
+        <img src="/assets/brand/paramount-logo.png" alt="Paramount Shipping" width="560" height="383" />
+      </picture>
         <p>Freight that arrives where it said it would, when it said it would.</p>
       </div>
       <div class="col">
@@ -514,17 +498,19 @@
   </footer>
 
   <div class="chat" id="chat" aria-live="polite">
-    <button class="chat-toggle" id="chat-toggle" aria-label="Open live chat" aria-expanded="false">
-      <svg class="i-open" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg>
+    <button class="chat-toggle" id="chat-toggle" aria-label="Talk to customer care" aria-expanded="false">
+      <span class="i-open"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><path d="M4 13h1.8A1.2 1.2 0 0 1 7 14.2v3.6A1.2 1.2 0 0 1 5.8 19H5a1 1 0 0 1-1-1z"/><path d="M20 13h-1.8a1.2 1.2 0 0 0-1.2 1.2v3.6a1.2 1.2 0 0 0 1.2 1.2H19a1 1 0 0 0 1-1z"/><path d="M18 19v.4a2.6 2.6 0 0 1-2.6 2.6H13"/></svg></span>
       <svg class="i-close" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      <span class="chat-ping" aria-hidden="true"></span>
     </button>
+    <span class="chat-label" aria-hidden="true">Customer care</span>
     <div class="chat-panel" id="chat-panel" hidden>
       <div class="chat-head">
         <div class="chat-head-id">
-          <span class="dot"></span>
+          <span class="chat-avatar"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><path d="M4 13h1.8A1.2 1.2 0 0 1 7 14.2v3.6A1.2 1.2 0 0 1 5.8 19H5a1 1 0 0 1-1-1z"/><path d="M20 13h-1.8a1.2 1.2 0 0 0-1.2 1.2v3.6a1.2 1.2 0 0 0 1.2 1.2H19a1 1 0 0 0 1-1z"/><path d="M18 19v.4a2.6 2.6 0 0 1-2.6 2.6H13"/></svg></span>
           <div>
-            <strong data-chat-agent>Paramount Control</strong>
-            <small>Quote a tracking number for a live answer</small>
+            <strong data-chat-agent>Customer care</strong>
+            <small><span class="dot"></span>Quote a tracking number for a live answer</small>
           </div>
         </div>
         <button class="chat-min" id="chat-min" aria-label="Minimise chat">&minus;</button>
@@ -543,5 +529,7 @@
   <script src="/js/track.js"></script>
   <script src="/js/supabase-lite.js"></script>
   <script src="/js/chat.js"></script>
+  <script src="/assets/map/world.js"></script>
+  <script src="/js/fleet-map.js"></script>
 </body>
 </html>

@@ -1111,6 +1111,50 @@ async function withApp(env, fn) {
     sb.close();
   }
 
+  /* ---- the fleet behind the home page ---- */
+  {
+    const fleet = require(ROOT + '/src/utils/fleet');
+    const now = Date.now();
+    const snap = fleet.snapshot(now);
+
+    assert.ok(snap.vessels.length >= 8, 'there is a fleet to draw');
+    assert.ok(snap.underway > 0 && snap.underway <= snap.count, 'some of it is at sea');
+
+    snap.vessels.forEach((v) => {
+      assert.ok(Math.abs(v.lat) <= 90 && Math.abs(v.lng) <= 180, `${v.name} is on the planet`);
+      assert.match(v.latitude, /^\d+°\d+\.\d'[NS]$/, `${v.name} latitude reads as a chart prints it`);
+      assert.match(v.longitude, /^\d+°\d+\.\d'[EW]$/, `${v.name} longitude reads as a chart prints it`);
+      assert.ok(v.course >= 0 && v.course <= 360, `${v.name} has a course`);
+      assert.ok(v.track.length >= 2, `${v.name} has a track to draw`);
+      assert.ok(v.imo && v.mmsi && v.callsign, `${v.name} carries its identifiers`);
+      // The next call has to be a port. A waypoint in the middle of an ocean
+      // is not something a customer can be told to expect it at.
+      assert.strictEqual(v.nextPort.kind, 'port', `${v.name} reports a real next port`);
+    });
+    console.log('  ok  every vessel reports a position, a heading and a real next port');
+
+    // An hour on, each one has moved by the distance its own speed implies.
+    const later = fleet.snapshot(now + 3600000);
+    snap.vessels.forEach((v, i) => {
+      const then = later.vessels[i];
+      const moved = fleet.distanceNm({ lat: v.lat, lng: v.lng }, { lat: then.lat, lng: then.lng });
+      if (v.inPort) return;
+      assert.ok(
+        Math.abs(moved - v.speed) < 1.5,
+        `${v.name} moved ${moved.toFixed(1)} nm in an hour but reports ${v.speed} kn`
+      );
+    });
+    console.log('  ok  and moves at exactly the speed it reports');
+
+    // The whole fleet must not be alongside at once, whenever you look.
+    let sailingSomewhere = 0;
+    for (let d = 0; d < 30; d += 1) {
+      if (fleet.snapshot(now + d * 86400000).underway > 0) sailingSomewhere += 1;
+    }
+    assert.strictEqual(sailingSomewhere, 30, 'there are vessels at sea on every one of the next 30 days');
+    console.log('  ok  the fleet is still sailing a month from now');
+  }
+
   /* ---- tracking numbers ---- */
   {
     const tracking = require(ROOT + '/src/utils/tracking');

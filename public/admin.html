@@ -6,11 +6,13 @@
   <title>Desk | Paramount Logistics</title>
   <meta name="description" content="Paramount Logistics operations desk." />
   <meta name="robots" content="noindex, nofollow" />
-  <meta name="theme-color" content="#04070f" />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <meta name="theme-color" content="#0c1f3d" />
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/favicon.png" sizes="64x64" type="image/png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/styles.css" />
   <link rel="stylesheet" href="/css/admin.css" />
 </head>
@@ -48,7 +50,14 @@
     <div class="admin-shell" id="admin-shell" hidden>
       <header class="admin-bar">
         <a class="admin-brand" href="/">
-          <img src="/assets/brand/paramount-wordmark.svg" alt="Paramount Logistics" width="520" height="96" />
+          <picture class="brand-logo on-dark">
+            <source srcset="/assets/brand/paramount-mark-light.webp" type="image/webp" />
+            <img src="/assets/brand/paramount-mark-light.png" alt="Paramount Shipping" width="360" height="124" />
+          </picture>
+          <picture class="brand-logo on-light">
+            <source srcset="/assets/brand/paramount-mark.webp" type="image/webp" />
+            <img src="/assets/brand/paramount-mark.png" alt="Paramount Shipping" width="360" height="124" />
+          </picture>
           <span>Operations desk</span>
         </a>
         <div class="admin-bar-end">

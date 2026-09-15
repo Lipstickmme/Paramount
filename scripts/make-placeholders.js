@@ -18,20 +18,23 @@ const path = require('path');
 
 const OUT = path.join(__dirname, '..', 'public', 'assets', 'img');
 
+/* Brand navy, with the logo's oxide red as the one warm note. These stand in
+   for photographs, so they are quiet on purpose: a placeholder that shouts is
+   harder to notice you have not replaced. */
 const PALETTES = {
-  deep: ['#050b18', '#0d1b33', '#12e0c4'],
-  dusk: ['#0a0f24', '#241a45', '#7c5cff'],
-  steel: ['#070d1a', '#132a3f', '#38bdf8'],
-  ember: ['#0b0a14', '#2a1430', '#ff7a45'],
-  sea: ['#03121c', '#07304a', '#22d3ee'],
+  deep: ['#0a1830', '#0c1f3d', '#5f8cb8'],
+  dusk: ['#091426', '#14294a', '#4d7fae'],
+  steel: ['#0b1b33', '#173154', '#6f9cc4'],
+  ember: ['#0e1526', '#2a1f28', '#a3583f'],
+  sea: ['#071526', '#0d2138', '#4f93c4'],
 };
 
 /** A dense field of freight-manifest ticks, so the plate is never flat. */
 function grid(id, tint) {
   return `
     <pattern id="${id}" width="48" height="48" patternUnits="userSpaceOnUse">
-      <path d="M48 0H0v48" fill="none" stroke="${tint}" stroke-opacity=".10" stroke-width="1"/>
-      <circle cx="0" cy="0" r="1.4" fill="${tint}" fill-opacity=".28"/>
+      <path d="M48 0H0v48" fill="none" stroke="${tint}" stroke-opacity=".12" stroke-width="1"/>
+      <circle cx="0" cy="0" r="1.4" fill="${tint}" fill-opacity=".3"/>
     </pattern>`;
 }
 
@@ -62,6 +65,15 @@ function plate({ w = 1600, h = 1000, palette = 'deep', label = '', kicker = '', 
         <path d="M0 ${cy + 60} q ${w / 8} -60 ${w / 4} 0 t ${w / 4} 0 t ${w / 4} 0 t ${w / 4} 0"/>
         <path d="M0 ${cy + 120} q ${w / 8} -60 ${w / 4} 0 t ${w / 4} 0 t ${w / 4} 0 t ${w / 4} 0" stroke-opacity=".4"/>
       </g>`,
+    ship: `
+      <g transform="translate(${cx} ${cy})" fill="none" stroke="${accent}" stroke-width="3" stroke-linejoin="round" stroke-opacity=".85">
+        <path d="M-210 40 L-180 -10 L150 -10 L210 40 Z" fill="${accent}" fill-opacity=".12"/>
+        <path d="M-150 -10 V-70 H-40 L-10 -10"/>
+        <path d="M-120 -70 V-100"/>
+        <rect x="10" y="-52" width="52" height="42" fill="${accent}" fill-opacity=".18"/>
+        <rect x="72" y="-52" width="52" height="42" fill="${accent}" fill-opacity=".1"/>
+        <path d="M-240 60 q 40 -18 80 0 t 80 0 t 80 0 t 80 0 t 80 0" stroke-opacity=".45"/>
+      </g>`,
     globe: `
       <g fill="none" stroke="${accent}" stroke-width="2.5" stroke-opacity=".75" transform="translate(${cx} ${cy})">
         <circle r="230"/><ellipse rx="230" ry="90"/><ellipse rx="230" ry="170"/>
@@ -77,7 +89,7 @@ function plate({ w = 1600, h = 1000, palette = 'deep', label = '', kicker = '', 
       <stop offset="1" stop-color="${c1}"/>
     </linearGradient>
     <radialGradient id="glow" cx="0.7" cy="0.25" r="0.8">
-      <stop offset="0" stop-color="${accent}" stop-opacity=".38"/>
+      <stop offset="0" stop-color="${accent}" stop-opacity=".3"/>
       <stop offset="1" stop-color="${accent}" stop-opacity="0"/>
     </radialGradient>
     ${grid('grid', accent)}
@@ -96,19 +108,19 @@ function plate({ w = 1600, h = 1000, palette = 'deep', label = '', kicker = '', 
 }
 
 const SET = [
-  ['ph-hero-1.svg', { palette: 'deep', kicker: 'Placeholder', label: 'Ocean gateway at dawn', glyph: 'wave', w: 1920, h: 1080 }],
-  ['ph-hero-2.svg', { palette: 'dusk', kicker: 'Placeholder', label: 'Night uplift, gate 14', glyph: 'route', w: 1920, h: 1080 }],
-  ['ph-hero-3.svg', { palette: 'sea', kicker: 'Placeholder', label: 'Trunking, E19 corridor', glyph: 'box', w: 1920, h: 1080 }],
+  ['ph-hero-1.svg', { palette: 'deep', kicker: 'Placeholder', label: 'Container ship at first light', glyph: 'ship', w: 1920, h: 1080 }],
+  ['ph-hero-2.svg', { palette: 'dusk', kicker: 'Placeholder', label: 'Terminal at blue hour', glyph: 'wave', w: 1920, h: 1080 }],
+  ['ph-hero-3.svg', { palette: 'sea', kicker: 'Placeholder', label: 'Bridge wing, looking forward', glyph: 'route', w: 1920, h: 1080 }],
   ['ph-underlay.svg', { palette: 'deep', glyph: 'globe', w: 1920, h: 1200 }],
-  ['ph-about.svg', { palette: 'steel', kicker: 'Placeholder', label: 'Control tower floor', glyph: 'route' }],
   ['ph-network.svg', { palette: 'sea', kicker: 'Placeholder', label: 'Global network', glyph: 'globe' }],
+  ['ph-about.svg', { palette: 'steel', kicker: 'Placeholder', label: 'Operations desk', glyph: 'route' }],
   ['ph-control.svg', { palette: 'dusk', kicker: 'Placeholder', label: 'Live exception desk', glyph: 'route' }],
   ['ph-leadership.svg', { palette: 'steel', kicker: 'Placeholder', label: 'Group Chief Executive', glyph: 'box', w: 1200, h: 1400 }],
   ['ph-careers.svg', { palette: 'ember', kicker: 'Placeholder', label: 'Working at Paramount', glyph: 'box' }],
   ['ph-contact.svg', { palette: 'deep', kicker: 'Placeholder', label: 'Rotterdam desk', glyph: 'route' }],
   ['ph-warehouse.svg', { palette: 'steel', kicker: 'Placeholder', label: 'Bonded warehousing', glyph: 'box' }],
   ['ph-air.svg', { palette: 'dusk', kicker: 'Air freight', label: 'Placeholder artwork', glyph: 'route', w: 1200, h: 900 }],
-  ['ph-ocean.svg', { palette: 'sea', kicker: 'Ocean freight', label: 'Placeholder artwork', glyph: 'wave', w: 1200, h: 900 }],
+  ['ph-ocean.svg', { palette: 'sea', kicker: 'Ocean freight', label: 'Placeholder artwork', glyph: 'ship', w: 1200, h: 900 }],
   ['ph-road.svg', { palette: 'steel', kicker: 'Road haulage', label: 'Placeholder artwork', glyph: 'box', w: 1200, h: 900 }],
   ['ph-rail.svg', { palette: 'deep', kicker: 'Rail freight', label: 'Placeholder artwork', glyph: 'route', w: 1200, h: 900 }],
   ['ph-express.svg', { palette: 'ember', kicker: 'Express courier', label: 'Placeholder artwork', glyph: 'box', w: 1200, h: 900 }],

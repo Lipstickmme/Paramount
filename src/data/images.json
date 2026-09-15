@@ -1,27 +1,136 @@
 {
-  "_comment": "Each slot names the files it would rather have and the placeholder it falls back to. Drop a real photograph into public/assets/img/ under any of the `prefer` names, in any common format, and the next build picks it up. No code change needed.",
+  "_comment": "Each slot names the files it would rather have and the placeholder it falls back to. Drop a real photograph into public/assets/img/ under any of the `prefer` names, in any common format, and the next build picks it up. No code change needed. docs/IMAGES.md lists every one with the size and a brief.",
   "slots": {
-    "underlay":   { "prefer": ["paramount-underlay", "underlay", "pm-bg"], "fallback": "/assets/img/ph-underlay.svg" },
-    "about":      { "prefer": ["paramount-about", "about", "pm1"], "fallback": "/assets/img/ph-about.svg" },
-    "network":    { "prefer": ["paramount-network", "network", "pm2"], "fallback": "/assets/img/ph-network.svg" },
-    "control":    { "prefer": ["paramount-control", "control-tower", "pm3"], "fallback": "/assets/img/ph-control.svg" },
-    "leadership": { "prefer": ["paramount-ceo", "ceo", "leadership"], "fallback": "/assets/img/ph-leadership.svg" },
-    "careers":    { "prefer": ["paramount-careers", "careers", "pm4"], "fallback": "/assets/img/ph-careers.svg" },
-    "contact":    { "prefer": ["paramount-contact", "contact", "pm5"], "fallback": "/assets/img/ph-contact.svg" },
-    "warehouse":  { "prefer": ["paramount-warehouse", "warehouse"], "fallback": "/assets/img/ph-warehouse.svg" },
-    "og":         { "prefer": ["paramount-og", "og"], "fallback": "/assets/img/ph-og.svg" }
+    "underlay": {
+      "prefer": [
+        "paramount-underlay",
+        "underlay"
+      ],
+      "fallback": "/assets/img/ph-underlay.svg"
+    },
+    "about": {
+      "prefer": [
+        "paramount-about",
+        "about"
+      ],
+      "fallback": "/assets/img/ph-about.svg"
+    },
+    "network": {
+      "prefer": [
+        "paramount-network",
+        "network"
+      ],
+      "fallback": "/assets/img/ph-network.svg"
+    },
+    "control": {
+      "prefer": [
+        "paramount-control",
+        "control-tower"
+      ],
+      "fallback": "/assets/img/ph-control.svg"
+    },
+    "leadership": {
+      "prefer": [
+        "paramount-ceo",
+        "ceo",
+        "leadership"
+      ],
+      "fallback": "/assets/img/ph-leadership.svg"
+    },
+    "careers": {
+      "prefer": [
+        "paramount-careers",
+        "careers"
+      ],
+      "fallback": "/assets/img/ph-careers.svg"
+    },
+    "contact": {
+      "prefer": [
+        "paramount-contact",
+        "contact"
+      ],
+      "fallback": "/assets/img/ph-contact.svg"
+    },
+    "warehouse": {
+      "prefer": [
+        "paramount-warehouse",
+        "warehouse"
+      ],
+      "fallback": "/assets/img/ph-warehouse.svg"
+    },
+    "og": {
+      "prefer": [
+        "paramount-og",
+        "og"
+      ],
+      "fallback": "/assets/img/ph-og.svg"
+    }
   },
   "serviceSlots": {
-    "air-freight":     { "prefer": ["service-air", "air-freight"], "fallback": "/assets/img/ph-air.svg" },
-    "ocean-freight":   { "prefer": ["service-ocean", "ocean-freight"], "fallback": "/assets/img/ph-ocean.svg" },
-    "road-haulage":    { "prefer": ["service-road", "road-haulage"], "fallback": "/assets/img/ph-road.svg" },
-    "rail-freight":    { "prefer": ["service-rail", "rail-freight"], "fallback": "/assets/img/ph-rail.svg" },
-    "express-courier": { "prefer": ["service-express", "express-courier"], "fallback": "/assets/img/ph-express.svg" },
-    "warehousing":     { "prefer": ["service-warehousing", "warehousing"], "fallback": "/assets/img/ph-warehouse.svg" }
+    "air-freight": {
+      "prefer": [
+        "service-air",
+        "air-freight"
+      ],
+      "fallback": "/assets/img/ph-air.svg"
+    },
+    "ocean-freight": {
+      "prefer": [
+        "service-ocean",
+        "ocean-freight"
+      ],
+      "fallback": "/assets/img/ph-ocean.svg"
+    },
+    "road-haulage": {
+      "prefer": [
+        "service-road",
+        "road-haulage"
+      ],
+      "fallback": "/assets/img/ph-road.svg"
+    },
+    "rail-freight": {
+      "prefer": [
+        "service-rail",
+        "rail-freight"
+      ],
+      "fallback": "/assets/img/ph-rail.svg"
+    },
+    "express-courier": {
+      "prefer": [
+        "service-express",
+        "express-courier"
+      ],
+      "fallback": "/assets/img/ph-express.svg"
+    },
+    "warehousing": {
+      "prefer": [
+        "service-warehousing",
+        "warehousing"
+      ],
+      "fallback": "/assets/img/ph-warehouse.svg"
+    }
   },
   "heroSlides": [
-    { "prefer": ["paramount-hero-1", "hero-1", "pm-hero1"], "fallback": "/assets/img/ph-hero-1.svg" },
-    { "prefer": ["paramount-hero-2", "hero-2", "pm-hero2"], "fallback": "/assets/img/ph-hero-2.svg" },
-    { "prefer": ["paramount-hero-3", "hero-3", "pm-hero3"], "fallback": "/assets/img/ph-hero-3.svg" }
+    {
+      "prefer": [
+        "hero-1",
+        "paramount-hero-1"
+      ],
+      "fallback": "/assets/img/ph-hero-1.svg"
+    },
+    {
+      "prefer": [
+        "hero-2",
+        "paramount-hero-2"
+      ],
+      "fallback": "/assets/img/ph-hero-2.svg"
+    },
+    {
+      "prefer": [
+        "hero-3",
+        "paramount-hero-3"
+      ],
+      "fallback": "/assets/img/ph-hero-3.svg"
+    }
   ]
 }

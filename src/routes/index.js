@@ -21,6 +21,9 @@ router.use('/shipments', require('./shipments'));
 // Customers, signed in to their own account.
 router.use('/portal', require('./portal'));
 
+// The live fleet behind the tracker on the home page.
+router.use('/fleet', require('./fleet'));
+
 router.use('/services', require('./services'));
 router.use('/network', require('./network'));
 router.use('/team', require('./team'));

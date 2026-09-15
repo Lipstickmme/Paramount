@@ -1,17 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" role="img" aria-label="Control tower floor">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" role="img" aria-label="Operations desk">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#070d1a"/>
-      <stop offset="1" stop-color="#132a3f"/>
+      <stop offset="0" stop-color="#0b1b33"/>
+      <stop offset="1" stop-color="#173154"/>
     </linearGradient>
     <radialGradient id="glow" cx="0.7" cy="0.25" r="0.8">
-      <stop offset="0" stop-color="#38bdf8" stop-opacity=".38"/>
-      <stop offset="1" stop-color="#38bdf8" stop-opacity="0"/>
+      <stop offset="0" stop-color="#6f9cc4" stop-opacity=".3"/>
+      <stop offset="1" stop-color="#6f9cc4" stop-opacity="0"/>
     </radialGradient>
     
     <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
-      <path d="M48 0H0v48" fill="none" stroke="#38bdf8" stroke-opacity=".10" stroke-width="1"/>
-      <circle cx="0" cy="0" r="1.4" fill="#38bdf8" fill-opacity=".28"/>
+      <path d="M48 0H0v48" fill="none" stroke="#6f9cc4" stroke-opacity=".12" stroke-width="1"/>
+      <circle cx="0" cy="0" r="1.4" fill="#6f9cc4" fill-opacity=".3"/>
     </pattern>
   </defs>
   <rect width="1600" height="1000" fill="url(#g)"/>
@@ -19,13 +19,13 @@
   <rect width="1600" height="1000" fill="url(#glow)"/>
   
       <path d="M192 720 Q 800 180 1408 550"
-            fill="none" stroke="#38bdf8" stroke-opacity=".85" stroke-width="3" stroke-dasharray="14 10"/>
-      <circle cx="192" cy="720" r="13" fill="#38bdf8"/>
-      <circle cx="1408" cy="550" r="13" fill="none" stroke="#38bdf8" stroke-width="3"/>
+            fill="none" stroke="#6f9cc4" stroke-opacity=".85" stroke-width="3" stroke-dasharray="14 10"/>
+      <circle cx="192" cy="720" r="13" fill="#6f9cc4"/>
+      <circle cx="1408" cy="550" r="13" fill="none" stroke="#6f9cc4" stroke-width="3"/>
       <circle cx="800" cy="353" r="7" fill="#fff" fill-opacity=".9"/>
   <g font-family="'Space Grotesk',Inter,system-ui,sans-serif" fill="#f8fafc">
-    <text x="64" y="904" font-size="22" letter-spacing="6" fill="#38bdf8" opacity=".95">PLACEHOLDER</text>
-    <text x="64" y="956" font-size="44" font-weight="600" opacity=".92">Control tower floor</text>
+    <text x="64" y="904" font-size="22" letter-spacing="6" fill="#6f9cc4" opacity=".95">PLACEHOLDER</text>
+    <text x="64" y="956" font-size="44" font-weight="600" opacity=".92">Operations desk</text>
   </g>
-  <rect x="1" y="1" width="1598" height="998" fill="none" stroke="#38bdf8" stroke-opacity=".22" stroke-width="2"/>
+  <rect x="1" y="1" width="1598" height="998" fill="none" stroke="#6f9cc4" stroke-opacity=".22" stroke-width="2"/>
 </svg>

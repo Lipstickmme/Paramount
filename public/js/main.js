@@ -64,29 +64,54 @@
 
   /* --------------------------------------------------------------- nav --- */
 
-  const nav = $('#nav');
-  const navLinks = $('#navlinks');
+  /**
+   * The menu is a left-hand drawer now.
+   *
+   * Opening it traps nothing and breaks nothing: the page behind still scrolls
+   * on desktop, Escape closes it, focus moves to the panel so a keyboard lands
+   * inside rather than behind it, and the scrim is clickable because that is
+   * what everyone tries first.
+   */
+  const drawer = $('#drawer');
+  const scrim = $('#drawer-scrim');
   const navToggle = $('#navtoggle');
+  let lastFocus = null;
 
-  if (navToggle && navLinks) {
-    navToggle.addEventListener('click', () => {
-      const open = navLinks.classList.toggle('open');
-      navToggle.setAttribute('aria-expanded', String(open));
-    });
-    navLinks.addEventListener('click', (e) => {
-      if (e.target.closest('a')) {
-        navLinks.classList.remove('open');
-        navToggle.setAttribute('aria-expanded', 'false');
-      }
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && navLinks.classList.contains('open')) {
-        navLinks.classList.remove('open');
-        navToggle.setAttribute('aria-expanded', 'false');
-        navToggle.focus();
-      }
+  function setDrawer(open) {
+    if (!drawer || !scrim || !navToggle) return;
+    drawer.classList.toggle('open', open);
+    drawer.setAttribute('aria-hidden', String(!open));
+    navToggle.setAttribute('aria-expanded', String(open));
+    document.body.classList.toggle('drawer-open', open);
+
+    if (open) {
+      lastFocus = document.activeElement;
+      scrim.hidden = false;
+      // Next frame, so the transition has a start state to animate from.
+      requestAnimationFrame(() => scrim.classList.add('open'));
+      const first = drawer.querySelector('a, button');
+      if (first) first.focus({ preventScroll: true });
+    } else {
+      scrim.classList.remove('open');
+      setTimeout(() => {
+        if (!drawer.classList.contains('open')) scrim.hidden = true;
+      }, 380);
+      if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+    }
+  }
+
+  if (navToggle) navToggle.addEventListener('click', () => setDrawer(!drawer.classList.contains('open')));
+  if (scrim) scrim.addEventListener('click', () => setDrawer(false));
+  const drawerClose = $('#drawer-close');
+  if (drawerClose) drawerClose.addEventListener('click', () => setDrawer(false));
+  if (drawer) {
+    drawer.addEventListener('click', (e) => {
+      if (e.target.closest('a')) setDrawer(false);
     });
   }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && drawer && drawer.classList.contains('open')) setDrawer(false);
+  });
 
   const progress = $('#progress');
 

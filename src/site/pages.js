@@ -9,7 +9,7 @@
  * each entry through src/site/layout.js into public/*.html.
  */
 
-const { contactForm, tracker, esc, YEAR } = require('./layout');
+const { contactForm, tracker, icons, esc, YEAR } = require('./layout');
 const images = require('./images');
 
 const site = require('../data/site.json');
@@ -17,6 +17,7 @@ const services = require('../data/services.json');
 const network = require('../data/network.json');
 const industries = require('../data/industries.json');
 const careers = require('../data/careers.json');
+const atlas = require('../data/world-map.json');
 const leadership = require('../data/leadership.json');
 
 const BRAND = 'Paramount Logistics';
@@ -71,114 +72,137 @@ function serviceCard(svc, i) {
           <p class="tagline">${esc(svc.tagline)}</p>
           <p>${esc(svc.summary)}</p>
           <ul>${svc.capabilities.slice(0, 4).map((c) => `<li>${esc(c)}</li>`).join('')}</ul>
-          <a class="link" href="/services/${svc.id}">Explore ${esc(svc.title.toLowerCase())} <span class="arw">&rsaquo;</span></a>
+          <a class="link" href="/services/${svc.id}">Explore ${esc(svc.title.toLowerCase())} ${icons.arrow}</a>
         </article>`;
 }
 
-/** The world map on /network and the home page, drawn from hub coordinates. */
+/**
+ * The network chart on /network.
+ *
+ * The same coastlines the live tracker draws, rendered at build time from
+ * src/data/world-map.json: hubs, the lanes between them, and nothing moving.
+ * The home page has the vessels; this one is the shape of the network.
+ */
 function worldMap() {
-  // Equirectangular, cropped to the band the hubs actually occupy. A full
-  // -180..180 / -90..90 plate would leave them huddled in the middle of an
-  // empty rectangle; fitting the extent spreads them across the plate and
-  // keeps the relative geography honest.
-  const W = 1000;
-  const H = 460;
-  const pad = 64;
-  const lats = network.hubs.map((h) => Number(h.lat));
-  const lngs = network.hubs.map((h) => Number(h.lng));
-  const minLng = Math.min(...lngs) - 12;
-  const maxLng = Math.max(...lngs) + 12;
-  const minLat = Math.min(...lats) - 10;
-  const maxLat = Math.max(...lats) + 10;
-  const x = (lng) => pad + ((Number(lng) - minLng) / (maxLng - minLng)) * (W - pad * 2);
-  const y = (lat) => pad + ((maxLat - Number(lat)) / (maxLat - minLat)) * (H - pad * 2);
-  const byId = Object.fromEntries(network.hubs.map((h) => [h.id, h]));
+  const project = (lng, lat) => ({
+    x: ((Number(lng) + 180) / 360) * atlas.width,
+    y:
+      ((atlas.latMax - Math.max(atlas.latMin, Math.min(atlas.latMax, Number(lat)))) /
+        (atlas.latMax - atlas.latMin)) *
+      atlas.height,
+  });
 
-  // A graticule at whole tens of degrees, so the plate reads as a map.
-  const graticule = [];
-  for (let lat = Math.ceil(minLat / 20) * 20; lat <= maxLat; lat += 20) {
-    graticule.push(`<line x1="${pad}" y1="${y(lat).toFixed(1)}" x2="${W - pad}" y2="${y(lat).toFixed(1)}" stroke="var(--line)" stroke-width="1" />`);
-  }
-  for (let lng = Math.ceil(minLng / 30) * 30; lng <= maxLng; lng += 30) {
-    graticule.push(`<line x1="${x(lng).toFixed(1)}" y1="${pad}" x2="${x(lng).toFixed(1)}" y2="${H - pad}" stroke="var(--line)" stroke-width="1" />`);
-  }
+  const byId = Object.fromEntries(network.hubs.map((h) => [h.id, h]));
 
   const lanes = network.lanes
     .map((lane) => {
       const a = byId[lane.from];
       const b = byId[lane.to];
       if (!a || !b) return '';
-      const x1 = x(a.lng);
-      const y1 = y(a.lat);
-      const x2 = x(b.lng);
-      const y2 = y(b.lat);
-      // Bow every lane the same way so crossing routes stay readable.
-      const cx = (x1 + x2) / 2;
-      const cy = (y1 + y2) / 2 - Math.abs(x2 - x1) * 0.22 - 18;
-      return `<path class="dash" d="M${x1.toFixed(1)} ${y1.toFixed(1)} Q ${cx.toFixed(1)} ${cy.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}"
-        fill="none" stroke="url(#lane)" stroke-width="1.6" opacity=".85"><title>${esc(lane.label)} · ${esc(lane.transit)}</title></path>`;
+      const p1 = project(a.lng, a.lat);
+      const p2 = project(b.lng, b.lat);
+      // Bowed the same way for every lane, so crossing routes stay readable.
+      const cx = (p1.x + p2.x) / 2;
+      const cy = (p1.y + p2.y) / 2 - Math.abs(p2.x - p1.x) * 0.2 - 14;
+      return `<path class="net-lane" d="M${p1.x.toFixed(1)} ${p1.y.toFixed(1)} Q ${cx.toFixed(1)} ${cy.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}">
+          <title>${esc(lane.label)} · ${esc(lane.transit)}</title>
+        </path>`;
     })
-    .join('\n        ');
+    .join('');
 
-  // Hubs in the same neighbourhood would print their codes on top of each
-  // other — Rotterdam and Hamburg are 500km apart and all but touching at this
-  // scale — so a label is placed below its dot unless something already sits
-  // there, in which case it goes above.
+  // Labels alternate above and below, because Rotterdam and Hamburg are 500 km
+  // apart and all but touching at this scale.
   const placed = [];
-  const labelOffset = (cx, cy) => {
-    for (const side of [19, -13]) {
-      const ly = cy + side;
-      const clash = placed.some((p) => Math.abs(p.x - cx) < 54 && Math.abs(p.y - ly) < 26);
-      if (!clash) {
-        placed.push({ x: cx, y: ly });
+  const offsetFor = (x, y) => {
+    for (const side of [15, -11]) {
+      const ly = y + side;
+      if (!placed.some((q) => Math.abs(q.x - x) < 52 && Math.abs(q.y - ly) < 22)) {
+        placed.push({ x, y: ly });
         return side;
       }
     }
-    // Both sides are taken: stack further out rather than printing on top.
-    const ly = cy + 40;
-    placed.push({ x: cx, y: ly });
-    return 40;
+    placed.push({ x, y: y + 34 });
+    return 34;
   };
 
-  const dots = network.hubs
-    .map((h) => {
-      const cx = x(h.lng);
-      const cy = y(h.lat);
-      const dy = labelOffset(cx, cy);
-      return `<g><circle class="hub-dot" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5.5" fill="var(--accent-2)">
-          <title>${esc(h.city)} (${esc(h.code)}) — ${esc(h.role)}</title>
-        </circle>
-        <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5.5" fill="none" stroke="var(--accent-2)" stroke-width="1.2" opacity=".5">
-          <animate attributeName="r" values="5.5;16" dur="2.6s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values=".5;0" dur="2.6s" repeatCount="indefinite" />
-        </circle>
-        <text x="${cx.toFixed(1)}" y="${(cy + dy).toFixed(1)}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink-3)">${esc(h.code)}</text>
-        <text x="${cx.toFixed(1)}" y="${(cy + dy + (dy < 0 ? -13 : 13)).toFixed(1)}" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="var(--ink-3)" opacity=".62">${esc(h.city)}</text></g>`;
+  const hubs = network.hubs
+    .map((hub) => {
+      const { x, y } = project(hub.lng, hub.lat);
+      const dy = offsetFor(x, y);
+      return `<g class="net-hub">
+          <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.4"><title>${esc(hub.city)} (${esc(hub.code)}) — ${esc(hub.role)}</title></circle>
+          <circle class="net-hub-ring" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.4">
+            <animate attributeName="r" values="4.4;13" dur="3s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values=".5;0" dur="3s" repeatCount="indefinite" />
+          </circle>
+          <text class="net-label" x="${x.toFixed(1)}" y="${(y + dy).toFixed(1)}" text-anchor="middle">${esc(hub.code)}</text>
+        </g>`;
     })
-    .join('\n        ');
+    .join('');
 
   return `
       <div class="network-map" data-reveal>
-        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Paramount hubs and trade lanes">
+        <svg viewBox="0 0 ${atlas.width} ${atlas.height}" role="img"
+             aria-label="Paramount control hubs and the lanes between them"
+             preserveAspectRatio="xMidYMid meet">
           <defs>
-            <linearGradient id="lane" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stop-color="var(--accent)" />
-              <stop offset="1" stop-color="var(--accent-3)" />
-            </linearGradient>
-            <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse">
-              <circle cx="1.4" cy="1.4" r="1.1" fill="currentColor" opacity=".13" />
-            </pattern>
+            <radialGradient id="net-sea" cx="0.5" cy="0.1" r="1.1">
+              <stop offset="0" class="sea-lit" />
+              <stop offset="1" class="sea-deep" />
+            </radialGradient>
           </defs>
-          <rect width="${W}" height="${H}" fill="url(#dots)" color="var(--ink-2)" />
-          <g opacity=".55">${graticule.join('')}</g>
+          <rect x="-600" y="-600" width="${atlas.width + 1200}" height="${atlas.height + 1200}" fill="url(#net-sea)" />
+          <path class="fleet-land" d="${atlas.land}" />
           ${lanes}
-          ${dots}
+          ${hubs}
         </svg>
         <div class="map-legend">
-          <span><i style="background:var(--accent-2)"></i>Hub</span>
-          <span><i style="background:var(--accent-3)"></i>Active lane</span>
+          <span><i style="background:var(--accent-2)"></i>Control hub</span>
+          <span><i style="background:var(--ink-3)"></i>Contracted lane</span>
         </div>
       </div>`;
+}
+
+/**
+ * The fleet tracker.
+ *
+ * The chart used to sit two thirds of the way down the network page, where
+ * almost nobody scrolled to it. It is the most persuasive thing the business
+ * has — twelve vessels, where each one is, what it is carrying — so it leads.
+ * The markup is the frame; public/js/fleet-map.js draws into it from
+ * /api/fleet, and without the script the frame simply stays empty rather than
+ * leaving a broken half-chart behind.
+ */
+function fleetTracker() {
+  return `
+      <section class="fleet" id="fleet" aria-label="Live fleet tracker">
+        <header class="fleet-head">
+          <div>
+            <span class="eyebrow">Live fleet</span>
+            <h2>Every vessel, where it actually is.</h2>
+          </div>
+          <div class="fleet-head-end">
+            <span class="fleet-live"><span class="dot"></span>Live positions</span>
+            <button type="button" class="fleet-lapse" data-fleet-lapse aria-pressed="false"
+                    title="Wind the clock forward to watch the fleet move">
+              ${icons.radar}<span> Live</span>
+            </button>
+            <span class="fleet-count muted" data-fleet-count></span>
+          </div>
+        </header>
+
+        <div class="fleet-body">
+          <div class="fleet-chart" data-fleet-chart></div>
+          <aside class="fleet-panel" data-fleet-panel>
+            <p class="muted">Loading the fleet&hellip;</p>
+          </aside>
+        </div>
+
+        <div class="fleet-foot">
+          <div class="fleet-legend" data-fleet-legend></div>
+          <div class="fleet-list" data-fleet-list></div>
+        </div>
+      </section>`;
 }
 
 /* ------------------------------------------------------------------ home --- */
@@ -186,37 +210,34 @@ function worldMap() {
 const homeContent = `
   <main id="main">
     <section class="hero">
-      <div class="wrap hero-grid">
-        <div>
-          <span class="eyebrow" data-reveal>Freight forwarding &amp; contract logistics</span>
-          <h1>
-            <span class="line"><span>Every consignment,</span></span>
-            <span class="line"><span class="grad-text">accounted for.</span></span>
-          </h1>
-          <p class="lede" data-reveal>${esc(site.tagline)} Air, ocean, road, rail and warehousing on one file, one number and one honest timeline.</p>
-          <div class="hero-actions" data-reveal>
-            <a class="btn" href="/quote">Get a rate <span class="arw">&rsaquo;</span></a>
-            <a class="btn ghost" href="/services">See what we move</a>
+      <div class="wrap">
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <span class="eyebrow" data-reveal>Freight forwarding &amp; contract logistics</span>
+            <h1>
+              <span class="line"><span>Every consignment,</span></span>
+              <span class="line"><span class="grad-text">accounted for.</span></span>
+            </h1>
+            <p class="lede" data-reveal>${esc(site.tagline)} Air, ocean, road, rail and warehousing on one file, one number and one honest timeline.</p>
           </div>
-          <div class="hero-proof" data-reveal>
-            ${network.stats
-              .slice(0, 3)
-              .map(
-                (s) => `<div><strong data-count="${s.value}" data-suffix="${s.suffix}">${figure(s.value, s.suffix)}</strong><span>${esc(s.label)}</span></div>`
-              )
-              .join('\n            ')}
+
+          <div class="hero-aside">
+            <div class="hero-actions" data-reveal>
+              <a class="btn" href="/quote">Get a rate ${icons.arrow}</a>
+              <a class="btn ghost" href="/services">See what we move</a>
+            </div>
+            <div class="hero-proof" data-reveal>
+              ${network.stats
+                .slice(0, 3)
+                .map(
+                  (s) => `<div><strong data-count="${s.value}" data-suffix="${s.suffix}">${figure(s.value, s.suffix)}</strong><span>${esc(s.label)}</span></div>`
+                )
+                .join('\n              ')}
+            </div>
           </div>
         </div>
 
-        <div class="hero-side">
-          <div class="hero-media" data-reveal>
-            ${images.heroSlides
-              .map((src, i) => `<div class="hero-slide${i === 0 ? ' on' : ''}" style="background-image:url('${src}')"></div>`)
-              .join('\n            ')}
-            <span class="pill hero-media-tag"><span class="dot"></span>Live network</span>
-          </div>
-          ${tracker({ id: 'hero-tracker', compact: true })}
-        </div>
+        ${fleetTracker()}
       </div>
     </section>
 
@@ -239,7 +260,7 @@ const homeContent = `
           title: 'Six services, one consignment file.',
           lede: 'Mode is a routing decision, not a separate company. A booking can change mode mid-journey and keep the same tracking number, the same paperwork and the same person answering the phone.',
           split: true,
-          aside: '<a class="btn ghost" href="/services">All services <span class="arw">&rsaquo;</span></a>',
+          aside: `<a class="btn ghost" href="/services">All services ${icons.arrow}</a>`,
         })}
         <div class="grid three">
           ${services.map(serviceCard).join('\n')}
@@ -281,10 +302,9 @@ const homeContent = `
           title: 'Eight control hubs. One hundred and seventy-two countries.',
           lede: 'Our own people at the gateways that matter, and vetted partners everywhere else — with the same event standard applied to both.',
           split: true,
-          aside: '<a class="btn ghost" href="/network">Explore the network <span class="arw">&rsaquo;</span></a>',
+          aside: `<a class="btn ghost" href="/network">Explore the network ${icons.arrow}</a>`,
         })}
-        ${worldMap()}
-        <div class="stats" data-reveal style="margin-top:26px">
+        <div class="stats" data-reveal>
           ${network.stats
             .map(
               (s) => `<div class="stat"><b data-count="${s.value}" data-suffix="${s.suffix}">${figure(s.value, s.suffix)}</b><span>${esc(s.label)}</span></div>`
@@ -313,7 +333,7 @@ const homeContent = `
             ${check('Carbon reported per consignment, not per invoice.')}
             ${check('Cargo insurance arranged and claims handled on your behalf.')}
           </ul>
-          <div class="hero-actions"><a class="btn" href="/about">About Paramount <span class="arw">&rsaquo;</span></a></div>
+          <div class="hero-actions"><a class="btn" href="/about">About Paramount ${icons.arrow}</a></div>
         </div>
       </div>
     </section>
@@ -343,7 +363,7 @@ const homeContent = `
           <h2>Tell us the lane. We will tell you the truth about it.</h2>
           <p>Rates, transit times and the constraints nobody mentions until week three — from a specialist who actually runs the corridor.</p>
           <div class="cta-actions">
-            <a class="btn" href="/quote">Request a quote <span class="arw">&rsaquo;</span></a>
+            <a class="btn" href="/quote">Request a quote ${icons.arrow}</a>
             <a class="btn ghost" href="/contact">Talk to the desk</a>
           </div>
         </div>
@@ -434,7 +454,7 @@ const servicesContent = `
       <div class="wrap"><div class="cta" data-reveal>
         <h2>Not sure which mode the cargo wants?</h2>
         <p>Give us the weight, the lane and the date it has to land. We will tell you what it costs by air, by sea and by rail, and which one we would actually book.</p>
-        <div class="cta-actions"><a class="btn" href="/quote">Request a quote <span class="arw">&rsaquo;</span></a></div>
+        <div class="cta-actions"><a class="btn" href="/quote">Request a quote ${icons.arrow}</a></div>
       </div></div>
     </section>
   </main>`;
@@ -450,7 +470,7 @@ const serviceDetailContent = `
         <h1 data-svc="heading">Loading service&hellip;</h1>
         <p class="lede" data-svc="summary"></p>
         <div class="hero-actions">
-          <a class="btn" href="/quote">Get a rate for this lane <span class="arw">&rsaquo;</span></a>
+          <a class="btn" href="/quote">Get a rate for this lane ${icons.arrow}</a>
           <a class="btn ghost" href="/track">Track a consignment</a>
         </div>
       </div>
@@ -495,6 +515,12 @@ const networkContent = `
 
     <section class="section" style="padding-top:clamp(18px,3vw,36px)">
       <div class="wrap">
+        ${head({
+          kicker: 'Control hubs',
+          title: 'Our own people at the gateways that matter.',
+          split: true,
+          aside: '<a class="btn ghost" href="/#fleet">Watch the fleet ' + icons.arrow + '</a>',
+        })}
         ${worldMap()}
         <div class="hub-list">
           ${network.hubs
@@ -533,7 +559,7 @@ const networkContent = `
       <div class="wrap"><div class="cta" data-reveal>
         <h2>Need a lane we have not listed?</h2>
         <p>We open corridors for customers, not brochures. Tell us where the cargo starts and ends and we will tell you honestly whether we are the right forwarder for it.</p>
-        <div class="cta-actions"><a class="btn" href="/contact">Talk to the desk <span class="arw">&rsaquo;</span></a></div>
+        <div class="cta-actions"><a class="btn" href="/contact">Talk to the desk ${icons.arrow}</a></div>
       </div></div>
     </section>
   </main>`;
@@ -608,7 +634,7 @@ const aboutContent = `
       <div class="wrap"><div class="cta" data-reveal>
         <h2>Come and work on it.</h2>
         <p>We hire people who would rather make the bad call visible than let it stay quiet. Open roles across operations, compliance, commercial and technology.</p>
-        <div class="cta-actions"><a class="btn" href="/careers">See open roles <span class="arw">&rsaquo;</span></a></div>
+        <div class="cta-actions"><a class="btn" href="/careers">See open roles ${icons.arrow}</a></div>
       </div></div>
     </section>
   </main>`;
@@ -679,7 +705,7 @@ const quoteContent = `
             <div class="field"><label for="q-message">Anything else</label><textarea id="q-message" name="message" placeholder="Temperature range, deadlines, permits, hazardous class&hellip;"></textarea></div>
             <div class="honeypot" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
             <div class="form-status" data-form-status role="status" aria-live="polite"></div>
-            <button type="submit" class="btn block" data-submit>Request rates <span class="arw">&rsaquo;</span></button>
+            <button type="submit" class="btn block" data-submit>Request rates ${icons.arrow}</button>
           </form>
         </div>
       </div>
@@ -710,7 +736,7 @@ const contactContent = `
             <div class="contact-line"><dt>Cargo emergency</dt><dd><a href="tel:${esc(site.emergency_phone).replace(/\s+/g, '')}" data-site="emergency_phone">${esc(site.emergency_phone)}</a></dd></div>
             <div class="contact-line"><dt>Hours</dt><dd data-site="hours">${esc(site.hours)}</dd></div>
           </dl>
-          <div class="hero-actions"><a class="btn ghost" href="/track">Track a consignment <span class="arw">&rsaquo;</span></a></div>
+          <div class="hero-actions"><a class="btn ghost" href="/track">Track a consignment ${icons.arrow}</a></div>
         </div>
         <div class="card" data-reveal>
           <h3 style="margin-bottom:18px">Send us a message</h3>
@@ -757,7 +783,7 @@ const careersContent = `
 
     <section class="section" style="padding-top:clamp(18px,3vw,36px)">
       <div class="wrap">
-        ${head({ kicker: 'Open roles', title: 'Where we are hiring.', split: true, aside: '<a class="btn ghost" href="/apply">Speculative application <span class="arw">&rsaquo;</span></a>' })}
+        ${head({ kicker: 'Open roles', title: 'Where we are hiring.', split: true, aside: `<a class="btn ghost" href="/apply">Speculative application ${icons.arrow}</a>` })}
         <div class="grid" id="role-list" style="gap:14px">
           ${careers
             .map(
@@ -768,7 +794,7 @@ const careersContent = `
               <h3>${esc(role.title)}</h3>
               <p>${esc(role.summary)}</p>
             </div>
-            <a class="btn sm" href="/apply?role=${encodeURIComponent(role.id)}">Apply <span class="arw">&rsaquo;</span></a>
+            <a class="btn sm" href="/apply?role=${encodeURIComponent(role.id)}">Apply ${icons.arrow}</a>
           </article>`
             )
             .join('')}
@@ -826,7 +852,7 @@ const applyContent = `
             <div class="field"><label for="a-message">Tell us about your work</label><textarea id="a-message" name="message" placeholder="What have you run, and what went wrong that you fixed?" required></textarea><div class="err" data-err="message"></div></div>
             <div class="honeypot" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
             <div class="form-status" data-form-status role="status" aria-live="polite"></div>
-            <button type="submit" class="btn block" data-submit>Send application <span class="arw">&rsaquo;</span></button>
+            <button type="submit" class="btn block" data-submit>Send application ${icons.arrow}</button>
           </form>
         </div>
       </div>
@@ -857,7 +883,7 @@ const portalContent = `
             <span class="eyebrow">Customer portal</span>
             <h2 style="margin-top:14px">Accounts are not available here yet.</h2>
             <p class="muted" style="margin-top:12px">This deployment has no account service connected, so there is nothing to sign in to. You can still track any consignment with its number.</p>
-            <div class="hero-actions"><a class="btn" href="/track">Track a consignment <span class="arw">&rsaquo;</span></a></div>
+            <div class="hero-actions"><a class="btn" href="/track">Track a consignment ${icons.arrow}</a></div>
           </div>
         </div>
 
@@ -904,7 +930,7 @@ const portalContent = `
               <label class="sr-only" for="portal-claim-number">Tracking number</label>
               <input type="text" id="portal-claim-number" name="number" placeholder="e.g. PMT-${YEAR}-4F7K2QX9"
                      autocomplete="off" spellcheck="false" maxlength="32" />
-              <button type="submit" class="btn" id="portal-claim-submit">Add <span class="arw">&rsaquo;</span></button>
+              <button type="submit" class="btn" id="portal-claim-submit">Add ${icons.arrow}</button>
             </div>
             <div class="form-status" id="portal-claim-status" role="status" aria-live="polite"></div>
           </form>
@@ -928,7 +954,7 @@ const notFoundContent = `
         <h1>That page has been rerouted.</h1>
         <p class="lede">The link is wrong or the page has moved. If you were looking for a consignment, the tracking console will find it.</p>
         <div class="hero-actions">
-          <a class="btn" href="/track">Track a consignment <span class="arw">&rsaquo;</span></a>
+          <a class="btn" href="/track">Track a consignment ${icons.arrow}</a>
           <a class="btn ghost" href="/">Back to the home page</a>
         </div>
       </div>
@@ -946,6 +972,8 @@ module.exports = [
     active: 'home',
     bodyClass: 'page-home',
     content: homeContent,
+    // The chart data is 29 KB of coastline; only the page that draws it pays.
+    extraScripts: ['/assets/map/world.js', '/js/fleet-map.js'],
   },
   {
     file: 'track.html',

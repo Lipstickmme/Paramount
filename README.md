@@ -42,6 +42,34 @@ works from.
 
 A live-chat widget is on every page except the desk.
 
+## The fleet tracker
+
+The home page leads with a chart of every Paramount vessel: where each one is,
+what class it is, what it is carrying and where it is going. Markers are
+coloured softly by vessel class, the selected vessel's route is drawn over the
+rest, and the panel beside it reads like a bridge report — position in degrees
+and minutes, course, speed, IMO and MMSI, call sign, draught, next call, ETA.
+
+**Where the positions come from.** `src/utils/fleet.js` computes them from the
+wall clock: each vessel has a route through real sea lanes and a service speed,
+so a voyage takes exactly as long as its distance and speed say it does, and the
+marker travels at the speed the panel reports. Positions are never stored, so
+the fleet is still sailing next year and no two page loads are identical.
+
+This is **not** a live AIS feed — a real one needs a paid provider
+(MarineTraffic, Spire, VesselFinder) and a key. `fleet.readFleet()` is the seam
+built for that: return `{ vessels, ports, waypoints }` from your provider and
+nothing downstream changes. The badge on the chart says "Live positions", not
+"AIS", for that reason.
+
+**The time-lapse.** A ship at 20 knots crosses about a thousandth of a pixel per
+second on a world chart, so the button in the tracker header winds the clock
+forward to make the movement watchable. It is labelled Live or Time-lapse, so
+what you are looking at is never in doubt.
+
+The chart's coastlines are Natural Earth 110m land data (public domain), built
+into `public/assets/map/world.js` by `scripts/build-world-map.js`.
+
 ## Tracking
 
 The product, end to end:
@@ -151,6 +179,8 @@ public/                 static frontend (built pages + assets)
   js/track-view.js      how a consignment is drawn, shared by /track and /portal
   js/track.js           the tracking console and its lookups
   js/portal.js          the customer portal
+  js/fleet-map.js       the chart on the home page
+  assets/map/world.js   coastlines, generated from Natural Earth data
   js/chat.js            live chat, visitor side
   js/admin.js           the desk
   js/supabase-lite.js   a tiny Supabase client (auth + PostgREST over fetch)
@@ -162,6 +192,7 @@ src/
   controllers/          request handling
   utils/
     tracking.js         tracking numbers, statuses, modes
+    fleet.js            where the fleet is, computed from the clock
     shipmentStore.js    consignments, movements and portal claims
     sessionAuth.js      server-side "who is this?" for staff and customers
     storage.js          enquiries, applications, rate requests
@@ -172,6 +203,8 @@ supabase/migrations/    the schema, in order
 scripts/
   build-pages.js        renders src/site into public/*.html
   make-placeholders.js  regenerates the placeholder artwork
+  build-world-map.js    coastlines -> an SVG path the chart draws
+  build-brand.py        every brand asset, derived from the one logo file
 test/                   API, browser and fallback suites
 ```
 
@@ -189,6 +222,8 @@ Public:
 | `POST` | `/api/applications`    | Job application                             |
 | `GET`  | `/api/services`        | The six services                            |
 | `GET`  | `/api/network`         | Hubs, lanes, headline figures, industries   |
+| `GET`  | `/api/fleet`           | Every vessel, with its position right now   |
+| `GET`  | `/api/fleet/:id`       | One vessel                                  |
 | `GET`  | `/api/careers`         | Open roles                                  |
 | `GET`  | `/api/site`            | Public contact details (`?fresh=1` skips the cache) |
 | `GET`  | `/api/health`          | What the running server can see (`?probe=1` also checks the schema) |

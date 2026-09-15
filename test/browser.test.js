@@ -146,12 +146,13 @@ async function until(check, what, timeout = 10000) {
     const visitorCtx = await browser.newContext();
     const visitor = await newPage(visitorCtx);
 
-    // Straight from the landing page, the way a customer arrives.
+    // From the header box, which is on every page and is how most people
+    // arrive at a tracking result.
     await visitor.goto(`${base}/`, { waitUntil: 'networkidle' });
-    await visitor.fill('#hero-tracker-number', number.toLowerCase());
+    await visitor.fill('#nav-track-number', number.toLowerCase());
     await Promise.all([
       visitor.waitForURL(/\/track\?number=/, { timeout: 15000 }),
-      visitor.click('#hero-tracker [data-track-submit]'),
+      visitor.click('.nav-track [data-track-submit]'),
     ]);
     await visitor.waitForSelector('.result-number', { timeout: 15000 });
     assert.match(await visitor.textContent('.result-number'), new RegExp(number));
@@ -269,6 +270,29 @@ async function until(check, what, timeout = 10000) {
     );
     console.log('  ok  a staff reply reaches the visitor without a reload');
 
+    /* ---------------- the menu drawer ---------------- */
+    await visitor.goto(`${base}/`, { waitUntil: 'networkidle' });
+    assert.strictEqual(await visitor.isVisible('#drawer.open'), false, 'the drawer starts closed');
+    await visitor.click('#navtoggle');
+    await visitor.waitForSelector('#drawer.open', { timeout: 5000 });
+    assert.strictEqual(await visitor.getAttribute('#navtoggle', 'aria-expanded'), 'true');
+    // Escape closes it, and focus goes back to the button that opened it.
+    await visitor.keyboard.press('Escape');
+    await visitor.waitForFunction(() => !document.getElementById('drawer').classList.contains('open'));
+    assert.strictEqual(
+      await visitor.evaluate(() => document.activeElement.id),
+      'navtoggle',
+      'focus returns to the trigger'
+    );
+    // And a link inside it navigates.
+    await visitor.click('#navtoggle');
+    await visitor.waitForSelector('#drawer.open');
+    await Promise.all([
+      visitor.waitForURL(/\/network$/, { timeout: 15000 }),
+      visitor.click('#drawer a[href="/network"]'),
+    ]);
+    console.log('  ok  the menu drawer opens, closes on Escape and navigates');
+
     /* ---------------- the customer portal ---------------- */
     const customerCtx = await browser.newContext();
     const customer = await newPage(customerCtx);
@@ -340,6 +364,25 @@ async function until(check, what, timeout = 10000) {
     await customer.waitForSelector('#portal-auth:not([hidden])', { timeout: 10000 });
     console.log('  ok  signing out returns to the gate');
     await customer.close();
+
+    /* ---------------- the fleet tracker ---------------- */
+    await visitor.goto(`${base}/`, { waitUntil: 'networkidle' });
+    await visitor.waitForSelector('.fleet-vessel', { timeout: 15000 });
+    const vessels = await visitor.$$eval('.fleet-vessel', (n) => n.length);
+    assert.ok(vessels >= 8, `the chart draws the fleet, got ${vessels}`);
+    assert.match(await visitor.textContent('.fleet-panel'), /\d+°\d+\.\d'[NS]/, 'the panel reports a latitude');
+
+    // Picking a vessel changes the panel and draws its track.
+    const second = (await visitor.$$('.fleet-chip'))[2];
+    const namedBefore = await visitor.textContent('.fleet-panel h3');
+    await second.click();
+    await visitor.waitForFunction(
+      (before) => document.querySelector('.fleet-panel h3').textContent !== before,
+      namedBefore,
+      { timeout: 8000 }
+    );
+    assert.ok(await visitor.$('.fleet-track'), 'the selected vessel gets its route drawn');
+    console.log('  ok  the fleet tracker draws, and picking a vessel opens it');
 
     /* ---------------- enquiry and rate request reach the desk ---------------- */
     await visitor.goto(`${base}/contact`, { waitUntil: 'networkidle' });
