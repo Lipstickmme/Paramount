@@ -129,6 +129,13 @@ The marker is the mode's own silhouette — a cargo ship in plan view, bow-up, s
 rotating it to the course turns it rather than flipping it over when it heads
 west.
 
+**A Pacific crossing frames on the Pacific.** Cutting the route at the dateline
+draws it correctly and frames it uselessly: Busan to Long Beach came out as the
+whole world with the line pinned to both edges. So the chart unrolls the world
+instead — longitudes run past 180 rather than wrapping, the route stays one
+continuous line, and as many copies of the coastlines are drawn as the frame
+needs.
+
 ### Statuses
 
 `pending` → `picked_up` → `in_transit` → `at_facility` → `out_for_delivery` →
