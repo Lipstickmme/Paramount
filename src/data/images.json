@@ -1,5 +1,5 @@
 {
-  "_comment": "Each slot names the files it would rather have and the placeholder it falls back to. Originals live in media/ and are never served; python3 scripts/build-photos.py derives the sized WebP the pages use into public/assets/photo/. A loose file dropped into public/assets/img/ under one of the `prefer` names still wins if it is there. docs/IMAGES.md lists every slot with its size and a brief.",
+  "_comment": "Each slot names the files it would rather have and the placeholder it falls back to. Uploads live in public/assets/img/ and stay there; python3 scripts/build-photos.py derives the sized WebP the pages actually serve into public/assets/photo/, and the resolver looks there first. A web-sized file dropped into public/assets/img/ under one of the `prefer` names still wins. docs/IMAGES.md lists every slot with its size and a brief.",
   "slots": {
     "underlay": {
       "prefer": [
@@ -44,27 +44,6 @@
         "careers"
       ],
       "fallback": "/assets/img/ph-careers.svg"
-    },
-    "contact": {
-      "prefer": [
-        "paramount-contact",
-        "contact"
-      ],
-      "fallback": "/assets/img/ph-contact.svg"
-    },
-    "warehouse": {
-      "prefer": [
-        "paramount-warehouse",
-        "warehouse"
-      ],
-      "fallback": "/assets/img/ph-warehouse.svg"
-    },
-    "og": {
-      "prefer": [
-        "paramount-og",
-        "og"
-      ],
-      "fallback": "/assets/img/ph-og.svg"
     }
   },
   "serviceSlots": {

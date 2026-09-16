@@ -192,7 +192,8 @@ public/                 static frontend (built pages + assets)
   js/portal.js          the customer portal
   js/fleet-map.js       the chart on the home page
   assets/map/world.js   coastlines, generated from Natural Earth data
-  assets/photo/         web-sized crops, derived from media/
+  assets/img/           the uploaded originals, plus the SVG placeholders
+  assets/photo/         web-sized crops, derived from the uploads
   assets/fonts/         the three faces, self-hosted
   js/chat.js            live chat, visitor side
   js/admin.js           the desk
@@ -218,9 +219,8 @@ scripts/
   make-placeholders.js  regenerates the placeholder artwork
   build-world-map.js    coastlines -> an SVG path the chart draws
   build-brand.py        every brand asset, derived from the one logo file
-  build-photos.py       media/ originals -> the sized crops the pages serve
+  build-photos.py       the uploads -> the sized crops the pages serve
   build-fonts.sh        refreshes the self-hosted webfonts
-media/                  the original photographs; never served, never deployed
 test/                   API, browser and fallback suites
 ```
 
@@ -318,8 +318,8 @@ contract, for a client that would rather call Postgres directly.
 
 ## Images
 
-Originals live in `media/` and are never served. They are 1-8 MB PNGs, which is
-right for an archive and wrong for a web page, so:
+Uploads go into `public/assets/img/`, where they stay. They are 1-8 MB PNGs,
+which is right for an archive and wrong for a web page, so:
 
 ```
 python3 scripts/build-photos.py
@@ -329,7 +329,13 @@ derives every crop the layout asks for into `public/assets/photo/` — a 2400x82
 banner per page, a 1200x900 card per service, 1600x1000 figures, the leadership
 portrait, and the blurred plate behind every page. 46 MB of source becomes about
 3 MB of WebP. The outputs are committed, because the Vercel build image has no
-Pillow; `media/` is in `.vercelignore`, so the originals never deploy.
+Pillow.
+
+The originals are source files, not pages, so `.vercelignore` drops every `.png`
+in `public/assets/img/` from the deploy. `npm run check:vercel` reads the built
+HTML, CSS and JS and fails if any page points at a file the deploy would not
+carry — so a slot that resolved to an original instead of its derivative is
+caught here rather than as a 404 in production.
 
 Which photograph goes where is `scripts/build-photos.py`'s three tables
 (`BANNERS`, `CARDS`, `WIDES`) — one line each, and the naming is the slot, not

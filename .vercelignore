@@ -5,10 +5,17 @@
 # Local runtime storage at the repo root
 /data/
 
-# The original photographs. scripts/build-photos.py derives the web-sized crops
-# into public/assets/photo/ and those are committed, so the deploy never needs
-# the 46 MB of source PNGs.
-/media/
+# The uploaded photographs. They stay in the repo, next to everything else in
+# assets, because that is where they were put and where the next one will go —
+# but they are source files, not pages. scripts/build-photos.py derives the
+# web-sized crops into public/assets/photo/ and those are what the site serves,
+# so the deploy never carries the 46 MB of originals.
+#
+# Every PNG in this directory is an original by convention; the generated
+# artwork lives in assets/photo (crops), assets/brand (logo, favicons, link
+# card) and assets/img/ph-*.svg (placeholders). scripts/check-vercel-upload.js
+# proves no built page ever points at a file this drops.
+/public/assets/img/*.png
 
 # Not needed by the deployment
 /docs/

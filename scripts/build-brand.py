@@ -6,7 +6,7 @@ generated at request time:
 
     python3 scripts/build-brand.py
 
-Source: media/Logoshipping.png — a navy-and-red container-ship
+Source: public/assets/img/Logoshipping.png — a navy-and-red container-ship
 emblem on a white ground. What the site needs from it:
 
   * the lockup with the white ground knocked out, so it sits on any panel
@@ -21,7 +21,7 @@ from collections import deque
 from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, 'media', 'Logoshipping.png')
+SRC = os.path.join(ROOT, 'public', 'assets', 'img', 'Logoshipping.png')
 BRAND = os.path.join(ROOT, 'public', 'assets', 'brand')
 PUBLIC = os.path.join(ROOT, 'public')
 
@@ -180,7 +180,7 @@ for i in range(180):  # a soft horizon, so the card is not a flat rectangle
     alpha = int(26 * (1 - i / 180))
     draw.line((0, 630 - i, 1200, 630 - i), fill=(255, 255, 255, alpha))
 centre(card, fit(to_white(lockup), (760, 430)), dy=-6)
-card.convert('RGB').save(os.path.join(PUBLIC, 'assets', 'img', 'paramount-og.png'), quality=92, optimize=True)
+card.convert('RGB').save(os.path.join(BRAND, 'paramount-og.png'), quality=92, optimize=True)
 
 for name in ('paramount-logo.png', 'paramount-logo.webp', 'paramount-logo-light.png',
              'paramount-logo-light.webp', 'paramount-mark.png', 'paramount-mark.webp',
@@ -190,5 +190,5 @@ for name in ('paramount-logo.png', 'paramount-logo.webp', 'paramount-logo-light.
 for name in ('favicon.png', 'favicon-32.png', 'apple-touch-icon.png'):
     p = os.path.join(PUBLIC, name)
     print(f'  {name:28} {Image.open(p).size}  {os.path.getsize(p) / 1024:.0f} KB')
-p = os.path.join(PUBLIC, 'assets', 'img', 'paramount-og.png')
+p = os.path.join(BRAND, 'paramount-og.png')
 print(f'  paramount-og.png             {Image.open(p).size}  {os.path.getsize(p) / 1024:.0f} KB')

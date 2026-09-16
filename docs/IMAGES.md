@@ -5,32 +5,40 @@ Every photograph on the site, where it came from, and where it goes.
 ## How it works
 
 ```
-media/                       the originals you upload. Never served, never deployed.
+public/assets/img/*.png      the originals you upload. Kept, but never served.
   ↓  python3 scripts/build-photos.py
-public/assets/photo/         the sized WebP crops the pages actually serve. Committed.
+public/assets/photo/         the sized WebP crops the pages serve. Committed.
   ↓  npm run build
 public/*.html                the built pages, with the right file in the right slot.
 ```
+
+Upload wherever you like in `public/assets/img/` — that is where the images
+already are and where the next one should go. They stay in the repo; they are
+simply not what the browser asks for. `.vercelignore` drops every `.png` in that
+directory from the deploy, because each one is a source file with a web-sized
+twin next door, and `npm run check:vercel` fails the build if any page ever
+points at one of them.
 
 Three tables at the top of `scripts/build-photos.py` decide what goes where —
 `BANNERS`, `CARDS`, `WIDES` — one line each. To point a page at a different
 photograph, change the name on the right of that line and re-run the script.
 Nothing else needs editing.
 
-**Adding a photograph.** Drop it into `media/` with a plain lower-case name,
-add or change the line that uses it, then:
+**Adding a photograph.** Drop it into `public/assets/img/` with a plain
+lower-case name, add or change the line that uses it, then:
 
 ```
 python3 scripts/build-photos.py && npm run build
 ```
 
 Any common format works; the script converts. Originals can be as large as you
-like — 46 MB of PNG comes out as about 3 MB of WebP, and `media/` is excluded
-from the deploy.
+like — 46 MB of PNG comes out as about 3 MB of WebP, and none of the 46 MB is
+deployed.
 
-**The escape hatch.** A file dropped straight into `public/assets/img/` under one
-of the `prefer` names in `src/data/images.json` still wins over the derived crop,
-so a one-off swap needs no script run at all.
+**The escape hatch.** A `.webp`, `.jpg` or `.svg` dropped into
+`public/assets/img/` under one of the `prefer` names in `src/data/images.json` is
+served as-is, with no script run — the exclusion rule only covers `.png`, which
+is the format the uploads arrive in. Keep it web-sized if you use this.
 
 ---
 
@@ -76,16 +84,19 @@ build-time map in the page (`#svc-images`).
 | Slot | Where | Source |
 | --- | --- | --- |
 | About | `/about`, the company block | `collage.png` |
-| Network | `/network` | `shipyard.png` |
-| Control tower | Home, "why Paramount" | `shipyard.png` |
-| Careers | `/careers` | `careers.png` |
-| Contact | `/contact` | `shipsailing.png` |
-| Warehouse | Warehousing service | `warehouse.png` |
+| Network | `/services/:id`, before its own artwork loads | `shipyard.png` |
+| Control | Home, "why Paramount" | `shipyard.png` |
+| Careers | `/careers`, beside the open roles | `careers.png` |
+
+Every other page carries its photograph in the banner and nowhere else —
+repeating the same picture further down a page reads as padding, not design.
 
 ### Portrait — 1200×1500
 
 `/about`, the leadership portrait: `newceoimage.png`, cropped from the top so
-the sitter's head is the subject rather than their desk.
+the sitter's head is the subject rather than their desk. The earlier
+`ceo.png` is kept in `public/assets/img/` but is not used anywhere — change the
+`PORTRAITS` line in `scripts/build-photos.py` to bring it back.
 
 ### The plate behind every page — 2400×1400
 
@@ -97,7 +108,8 @@ a picture.
 
 ## Brand assets
 
-Generated from `media/Logoshipping.png` by `python3 scripts/build-brand.py`.
+Generated from `public/assets/img/Logoshipping.png` by
+`python3 scripts/build-brand.py`.
 Re-run it if the logo is ever replaced; do not edit the outputs by hand.
 
 | Asset | File | Used for |
@@ -107,7 +119,7 @@ Re-run it if the logo is ever replaced; do not edit the outputs by hand.
 | Ship mark | `assets/brand/paramount-mark.{webp,png}` | Header (light) |
 | Ship mark, white | `assets/brand/paramount-mark-light.{webp,png}` | Header (dark) |
 | Favicons | `favicon-32.png`, `favicon.png`, `apple-touch-icon.png` | Tab, bookmarks, home screen |
-| Link card | `assets/img/paramount-og.png` | Social and chat previews |
+| Link card | `assets/brand/paramount-og.png` | Social and chat previews |
 
 The white versions are a one-colour cut of the same artwork, not a recolour: ink
 coverage becomes opacity, so the line-work and the lettering come back solid

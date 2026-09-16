@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Derive every photographic asset the site serves from the originals in media/.
+Derive every photographic asset the site serves from the uploads in
+public/assets/img/.
 
-The originals are 1-8 MB PNGs — right for an archive, wrong for a web page. This
+The uploads are 1-8 MB PNGs — right for an archive, wrong for a web page. This
 turns each one into the handful of crops the layout actually asks for, at the
 sizes it asks for, in WebP with a JPEG twin for anything that still wants one:
 
@@ -12,10 +13,14 @@ sizes it asks for, in WebP with a JPEG twin for anything that still wants one:
     portrait  1200x1500  the leadership portrait
     underlay  2400x1400  the fixed plate behind every page, darkened and blurred
 
-Nothing here is destructive: media/ is never written to, and the outputs land in
-public/assets/photo/ under predictable names, so re-running after a new upload
-is safe. media/ is excluded from the deploy (.vercelignore); the derivatives are
-committed, because the Vercel build image has no Pillow.
+Nothing here is destructive: the uploads are only ever read, and the outputs
+land in public/assets/photo/ under predictable names, so re-running after a new
+upload is safe.
+
+The originals stay in public/assets/img/ where they were uploaded, but they are
+not deployed — .vercelignore drops every .png in that directory, because each
+one is a source file with a web-sized twin in public/assets/photo/. Those
+derivatives are committed, since the Vercel build image has no Pillow.
 
     python3 scripts/build-photos.py
 """
@@ -25,7 +30,7 @@ import sys
 from PIL import Image, ImageEnhance, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, 'media')
+SRC = os.path.join(ROOT, 'public', 'assets', 'img')
 OUT = os.path.join(ROOT, 'public', 'assets', 'photo')
 
 # Slot -> (source file, variant). One source may serve several slots: the same
@@ -58,13 +63,13 @@ CARDS = {
     'service-warehousing': 'warehouse',
 }
 
+# The in-page figures. One per slot the pages actually render — a crop nothing
+# asks for is dead weight in the repo and a lie in the manifest.
 WIDES = {
     'paramount-about': 'collage',
     'paramount-network': 'shipyard',
     'paramount-control': 'shipyard',
     'paramount-careers': 'careers',
-    'paramount-contact': 'shipsailing',
-    'paramount-warehouse': 'warehouse',
 }
 
 PORTRAITS = {'paramount-ceo': 'newceoimage'}
@@ -109,12 +114,12 @@ def load(stem):
         p = os.path.join(SRC, stem + ext)
         if os.path.exists(p):
             return polish(Image.open(p).convert('RGB'))
-    raise SystemExit(f'media/{stem}.* is missing — nothing to derive from.')
+    raise SystemExit(f'public/assets/img/{stem}.* is missing — nothing to derive from.')
 
 
 def main():
     if not os.path.isdir(SRC):
-        raise SystemExit('media/ does not exist; put the original photographs there.')
+        raise SystemExit('public/assets/img/ does not exist.')
     made = 0
 
     for slot, stem in BANNERS.items():

@@ -335,7 +335,7 @@ const homeContent = `
     <section class="section">
       <div class="wrap split">
         <div class="split-media" data-reveal>
-          <img src="${images.control}" alt="Paramount control tower" loading="lazy" width="1600" height="1000" />
+          <img src="${images.control}" alt="Paramount crew working a container terminal" loading="lazy" width="1600" height="1000" />
           <div class="badge"><b>24/7</b><span>Control tower</span></div>
         </div>
         <div>
@@ -570,7 +570,7 @@ const aboutContent = `
     <section class="section" style="padding-top:clamp(18px,3vw,36px)">
       <div class="wrap split">
         <div class="split-media" data-reveal>
-          <img src="${images.about}" alt="Paramount operations" loading="lazy" width="1600" height="1000" />
+          <img src="${images.about}" alt="Paramount crew, containers and a truck on the quay" loading="lazy" width="1600" height="1000" />
           <div class="badge"><b>2009</b><span>Founded, Rotterdam</span></div>
         </div>
         <div>
@@ -792,7 +792,7 @@ const careersContent = `
 
     <section class="section">
       <div class="wrap split">
-        <div class="split-media" data-reveal><img src="${images.careers}" alt="Working at Paramount" loading="lazy" width="1600" height="1000" /></div>
+        <div class="split-media" data-reveal><img src="${images.careers}" alt="Paramount crew on the quay beside a berthed vessel" loading="lazy" width="1600" height="1000" /></div>
         <div>
           ${head({ kicker: 'What you get', title: 'The terms, plainly.' })}
           <ul class="checks">
