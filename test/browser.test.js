@@ -205,8 +205,14 @@ async function until(check, what, timeout = 10000) {
     // passed stay marked even when the status moves on.
     const done = await visitor.$$eval('.milestone.done', (n) => n.length);
     assert.ok(done >= 3, `milestones fill from history, got ${done}`);
-    // Coordinates on both ends and a scan between them are enough to draw it.
-    assert.strictEqual(await visitor.$$eval('.map-card svg', (n) => n.length), 1, 'the route map is drawn');
+    // Coordinates on both ends are enough to draw the chart, and the marker
+    // lands on real water rather than on the great circle through Siberia.
+    assert.strictEqual(await visitor.$$eval('.cm-chart', (n) => n.length), 1, 'the route chart is drawn');
+    assert.ok(await visitor.$('.cm-mark .cm-hull'), 'the consignment is marked with a ship');
+    assert.match(await visitor.textContent('[data-cm-read="lat"]'), /\d+°\d+\.\d'[NS]/, 'and reports a latitude');
+    const runNm = Number((await visitor.textContent('[data-cm-read="run"]')).replace(/[^\d]/g, ''));
+    const toGo = Number((await visitor.textContent('[data-cm-read="remaining"]')).replace(/[^\d]/g, ''));
+    assert.ok(runNm > 0 && toGo > 0, `the chart reports a run and a remainder, got ${runNm}/${toGo}`);
     console.log('  ok  the visitor sees the movement, the map and the filled milestones');
 
     /* ---------------- an internal note stays internal ---------------- */

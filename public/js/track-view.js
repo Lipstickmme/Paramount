@@ -88,25 +88,40 @@
       </div>`;
   }
 
+  /**
+   * The consignment's own details.
+   *
+   * Only what is actually known. A grid of sixteen rows, eleven of them an
+   * em dash, says nothing except that the form was long — and on a page whose
+   * whole argument is that the record is complete, a wall of blanks argues the
+   * opposite. Five rows are always shown because their absence is itself
+   * information: service, booked, the delivery date, and who it is between.
+   */
   function facts(s) {
-    const rows = [
+    const always = [
       ['Service', `${esc(s.mode_label)}${s.service_level ? ` · ${esc(s.service_level)}` : ''}`],
-      ['Pieces', s.pieces == null ? '—' : esc(s.pieces)],
-      ['Weight', s.weight_kg ? `${esc(s.weight_kg)} kg` : '—'],
-      ['Dimensions', s.dimensions ? esc(s.dimensions) : '—'],
-      ['Package type', s.package_type ? esc(s.package_type) : '—'],
-      ['Contents', s.contents ? esc(s.contents) : '—'],
-      ['Shipper', s.shipper_name ? esc(s.shipper_name) : '—'],
-      ['Consignee', s.receiver_name ? esc(s.receiver_name) : '—'],
-      ['Carrier', s.carrier ? esc(s.carrier) : '—'],
-      ['Vessel / flight', s.vessel_or_flight ? esc(s.vessel_or_flight) : '—'],
-      ['Your reference', s.reference ? esc(s.reference) : '—'],
       ['Booked', when(s.created_at, { withTime: false })],
-      ['Collected', when(s.picked_up_at)],
-      [s.is_delivered ? 'Delivered' : 'Estimated delivery', when(s.is_delivered ? s.delivered_at : s.estimated_delivery)],
-      ['Signed by', s.signed_by ? esc(s.signed_by) : '—'],
+      [s.is_delivered ? 'Delivered' : 'Estimated delivery', when(s.is_delivered ? s.delivered_at : s.estimated_delivery) || 'To be confirmed'],
       ['Last updated', `${when(s.updated_at)} <span class="muted">(${relative(s.updated_at)})</span>`],
     ];
+    const whenKnown = [
+      ['Pieces', s.pieces],
+      ['Weight', s.weight_kg ? `${esc(s.weight_kg)} kg` : null],
+      ['Volume', s.volume_cbm ? `${esc(s.volume_cbm)} cbm` : null],
+      ['Dimensions', s.dimensions],
+      ['Package type', s.package_type],
+      ['Contents', s.contents],
+      ['Shipper', s.shipper_name],
+      ['Consignee', s.receiver_name],
+      ['Carrier', s.carrier],
+      ['Vessel / flight', s.vessel_or_flight],
+      ['Container / ULD', s.container_no],
+      ['Your reference', s.reference],
+      ['Collected', when(s.picked_up_at)],
+      ['Signed by', s.signed_by],
+    ].filter(([, v]) => v != null && v !== '');
+
+    const rows = always.concat(whenKnown.map(([k, v]) => [k, typeof v === 'string' ? esc(v) : esc(String(v))]));
     return `<dl class="facts">${rows
       .map(([k, v]) => `<div class="fact"><dt>${k}</dt><dd>${v}</dd></div>`)
       .join('')}</dl>`;
@@ -133,100 +148,49 @@
   }
 
   /**
-   * A schematic of the journey: origin, destination, the recorded scans, and
-   * where it is now. Coordinates are optional throughout, so the map is only
-   * drawn when there is enough to draw — never a guess.
+   * The chart, and the readout beside it.
+   *
+   * The drawing is done by consignment-map.js against the real coastlines; this
+   * only lays out the frame it goes in and the numbers that change as the
+   * marker moves. Both come back empty when the server could not say where the
+   * consignment is — no origin coordinates, no destination coordinates — and an
+   * absent map is better than an invented one.
    */
   function routeMap(s) {
-    const points = [];
-    if (s.origin_lat != null && s.origin_lng != null) {
-      points.push({ lat: +s.origin_lat, lng: +s.origin_lng, kind: 'origin' });
-    }
-    s.events
-      .slice()
-      .reverse()
-      .forEach((e) => {
-        if (e.lat != null && e.lng != null) points.push({ lat: +e.lat, lng: +e.lng, kind: 'scan' });
-      });
-    if (s.destination_lat != null && s.destination_lng != null) {
-      points.push({ lat: +s.destination_lat, lng: +s.destination_lng, kind: 'destination' });
-    }
-    if (points.length < 2) return '';
+    const p = s.position;
+    if (!p || !Array.isArray(p.route) || p.route.length < 2) return '';
 
-    const W = 900;
-    const H = 380;
-    const pad = 54;
-    const lats = points.map((p) => p.lat);
-    const lngs = points.map((p) => p.lng);
-    // A degenerate span (one city, or a due north-south route) would divide by
-    // zero, so the extent never shrinks below a couple of degrees.
-    const spanLng = Math.max(2, Math.max(...lngs) - Math.min(...lngs));
-    const spanLat = Math.max(2, Math.max(...lats) - Math.min(...lats));
-    const midLng = (Math.max(...lngs) + Math.min(...lngs)) / 2;
-    const midLat = (Math.max(...lats) + Math.min(...lats)) / 2;
-
-    const x = (lng) => pad + ((lng - (midLng - spanLng / 2)) / spanLng) * (W - pad * 2);
-    const y = (lat) => pad + (((midLat + spanLat / 2) - lat) / spanLat) * (H - pad * 2);
-
-    const path = points
-      .map((p, i) => `${i ? 'L' : 'M'}${x(p.lng).toFixed(1)} ${y(p.lat).toFixed(1)}`)
-      .join(' ');
-
-    const travelled = points.filter((p) => p.kind !== 'destination');
-    const travelledPath = travelled
-      .map((p, i) => `${i ? 'L' : 'M'}${x(p.lng).toFixed(1)} ${y(p.lat).toFixed(1)}`)
-      .join(' ');
-
-    const dots = points
-      .map((p) => {
-        const colour =
-          p.kind === 'origin' ? 'var(--accent-2)' : p.kind === 'destination' ? 'var(--accent-3)' : 'var(--ink-3)';
-        const r = p.kind === 'scan' ? 3.5 : 6;
-        return `<circle cx="${x(p.lng).toFixed(1)}" cy="${y(p.lat).toFixed(1)}" r="${r}" fill="${colour}" />`;
-      })
-      .join('');
-
-    const nowX = s.current_lng != null ? x(+s.current_lng) : null;
-    const nowY = s.current_lat != null ? y(+s.current_lat) : null;
-    const now =
-      nowX == null || nowY == null
-        ? ''
-        : `<g>
-            <circle cx="${nowX.toFixed(1)}" cy="${nowY.toFixed(1)}" r="7" fill="var(--accent)" />
-            <circle cx="${nowX.toFixed(1)}" cy="${nowY.toFixed(1)}" r="7" fill="none" stroke="var(--accent)" stroke-width="1.5">
-              <animate attributeName="r" values="7;22" dur="2.2s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values=".7;0" dur="2.2s" repeatCount="indefinite" />
-            </circle>
-          </g>`;
+    const estimated = p.source === 'estimated';
+    const basis = !estimated
+      ? ''
+      : p.basis === 'eta'
+        ? 'Estimated between scans, paced to the delivery date.'
+        : `Estimated between scans at the planned ${p.speed_kn} kn.`;
 
     return `
-      <div class="card map-card" data-reveal>
-        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Route from ${esc(s.origin_city)} to ${esc(s.destination_city)}">
-          <defs>
-            <linearGradient id="route" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stop-color="var(--accent-2)" />
-              <stop offset="1" stop-color="var(--accent-3)" />
-            </linearGradient>
-            <pattern id="rdots" width="18" height="18" patternUnits="userSpaceOnUse">
-              <circle cx="1.5" cy="1.5" r="1.2" fill="currentColor" opacity=".12" />
-            </pattern>
-          </defs>
-          <rect width="${W}" height="${H}" fill="url(#rdots)" color="var(--ink-2)" />
-          <path d="${path}" fill="none" stroke="var(--line-strong)" stroke-width="2" stroke-dasharray="4 8" />
-          <path d="${travelledPath}" fill="none" stroke="url(#route)" stroke-width="2.6" class="dash" />
-          ${dots}
-          ${now}
-          <text x="${x(points[0].lng).toFixed(1)}" y="${(y(points[0].lat) - 14).toFixed(1)}" text-anchor="middle"
-                font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink-2)">${esc(s.origin_city)}</text>
-          <text x="${x(points[points.length - 1].lng).toFixed(1)}" y="${(y(points[points.length - 1].lat) + 24).toFixed(1)}" text-anchor="middle"
-                font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink-2)">${esc(s.destination_city)}</text>
-        </svg>
-        <div class="map-legend">
-          <span><i style="background:var(--accent-2)"></i>Origin</span>
-          <span><i style="background:var(--accent)"></i>Now</span>
-          <span><i style="background:var(--accent-3)"></i>Destination</span>
+      <section class="cm card" data-reveal>
+        <header class="cm-head">
+          <div>
+            <span class="eyebrow">Where it is</span>
+            <h3>${esc(s.origin_city || 'Origin')} &rarr; ${esc(s.destination_city || 'Destination')}</h3>
+          </div>
+          <span class="cm-state ${estimated ? 'is-estimated' : 'is-fixed'}">
+            <span class="dot"></span>${estimated ? 'Estimated position' : 'Last recorded position'}
+          </span>
+        </header>
+
+        <div class="cm-stage" data-consignment-map></div>
+
+        <div class="cm-readout">
+          <div><dt>Latitude</dt><dd class="mono" data-cm-read="lat">—</dd></div>
+          <div><dt>Longitude</dt><dd class="mono" data-cm-read="lng">—</dd></div>
+          <div><dt>Course</dt><dd class="mono" data-cm-read="course">—</dd></div>
+          <div><dt>Run</dt><dd><b class="mono" data-cm-read="run">—</b> nm</dd></div>
+          <div><dt>To go</dt><dd><b class="mono" data-cm-read="remaining">—</b> nm</dd></div>
         </div>
-      </div>`;
+
+        ${basis ? `<p class="cm-note">${esc(basis)} Every dot on the line is a movement somebody recorded; the marker between them is our reckoning, and the next scan replaces it.</p>` : ''}
+      </section>`;
   }
 
   function render(s) {
@@ -269,13 +233,15 @@
         ${s.special_handling ? `<div><span class="tag">${esc(s.special_handling)}</span></div>` : ''}
       </div>
 
+      ${routeMap(s)}
+
       <div class="result-grid">
-        <div class="card" data-reveal>
+        <div class="card result-panel" data-reveal>
           <div class="panel-title"><h3>Movement history</h3><span class="mono muted" style="font-size:.76rem">${s.events.length} event${s.events.length === 1 ? '' : 's'}</span></div>
           ${timeline(s.events)}
         </div>
-        <div style="display:grid;gap:20px">
-          ${routeMap(s)}
+        <div class="card result-panel" data-reveal>
+          <div class="panel-title"><h3>Consignment</h3></div>
           ${facts(s)}
         </div>
       </div>
@@ -286,8 +252,29 @@
       </div>`;
   }
 
+  /**
+   * Hand a freshly painted result to the chart.
+   *
+   * Called by whoever wrote the markup — the tracking console, the portal —
+   * because only they know when the nodes are in the document. Each call stops
+   * the previous chart's clock, so opening a second consignment does not leave
+   * a timer ticking against a detached element.
+   */
+  let stopChart = null;
+  function activate(root, shipment) {
+    if (stopChart) {
+      stopChart();
+      stopChart = null;
+    }
+    const stage = (root || document).querySelector('[data-consignment-map]');
+    const chart = global.PARAMOUNT_CONSIGNMENT_MAP;
+    if (!stage || !chart) return;
+    stopChart = chart.mount(stage, shipment);
+  }
+
   global.PARAMOUNT_TRACK_VIEW = {
     esc,
+    activate,
     when,
     relative,
     place,

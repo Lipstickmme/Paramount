@@ -980,8 +980,9 @@ module.exports = [
     active: 'home',
     bodyClass: 'page-home',
     content: homeContent,
-    // The chart data is 29 KB of coastline; only the page that draws it pays.
-    extraScripts: ['/assets/map/world.js', '/js/fleet-map.js'],
+    // The chart data is 29 KB of coastline; only the pages that draw one pay.
+    // The landing page draws two: the fleet, and whatever is being tracked.
+    extraScripts: ['/assets/map/world.js', '/js/fleet-map.js', '/js/consignment-map.js'],
   },
   {
     file: 'services.html',
@@ -1059,7 +1060,8 @@ module.exports = [
     content: portalContent,
     // Nothing here should be indexed: it is one account's consignments.
     noindex: true,
-    extraScripts: ['/js/portal.js'],
+    // The portal opens a consignment on the same chart the landing page uses.
+    extraScripts: ['/assets/map/world.js', '/js/consignment-map.js', '/js/portal.js'],
   },
   {
     file: '404.html',

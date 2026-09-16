@@ -110,6 +110,9 @@
       recent.add(body.shipment.tracking_number);
       paintRecent();
       paint(view.render(body.shipment));
+      // The chart needs the nodes to be in the document before it can measure
+      // and start its clock, so it is started here rather than inside render().
+      if (view.activate) view.activate(resultBox, body.shipment);
 
       if (push && window.history && window.history.replaceState) {
         const url = `${window.location.pathname}?number=${encodeURIComponent(body.shipment.tracking_number)}#track`;

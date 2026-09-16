@@ -1372,38 +1372,161 @@ form { display: grid; gap: 18px; }
 .timeline .note { color: var(--ink-3); font-size: 0.88rem; margin-top: 4px; }
 
 /* Route map (SVG, drawn from coordinates) */
-.map-card { position: relative; padding: 0; overflow: hidden; }
-.map-card svg { width: 100%; height: auto; display: block; }
-.map-legend {
-  position: absolute;
-  left: 16px;
-  bottom: 14px;
+/* =========================================================================
+   The consignment chart
+
+   The same coastlines the fleet tracker draws, framed on one route. Full width,
+   because the previous version was a schematic squeezed into a column and at
+   that size its two dots were two pixels across.
+   ========================================================================= */
+
+.cm {
+  display: grid;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.cm-head {
   display: flex;
-  gap: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: clamp(16px, 2vw, 22px) clamp(18px, 2.2vw, 26px);
+  border-bottom: 1px solid var(--line);
+}
+.cm-head h3 { font-size: clamp(1.05rem, 1.8vw, 1.35rem); margin-top: 7px; }
+
+.cm-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+.cm-state .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.cm-state.is-fixed { color: var(--go); border-color: color-mix(in srgb, var(--go) 40%, transparent); }
+.cm-state.is-estimated { color: var(--accent-2); border-color: color-mix(in srgb, var(--accent-2) 40%, transparent); }
+.cm-state.is-estimated .dot { animation: pulse 2.4s var(--ease-in-out) infinite; }
+
+.cm-stage { position: relative; background: var(--bg-2); }
+.cm-chart { display: block; width: 100%; height: clamp(230px, 27vw, 340px); }
+
+.cm-sea { fill: color-mix(in srgb, var(--accent-2) 9%, var(--bg-2)); }
+.cm-land {
+  fill: var(--panel-solid);
+  stroke: var(--line-strong);
+  stroke-width: 0.4;
+  vector-effect: non-scaling-stroke;
+}
+.cm-lane {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1.6;
+  stroke-dasharray: 3 5;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.cm-run {
+  fill: none;
+  stroke: var(--accent-2);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.cm-scan { fill: var(--ink-3); stroke: var(--panel-solid); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.cm-end circle { fill: var(--panel-solid); stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.cm-end.cm-to circle { stroke: var(--oxide); }
+.cm-end text {
   font-family: var(--mono);
-  font-size: 0.7rem;
-  color: var(--ink-3);
-  letter-spacing: 0.08em;
+  font-size: 9px;
+  fill: var(--ink-2);
+  paint-order: stroke;
+  stroke: var(--bg-2);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+/* The marker. The hull is drawn bow-up and rotated to its course, so a westerly
+   heading turns the ship rather than flipping it. */
+.cm-mark .cm-hull { fill: var(--oxide); stroke: var(--panel-solid); stroke-width: 0.7; vector-effect: non-scaling-stroke; }
+.cm-mark .cm-deck { fill: color-mix(in srgb, var(--panel-solid) 72%, var(--oxide)); }
+.cm-mark .cm-house { fill: var(--panel-solid); }
+.cm-halo { fill: color-mix(in srgb, var(--oxide) 20%, transparent); }
+.cm-mark.is-moving .cm-halo { animation: cm-ping 2.6s var(--ease-in-out) infinite; }
+@keyframes cm-ping {
+  0% { r: 11; opacity: 0.55; }
+  70% { r: 22; opacity: 0; }
+  100% { r: 22; opacity: 0; }
+}
+
+.cm-readout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border-top: 1px solid var(--line);
+}
+.cm-readout > div { padding: 13px 18px; background: var(--panel-solid); display: grid; gap: 4px; }
+.cm-readout dt {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  color: var(--ink-3);
 }
-.map-legend i {
-  display: inline-block;
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  margin-right: 6px;
-  vertical-align: middle;
+.cm-readout dd { font-size: 0.95rem; font-weight: 600; }
+.cm-readout dd b { font-weight: 600; }
+
+.cm-note {
+  padding: 13px clamp(18px, 2.2vw, 26px);
+  border-top: 1px solid var(--line);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--ink-3);
 }
-.dash { stroke-dasharray: 7 9; animation: crawl 2.4s linear infinite; }
-@keyframes crawl { to { stroke-dashoffset: -32; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cm-mark.is-moving .cm-halo { animation: none; }
+}
 
 .result-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 }
 @media (max-width: 980px) {
   .result-grid { grid-template-columns: 1fr; }
+}
+.result-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: clamp(18px, 2vw, 26px);
+}
+/* The taller panel sets the height and the shorter one fills it — but only the
+   panel stretches, never its contents. A two-event timeline stretched to the
+   height of a sixteen-row detail grid puts a hand's width of nothing between
+   two movements. */
+.result-panel > .facts { flex: 1; align-content: start; }
+.result-panel > .timeline { flex: 1; align-content: start; }
+
+/* Two columns, fixed, inside a result panel. `auto-fit` guessed the count from
+   the width, which made the next rule impossible to write. */
+.result-panel .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* An odd number of details left the last cell half-empty, and since the hairline
+   grid is a 1px gap over a coloured backing, "empty" rendered as a grey block.
+   The last one takes the whole row instead. */
+.result-panel .fact:last-child:nth-child(odd) { grid-column: 1 / -1; }
+@media (max-width: 560px) {
+  .result-panel .facts { grid-template-columns: 1fr; }
 }
 
 .panel-title {
@@ -2531,18 +2654,25 @@ body.pm-open .pm-hero-panel { display: none; }
    six saturated ones on a chart is a video game, not an operations picture. */
 .fleet-vessel { cursor: pointer; }
 .fleet-hit { fill: transparent; }
+/* The hull carries the class colour; the deck and the accommodation block are
+   drawn from the page's own ground, so one fill change recolours the whole
+   ship and it still reads as a ship at twenty pixels. */
 .fleet-hull {
   fill: var(--v-general);
   stroke: var(--panel-solid);
   stroke-width: 0.8;
-  transition: transform 0.9s linear;
+  vector-effect: non-scaling-stroke;
 }
+.fleet-boxes { fill: color-mix(in srgb, var(--panel-solid) 66%, transparent); }
+.fleet-house { fill: var(--panel-solid); }
+.fleet-vessel > g { transition: transform 0.9s linear; }
 .fleet-vessel.tone-container .fleet-hull { fill: var(--v-container); }
 .fleet-vessel.tone-bulk .fleet-hull { fill: var(--v-bulk); }
 .fleet-vessel.tone-tanker .fleet-hull { fill: var(--v-tanker); }
 .fleet-vessel.tone-reefer .fleet-hull { fill: var(--v-reefer); }
 .fleet-vessel.tone-roro .fleet-hull { fill: var(--v-roro); }
-.fleet-vessel.is-berthed .fleet-hull { opacity: 0.6; }
+.fleet-vessel.is-berthed .fleet-hull,
+.fleet-vessel.is-berthed .fleet-boxes { opacity: 0.6; }
 .fleet-vessel:hover .fleet-hull { stroke-width: 1.4; }
 .fleet-vessel:focus-visible { outline: none; }
 .fleet-vessel:focus-visible .fleet-halo,

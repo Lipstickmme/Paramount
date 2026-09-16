@@ -18,6 +18,7 @@ const crypto = require('crypto');
 const { dataDir } = require('./paths');
 const { getSupabase } = require('./supabase');
 const tracking = require('./tracking');
+const voyage = require('./voyage');
 
 const TABLE = 'shipments';
 const EVENTS = 'shipment_events';
@@ -573,6 +574,12 @@ function toPublic(shipment, events = []) {
       };
     })
     .sort((a, b) => String(b.occurred_at).localeCompare(String(a.occurred_at)));
+
+  // Where it is now, and the water it is following to get there. Computed, not
+  // recorded — see src/utils/voyage.js for what that means and what it refuses
+  // to do. Null when there is not enough to say, which the page treats as "no
+  // chart" rather than as a chart with a guess on it.
+  out.position = voyage.position(shipment, events || []);
 
   return out;
 }
