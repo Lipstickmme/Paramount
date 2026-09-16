@@ -84,24 +84,38 @@
   /* --------------------------------------------------------- drawing --- */
 
   /**
-   * Break a line where it crosses the dateline.
+   * Unroll a route that crosses the dateline.
    *
    * On an equirectangular plate a leg from 179°E to 179°W is two degrees of
-   * water and the whole width of the chart, so a single path would draw a
-   * stripe straight back across the world.
+   * water and the whole width of the chart. Cutting the line at the seam draws
+   * it correctly but frames it terribly: a Busan-to-Long Beach box ends up as
+   * the entire world with the route pinned to both edges and the Pacific — the
+   * only ocean that matters here — split down the middle.
+   *
+   * So instead of cutting the line, the world is unrolled. Longitudes run on
+   * past 180 rather than wrapping (Long Beach becomes 241.8°E), the route stays
+   * one continuous line, and the frame lands on the water the cargo is actually
+   * crossing. The chart draws a second copy of the coastlines one plate-width
+   * along to fill the space that creates.
    */
-  function polylines(points) {
-    const runs = [];
-    let run = [];
-    points.forEach((p, i) => {
-      if (i && Math.abs(p.lng - points[i - 1].lng) > 180) {
-        runs.push(run);
-        run = [];
-      }
-      run.push(p);
-    });
-    if (run.length) runs.push(run);
-    return runs.filter((r) => r.length > 1);
+  function unwrap(points) {
+    const out = [{ ...points[0] }];
+    for (let i = 1; i < points.length; i += 1) {
+      let lng = points[i].lng;
+      const prev = out[i - 1].lng;
+      while (lng - prev > 180) lng -= 360;
+      while (lng - prev < -180) lng += 360;
+      out.push({ ...points[i], lng });
+    }
+    return out;
+  }
+
+  /** Put a loose point (a scan, a port) into the same frame as the route. */
+  function intoFrame(p, midLng) {
+    let lng = p.lng;
+    while (lng - midLng > 180) lng -= 360;
+    while (lng - midLng < -180) lng += 360;
+    return { ...p, lng };
   }
 
   /* Densify a leg so a great circle draws as a curve rather than a chord. */
@@ -156,10 +170,19 @@
     const position = shipment && shipment.position;
     if (!host || !world || !position || !Array.isArray(position.route) || position.route.length < 2) return null;
 
-    const line = densify(position.route);
+    // Densify first, then unroll: interpolate() returns longitudes through
+    // atan2, so it wraps everything back into -180..180 and would undo the
+    // unrolling if it ran second.
+    const line = unwrap(densify(position.route));
     const marks = measure(line);
     const total = marks[marks.length - 1];
-    const project = (p) => world.project(p.lng, p.lat);
+    const midLng = (line[0].lng + line[line.length - 1].lng) / 2;
+
+    // x runs past the plate edge in this frame; y is unchanged.
+    const project = (p) => ({
+      x: ((p.lng + 180) / 360) * world.width,
+      y: world.project(0, p.lat).y,
+    });
 
     const path = (points) =>
       points.map((p, i) => {
@@ -167,8 +190,8 @@
         return `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
       }).join(' ');
 
-    // Frame the chart on the route rather than showing the whole world: a box
-    // between Shanghai and Rotterdam is not helped by an empty Pacific.
+    // Frame on the route rather than showing the whole world: a box between
+    // Shanghai and Rotterdam is not helped by an empty Pacific.
     const xs = line.map((p) => project(p).x);
     const ys = line.map((p) => project(p).y);
     const pad = 46;
@@ -193,13 +216,25 @@
       h = maxY - minY;
     }
 
+    // Enough copies of the coastlines to cover the frame, since it can now run
+    // past either edge of the plate.
+    const first = Math.floor(minX / world.width);
+    const last = Math.floor(maxX / world.width);
+    const lands = [];
+    for (let i = first; i <= last; i += 1) {
+      lands.push(`<path class="cm-land" transform="translate(${(i * world.width).toFixed(1)} 0)" d="${world.land}" />`);
+    }
+
     const scans = (shipment.events || [])
       .filter((e) => e.lat != null && e.lng != null)
-      .map((e) => ({ ...project({ lat: +e.lat, lng: +e.lng }), label: e.location || e.status_label }));
+      .map((e) => ({
+        ...project(intoFrame({ lat: +e.lat, lng: +e.lng }, midLng)),
+        label: e.location || e.status_label,
+      }));
 
     const ends = [
-      { p: position.origin, label: shipment.origin_city, kind: 'from' },
-      { p: position.destination, label: shipment.destination_city, kind: 'to' },
+      { p: line[0], label: shipment.origin_city, kind: 'from' },
+      { p: line[line.length - 1], label: shipment.destination_city, kind: 'to' },
     ];
 
     host.innerHTML = `
@@ -208,8 +243,8 @@
            aria-label="Route from ${esc(shipment.origin_city)} to ${esc(shipment.destination_city)}">
         <rect x="${(minX - 400).toFixed(1)}" y="${(minY - 400).toFixed(1)}"
               width="${(w + 800).toFixed(1)}" height="${(h + 800).toFixed(1)}" class="cm-sea" />
-        <path class="cm-land" d="${world.land}" />
-        ${polylines(line).map((run) => `<path class="cm-lane" d="${path(run)}" />`).join('')}
+        ${lands.join('')}
+        <path class="cm-lane" d="${path(line)}" />
         <path class="cm-run" data-cm-run d="" />
         ${scans.map((s) => `<circle class="cm-scan" cx="${s.x.toFixed(1)}" cy="${s.y.toFixed(1)}" r="2.6"><title>${esc(s.label)}</title></circle>`).join('')}
         ${ends.map(({ p, label, kind }) => {
@@ -249,14 +284,14 @@
     function paint(now) {
       const { along } = atTime(now);
       const here = pointAt(line, marks, along);
-      const { x, y } = project(here);
+      const { x, y } = project(intoFrame(here, midLng));
       markNode.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
       glyphNode.setAttribute('transform', `rotate(${here.course.toFixed(1)})`);
 
       // The distance already run, drawn over the lane so the two read as one
       // line with a bright half and a faint one.
-      const done = line.filter((p, i) => marks[i] <= along).concat([here]);
-      runNode.setAttribute('d', polylines(done).map(path).join(' '));
+      const done = line.filter((p, i) => marks[i] <= along).concat([intoFrame(here, midLng)]);
+      runNode.setAttribute('d', path(done));
 
       const remaining = Math.max(0, total - along);
       readouts.forEach((node) => {
