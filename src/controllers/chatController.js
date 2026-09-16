@@ -53,7 +53,7 @@ async function trackingAnswer(text) {
     view.current_location ? `Last scan: ${view.current_location}${last && last.occurred_at ? ` on ${new Date(last.occurred_at).toUTCString().replace('GMT', 'UTC')}` : ''}.` : null,
     `Route: ${view.origin_city} to ${view.destination_city}.`,
     view.is_delivered ? null : `Estimated delivery: ${eta}.`,
-    `Full timeline: /track?number=${encodeURIComponent(view.tracking_number)}`,
+    `Full timeline: /?number=${encodeURIComponent(view.tracking_number)}#track`,
   ].filter(Boolean).join(' ');
 }
 
@@ -66,7 +66,7 @@ function autoReply(text) {
   const has = (...words) => words.some((w) => t.includes(w));
 
   if (has('hello', 'hi ', 'hey', 'good morning', 'good afternoon') || t === 'hi') {
-    return "You're through to Paramount Logistics. Quote a tracking number and I'll tell you exactly where it is, or tell me what you need moved.";
+    return "You're through to Paramount Shipping. Quote a tracking number and I'll tell you exactly where it is, or tell me what you need moved.";
   }
   if (has('track', 'where is', 'status', 'delivery date', 'eta', 'arrive')) {
     return `Send me the tracking number — they look like ${tracking.PREFIX}-${new Date().getFullYear()}-4F7K2QX9 — and I'll pull up the live timeline. If you have lost it, the desk can find it from the booking reference or the consignee's address.`;
@@ -217,7 +217,7 @@ exports.greeting = async (req, res, next) => {
       agent: settings.chat_agent_name || settings.company_name,
       greeting:
         settings.chat_greeting ||
-        "You're through to Paramount Logistics. Quote a tracking number and I'll tell you exactly where it is.",
+        "You're through to Paramount Shipping. Quote a tracking number and I'll tell you exactly where it is.",
       away: settings.chat_away_message || '',
     });
   } catch (err) {

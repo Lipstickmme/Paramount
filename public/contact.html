@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Contact | Paramount Logistics</title>
-  <meta name="description" content="Reach the Paramount control tower, the rate desk or the cargo emergency line." />
+  <title>Contact | Paramount Shipping</title>
+  <meta name="description" content="Reach the Paramount control tower or the rate desk." />
   <meta name="theme-color" content="#0c1f3d" />
-  <meta property="og:title" content="Contact | Paramount Logistics" />
-  <meta property="og:description" content="Reach the Paramount control tower, the rate desk or the cargo emergency line." />
+  <meta property="og:title" content="Contact | Paramount Shipping" />
+  <meta property="og:description" content="Reach the Paramount control tower or the rate desk." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Paramount Shipping" />
   <meta property="og:image" content="/assets/img/paramount-og.png" />
@@ -18,9 +18,9 @@
   <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="icon" href="/favicon.png" sizes="64x64" type="image/png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="preload" href="/assets/fonts/public-sans.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/assets/fonts/fonts.css" />
   <link rel="stylesheet" href="/css/styles.css" />
   
   <script>
@@ -43,14 +43,14 @@
   <div class="scroll-progress" id="progress"></div>
 
   <div class="underlay" aria-hidden="true">
-    <div class="underlay-img" style="background-image:url('/assets/img/ph-underlay.svg')"></div>
+    <div class="underlay-img" style="background-image:url('/assets/photo/paramount-underlay.webp')"></div>
     <div class="underlay-grid"></div>
     <div class="underlay-scrim"></div>
   </div>
 
   <header class="nav" id="nav">
     <button class="nav-menu" id="navtoggle" aria-label="Open the menu" aria-expanded="false" aria-controls="drawer">
-      <span></span><span></span><span></span>
+      <span class="nav-menu-bars" aria-hidden="true"><span></span><span></span><span></span></span>
       <span class="nav-menu-word">Menu</span>
     </button>
 
@@ -112,7 +112,7 @@
           <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2 5.2-5.2 2 2-5.2z"/></svg></span>Home
         </a>
       
-        <a href="/track">
+        <a href="/#track">
           <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.6"/><path d="M12 12l6-4.4"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg></span>Track a consignment
         </a>
       
@@ -152,17 +152,23 @@
 
     <div class="drawer-foot">
       <span class="eyebrow">Control tower</span>
-      <a class="drawer-call" href="tel:+18622249080" data-site="support_phone">+1 862 224 9080</a>
+      <a class="drawer-call" href="mailto:info@paramountshipping.com" data-site="email">info@paramountshipping.com</a>
       <p class="muted">Staffed 24/7, every day of the year.</p>
     </div>
   </aside>
 
   <main id="main">
-    <section class="page-hero">
-      <div class="wrap inner">
+    
+    <section class="banner on-photo">
+      <div class="banner-img" aria-hidden="true" style="background-image:url('/assets/photo/banner-contact.webp')"></div>
+      <div class="banner-scrim" aria-hidden="true"></div>
+      <div class="wrap banner-inner">
+        
         <div class="crumbs"><a href="/">Home</a> <span>/</span> <span>Contact</span></div>
+        <span class="eyebrow">Contact</span>
         <h1>Talk to a person.</h1>
         <p class="lede">The control tower is staffed around the clock. Anything about a live consignment gets picked up immediately; everything else within one working day.</p>
+        
       </div>
     </section>
 
@@ -172,7 +178,7 @@
           
       <div class="section-head" data-reveal>
         <div>
-          <span class="eyebrow">Paramount Logistics</span>
+          <span class="eyebrow">Paramount Shipping</span>
           <h2 style="margin-top:14px">Rotterdam, and wherever your cargo is.</h2>
           
         </div>
@@ -180,13 +186,11 @@
       </div>
           <dl class="contact-lines">
             <div class="contact-line"><dt>Head office</dt><dd data-site="address">Pier 9, Harbour Gateway, Rotterdam 3011 XB, Netherlands</dd></div>
-            <div class="contact-line"><dt>General</dt><dd><a href="mailto:ops@paramountlogistics.com" data-site="email">ops@paramountlogistics.com</a></dd></div>
-            <div class="contact-line"><dt>Switchboard</dt><dd><a href="tel:+31108004400" data-site="phone">+31 10 800 4400</a></dd></div>
-            <div class="contact-line"><dt>24/7 support</dt><dd><a href="tel:+18622249080" data-site="support_phone">+1 862 224 9080</a></dd></div>
-            <div class="contact-line"><dt>Cargo emergency</dt><dd><a href="tel:+31108004411" data-site="emergency_phone">+31 10 800 4411</a></dd></div>
+            <div class="contact-line"><dt>Email</dt><dd><a href="mailto:info@paramountshipping.com" data-site="email">info@paramountshipping.com</a></dd></div>
+            <div class="contact-line"><dt>A live consignment</dt><dd>Open the chat, bottom right &mdash; a tracking number gets an answer from the record.</dd></div>
             <div class="contact-line"><dt>Hours</dt><dd data-site="hours">Control tower staffed 24/7 · Desk Mon–Fri 07:00–19:00 CET</dd></div>
           </dl>
-          <div class="hero-actions"><a class="btn ghost" href="/track">Track a consignment <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a></div>
+          <div class="hero-actions"><a class="btn ghost" href="/#track">Track a consignment <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a></div>
         </div>
         <div class="card" data-reveal>
           <h3 style="margin-bottom:18px">Send us a message</h3>
@@ -290,15 +294,14 @@
       </div>
       <div class="col">
         <h5>Support</h5>
-        <a href="/track">Track a consignment</a>
+        <a href="/#track">Track a consignment</a>
         <a href="/portal">Customer portal</a>
-        <a href="mailto:ops@paramountlogistics.com" data-site="email">ops@paramountlogistics.com</a>
-        <a href="tel:+18622249080" data-site="support_phone">+1 862 224 9080</a>
+        <a href="mailto:info@paramountshipping.com" data-site="email">info@paramountshipping.com</a>
         <span data-site="hours">Control tower staffed 24/7 · Desk Mon–Fri 07:00–19:00 CET</span>
       </div>
     </div>
     <div class="wrap footer-bottom">
-      <span>&copy; 2026 Paramount Logistics B.V. All rights reserved.</span>
+      <span>&copy; 2026 Paramount Shipping B.V. All rights reserved.</span>
       <span class="mono">Control tower staffed 24/7</span>
     </div>
   </footer>

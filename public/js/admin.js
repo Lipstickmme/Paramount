@@ -426,7 +426,7 @@
       }
       facts.appendChild(dd);
     };
-    fact('Email', row.email, `mailto:${row.email}?subject=${encodeURIComponent('Re: your enquiry to Paramount Logistics')}`);
+    fact('Email', row.email, `mailto:${row.email}?subject=${encodeURIComponent('Re: your enquiry to Paramount Shipping')}`);
     fact('Company', row.company);
     fact('Discipline', row.service);
     fact('Received', when(row.created_at));
@@ -502,7 +502,7 @@
       facts.appendChild(dd);
     };
     fact('Role', row.role_title);
-    fact('Email', row.email, `mailto:${row.email}?subject=${encodeURIComponent(`Your application: ${row.role_title || 'Paramount Logistics'}`)}`);
+    fact('Email', row.email, `mailto:${row.email}?subject=${encodeURIComponent(`Your application: ${row.role_title || 'Paramount Shipping'}`)}`);
     fact('Phone', row.phone, row.phone ? `tel:${row.phone}` : null);
     fact('Experience', row.experience);
     fact('Portfolio', row.portfolio, row.portfolio);
@@ -1085,7 +1085,7 @@
 
     const actions = el('div', 'admin-form-actions');
     const view = el('a', 'btn ghost sm', 'Open public tracking');
-    view.href = `/track?number=${encodeURIComponent(shipment.tracking_number)}`;
+    view.href = `/?number=${encodeURIComponent(shipment.tracking_number)}#track`;
     view.target = '_blank';
     view.rel = 'noopener';
     const edit = el('button', 'btn ghost sm', 'Edit details');
@@ -1311,10 +1311,6 @@
         ['tagline', 'Tagline', 'text'],
         ['address', 'Head office address', 'text'],
         ['email', 'General email', 'email'],
-        ['phone', 'Switchboard', 'tel'],
-        ['support_phone', '24/7 support line', 'tel'],
-        ['emergency_phone', 'Cargo emergency line', 'tel'],
-        ['whatsapp', 'WhatsApp', 'tel'],
         ['hours', 'Desk hours', 'text'],
       ],
     },

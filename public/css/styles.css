@@ -41,6 +41,27 @@
   --accent-ink: #ffffff;
   --signal: #a33a22;
 
+  /* The oxide red off the emblem's waterline. Every button wears it: it is the
+     one warm thing on a navy site, which is what makes it findable. Two stops,
+     because glass needs a gradient to look like it has depth. */
+  --oxide: #a8341c;
+  --oxide-2: #c4482a;
+  --oxide-ink: #ffffff;
+  --oxide-glow: rgba(168, 52, 28, 0.42);
+
+  /* Glass: a translucent fill, a lit top edge, and the page blurred behind it.
+     One set of tokens so a button, a panel and a banner card are the same
+     material rather than three near-misses. */
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-2: rgba(255, 255, 255, 0.78);
+  --glass-line: rgba(255, 255, 255, 0.6);
+  --glass-blur: blur(16px) saturate(155%);
+  --glass-shadow: 0 16px 40px -22px rgba(12, 31, 61, 0.5);
+  /* Type on a photograph is white in both themes — the photograph does not
+     change when the theme does. */
+  --on-photo: #ffffff;
+  --on-photo-2: rgba(255, 255, 255, 0.82);
+
   /* The one gradient left, and it only fills progress. */
   --grad: linear-gradient(90deg, var(--accent), var(--accent-2));
   --grad-soft: rgba(26, 110, 168, 0.1);
@@ -109,6 +130,14 @@
     --accent-2: #63aee2;
     --accent-ink: #04101f;
     --signal: #d4593c;
+    --oxide: #c14428;
+    --oxide-2: #e0603c;
+    --oxide-ink: #ffffff;
+    --oxide-glow: rgba(224, 96, 60, 0.4);
+    --glass: rgba(18, 34, 60, 0.52);
+    --glass-2: rgba(14, 29, 53, 0.78);
+    --glass-line: rgba(150, 178, 215, 0.22);
+    --glass-shadow: 0 18px 46px -24px rgba(0, 0, 0, 0.85);
     --grad-soft: rgba(47, 134, 200, 0.16);
     --go: #3fbf8e;
     --wait: #d6a63f;
@@ -145,6 +174,14 @@
   --accent-2: #63aee2;
   --accent-ink: #04101f;
   --signal: #d4593c;
+  --oxide: #c14428;
+  --oxide-2: #e0603c;
+  --oxide-ink: #ffffff;
+  --oxide-glow: rgba(224, 96, 60, 0.4);
+  --glass: rgba(18, 34, 60, 0.52);
+  --glass-2: rgba(14, 29, 53, 0.78);
+  --glass-line: rgba(150, 178, 215, 0.22);
+  --glass-shadow: 0 18px 46px -24px rgba(0, 0, 0, 0.85);
   --grad-soft: rgba(47, 134, 200, 0.16);
   --go: #3fbf8e;
   --wait: #d6a63f;
@@ -200,11 +237,17 @@ h1, h2, h3, h4, h5 { font-family: var(--display); font-weight: 700; line-height:
 p { margin: 0; }
 ul, ol { margin: 0; padding: 0; list-style: none; }
 
+/* The header is sticky, so an anchor jump would otherwise land its target
+   underneath it. One rule, rather than an offset baked into every link. */
+:target, [id] { scroll-margin-top: calc(var(--nav-h) + 18px); }
+
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
   border-radius: 4px;
 }
+/* On a photograph the navy ring disappears; a white one does not. */
+.on-photo :focus-visible { outline-color: #fff; }
 
 ::selection { background: var(--accent); color: var(--accent-ink); }
 
@@ -247,13 +290,8 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   font-size: 11.5px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
+  font-weight: 500;
   color: var(--accent-2);
-}
-.eyebrow::before {
-  content: '';
-  width: 26px;
-  height: 1px;
-  background: var(--accent-2);
 }
 
 h1, .h1 { font-size: clamp(2.6rem, 6.4vw, 5rem); }
@@ -294,17 +332,36 @@ h3, .h3 { font-size: clamp(1.35rem, 2.2vw, 1.9rem); }
 
 /* Buttons ------------------------------------------------------------------ */
 
+/*
+ * Buttons are glass in oxide red.
+ *
+ * Glass here means what it means in the physical world: the fill is
+ * translucent, the page blurs through it, the top edge catches light and the
+ * bottom edge falls into shadow. That is four properties, not a filter — a flat
+ * red pill with a blur behind it looks like a flat red pill.
+ *
+ * The red is the emblem's waterline, and it is the only warm colour on the
+ * site, which is what makes a button findable without making it loud.
+ */
 .btn {
-  --btn-bg: var(--accent);
+  --btn-a: var(--oxide-2);
+  --btn-b: var(--oxide);
+  --btn-ink: var(--oxide-ink);
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   padding: 14px 24px;
-  border: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 999px;
-  background: var(--btn-bg);
-  color: var(--accent-ink);
+  background:
+    linear-gradient(150deg,
+      color-mix(in srgb, var(--btn-a) 88%, transparent),
+      color-mix(in srgb, var(--btn-b) 95%, transparent));
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  color: var(--btn-ink);
   font-family: var(--display);
   font-weight: 600;
   font-size: 0.92rem;
@@ -312,31 +369,64 @@ h3, .h3 { font-size: clamp(1.35rem, 2.2vw, 1.9rem); }
   cursor: pointer;
   overflow: hidden;
   isolation: isolate;
-  transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease), filter 0.3s;
-  box-shadow: 0 8px 20px -10px rgba(12, 31, 61, 0.42);
+  transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease),
+    border-color 0.35s, filter 0.3s;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.16),
+    0 10px 24px -14px var(--oxide-glow);
 }
+/* The sheen: one pass of light across the glass on hover, not a loop. */
 .btn::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.45), transparent 80%);
+  background: linear-gradient(100deg, transparent 22%, rgba(255, 255, 255, 0.34), transparent 78%);
   transform: translateX(-120%);
-  transition: transform 0.7s var(--ease);
+  transition: transform 0.75s var(--ease);
   z-index: -1;
 }
-.btn:hover { transform: translateY(-1px); box-shadow: 0 14px 28px -12px rgba(12, 31, 61, 0.5); }
+.btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.46),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 18px 34px -16px var(--oxide-glow);
+}
 .btn:hover::after { transform: translateX(120%); }
-.btn:active { transform: translateY(0); }
-.btn[disabled] { opacity: 0.55; cursor: not-allowed; transform: none; }
+.btn:active { transform: translateY(0) scale(0.985); transition-duration: 0.09s; }
+.btn[disabled] { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn[disabled]::after { display: none; }
 
+/* The quiet twin: the same glass, none of the colour. Used where a page offers
+   two routes and only one of them is the one we want taken. */
 .btn.ghost {
-  --btn-bg: transparent;
+  background: var(--glass);
   color: var(--ink);
   border: 1px solid var(--line-strong);
-  box-shadow: none;
-  backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 0 var(--glass-line);
 }
-.btn.ghost:hover { border-color: var(--accent); box-shadow: var(--glow); }
+.btn.ghost:hover {
+  border-color: color-mix(in srgb, var(--oxide) 55%, var(--line-strong));
+  background: var(--glass-2);
+  box-shadow: inset 0 1px 0 var(--glass-line), 0 14px 30px -20px rgba(12, 31, 61, 0.45);
+}
+
+/* On a photograph the ghost has no page to blur, so it borrows the frame. */
+.on-photo .btn.ghost {
+  color: var(--on-photo);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.38);
+}
+.on-photo .btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Navy, for the places where red would be shouting: a form's secondary save,
+   the desk. Same glass, different fill. */
+.btn.navy { --btn-a: var(--accent-2); --btn-b: var(--accent); --btn-ink: #fff; }
 
 .btn.sm { padding: 10px 18px; font-size: 0.86rem; }
 .btn.block { width: 100%; justify-content: center; }
@@ -493,14 +583,15 @@ select {
 }
 [data-theme='light'] select { background-color: var(--panel-2); }
 
-.err { color: var(--bad); font-size: 0.82rem; min-height: 1.1em; }
+.err { color: var(--bad); font-size: 0.82rem; }
+.err:not(:empty) { margin-top: 4px; }
 .honeypot { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
 
 .form-status {
   font-size: 0.9rem;
   color: var(--ink-2);
-  min-height: 1.2em;
 }
+.form-status:not(:empty) { margin-top: 4px; }
 .form-status.ok { color: var(--go); }
 .form-status.bad { color: var(--bad); }
 
@@ -582,32 +673,50 @@ form { display: grid; gap: 18px; }
 
 /* The menu trigger. It reads as a button rather than three anonymous bars,
    because it is now the only way to the rest of the site. */
+/* The menu button.
+   The bars live in their own grid: as direct children of the button they were
+   flex items, so they laid out in a row and the control read as three dashes
+   rather than a hamburger. They cross into an X while the drawer is open. */
 .nav-menu {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  padding: 9px 14px 9px 12px;
+  gap: 10px;
+  padding: 9px 15px 9px 13px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--panel);
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   color: var(--ink);
   cursor: pointer;
   font-family: var(--display);
   font-weight: 600;
   font-size: 0.86rem;
+  box-shadow: inset 0 1px 0 var(--glass-line);
   transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
 }
-.nav-menu:hover { border-color: var(--line-strong); box-shadow: var(--glow); }
-.nav-menu > span:not(.nav-menu-word) {
+.nav-menu:hover {
+  border-color: var(--line-strong);
+  background: var(--glass-2);
+  box-shadow: inset 0 1px 0 var(--glass-line), var(--glow);
+}
+.nav-menu-bars {
+  display: grid;
+  gap: 4px;
+  width: 17px;
+}
+.nav-menu-bars span {
   display: block;
-  width: 16px;
-  height: 1.8px;
+  height: 1.9px;
   border-radius: 2px;
   background: currentColor;
-  transition: transform 0.35s var(--ease), opacity 0.2s;
+  transition: transform 0.36s var(--ease), opacity 0.2s var(--ease), width 0.36s var(--ease);
+  transform-origin: center;
 }
-.nav-menu > span:nth-child(1) { margin-bottom: -4.4px; }
-.nav-menu > span:nth-child(2) { margin-bottom: -4.4px; width: 11px; }
+.nav-menu-bars span:nth-child(2) { width: 12px; }
+.nav-menu[aria-expanded='true'] .nav-menu-bars span:nth-child(1) { transform: translateY(5.9px) rotate(45deg); }
+.nav-menu[aria-expanded='true'] .nav-menu-bars span:nth-child(2) { opacity: 0; width: 17px; }
+.nav-menu[aria-expanded='true'] .nav-menu-bars span:nth-child(3) { transform: translateY(-5.9px) rotate(-45deg); }
 .nav-menu-word { letter-spacing: 0.01em; }
 @media (max-width: 560px) {
   .nav-menu { padding: 9px 11px; }
@@ -904,42 +1013,8 @@ form { display: grid; gap: 18px; }
    Hero + tracking
    ========================================================================= */
 
-.hero {
-  position: relative;
-  padding-top: clamp(48px, 7vw, 96px);
-  padding-bottom: clamp(48px, 6vw, 90px);
-  overflow: hidden;
-}
-
-/* Copy on the left, the calls to action and the headline figures on the right,
-   and the chart full width beneath: the tracker is the argument, so it gets the
-   whole measure rather than half of it. */
-.hero-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-  gap: clamp(24px, 3.4vw, 56px);
-  align-items: end;
-  margin-bottom: clamp(24px, 3vw, 40px);
-}
-@media (max-width: 960px) {
-  .hero-grid { grid-template-columns: 1fr; align-items: start; }
-}
-.hero-copy h1 { font-size: clamp(2.2rem, 4.6vw, 3.6rem); }
-.hero-aside { display: grid; gap: 26px; }
-.hero-aside .hero-actions { margin-top: 0; }
-.hero-aside .hero-proof { margin-top: 0; padding-top: 22px; }
-
-.hero h1 { margin-block: 20px 22px; }
-.hero h1 .line { display: block; overflow: hidden; }
-.hero h1 .line > span {
-  display: block;
-  transform: translateY(105%);
-  animation: rise 0.95s var(--ease) forwards;
-}
-.hero h1 .line:nth-child(2) > span { animation-delay: 0.1s; }
-.hero h1 .line:nth-child(3) > span { animation-delay: 0.2s; }
-@keyframes rise { to { transform: none; } }
-
+/* The row of calls to action under a banner headline, and under a section's
+   closing argument. */
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
@@ -947,74 +1022,19 @@ form { display: grid; gap: 18px; }
   margin-top: 30px;
 }
 
-.hero-proof {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 26px;
-  margin-top: 34px;
-  padding-top: 26px;
-  border-top: 1px solid var(--line);
+/* A headline that arrives rather than appears: each line is clipped by its own
+   box and rises into it. One pass, on load, only where a page opens on a
+   headline — motion as punctuation, not decoration. */
+.banner h1 .line { display: block; overflow: hidden; padding-bottom: 0.06em; }
+.banner h1 .line > span {
+  display: block;
+  transform: translateY(105%);
+  animation: rise 0.95s var(--ease) forwards;
 }
-.hero-proof div { display: grid; gap: 2px; }
-.hero-proof strong {
-  font-family: var(--display);
-  font-size: clamp(1.4rem, 2.3vw, 1.85rem);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-.hero-proof span {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
+.banner h1 .line:nth-child(2) > span { animation-delay: 0.09s; }
+.banner h1 .line:nth-child(3) > span { animation-delay: 0.18s; }
+@keyframes rise { to { transform: none; } }
 
-/* Hero media: the slide stack behind the tracking card. */
-.hero-side { display: grid; }
-
-.hero-media {
-  position: relative;
-  border-radius: var(--r-xl);
-  overflow: hidden;
-  aspect-ratio: 16 / 9;
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-lift);
-}
-
-/* The console overlaps the artwork it sits on, so the two read as one object
-   rather than two stacked panels. */
-.hero-side .tracker {
-  position: relative;
-  z-index: 2;
-  margin: -58px 14px 0;
-}
-@media (max-width: 560px) {
-  .hero-side .tracker { margin-inline: 0; margin-top: -34px; }
-}
-.hero-slide {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  opacity: 0;
-  transform: scale(1.08);
-  transition: opacity 1.4s var(--ease), transform 8s linear;
-}
-.hero-slide.on { opacity: 1; transform: scale(1); }
-.hero-media::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(4, 7, 15, 0.1), rgba(4, 7, 15, 0.72));
-}
-.hero-media-tag {
-  position: absolute;
-  left: 18px;
-  top: 18px;
-  z-index: 2;
-  background: color-mix(in srgb, var(--bg) 72%, transparent);
-}
 
 /* The tracking console — the single most important object on the site. */
 .tracker {
@@ -1693,11 +1713,177 @@ form { display: grid; gap: 18px; }
 
 /* Page hero (inner pages) -------------------------------------------------- */
 
-.page-hero {
-  padding-top: clamp(40px, 6vw, 80px);
-  padding-bottom: clamp(26px, 4vw, 48px);
+/* ==========================================================================
+   The banner
+
+   Every page opens the same way: a slim photographic band directly under the
+   header, one fixed height across the whole site, with the page title on it.
+   The picture changes, the proportion never does, so moving between pages feels
+   like moving through one building rather than between ten of them.
+
+   Three layers: the photograph, a scrim, the words. The scrim is the part that
+   matters — a photograph is not a background until something guarantees the
+   contrast of the type sitting on it, and a flat 50% black would kill the
+   picture. This one is a navy wash that is dense on the left, where the words
+   are, and clears to almost nothing on the right, where the picture is.
+   ========================================================================== */
+
+.banner {
+  --banner-h: clamp(300px, 31vw, 420px);
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: var(--banner-h);
+  padding-block: clamp(30px, 4vw, 52px);
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--navy);
 }
-.page-hero .inner { display: grid; gap: 18px; max-width: 900px; }
+
+/* The photograph is inset past the band on both sides so the parallax in
+   main.js has somewhere to travel without ever showing an edge. No animation
+   here: a transform that runs whether or not anyone is looking keeps a
+   compositor layer awake for nothing. */
+.banner-img {
+  position: absolute;
+  inset: -110px 0;
+  z-index: -2;
+  background-position: center 42%;
+  background-size: cover;
+  will-change: transform;
+}
+
+.banner-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(94deg,
+      rgba(6, 16, 32, 0.9) 0%,
+      rgba(6, 16, 32, 0.76) 34%,
+      rgba(6, 16, 32, 0.4) 66%,
+      rgba(6, 16, 32, 0.24) 100%),
+    linear-gradient(to bottom, rgba(6, 16, 32, 0.34), transparent 38%, rgba(6, 16, 32, 0.42));
+}
+/* The seam where the band meets the page: a short fade, so the photograph does
+   not stop against the ground with a ruled line. */
+.banner::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 44px;
+  z-index: -1;
+  background: linear-gradient(to bottom, transparent, var(--bg));
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* .banner-inner is the page's own container, so it keeps the site's gutter and
+   width — capping it here would centre a narrow box in the viewport and pull
+   the headline away from the margin every other page aligns to. The measure is
+   set on the words instead. */
+.banner-inner {
+  position: relative;
+  display: grid;
+  gap: 13px;
+  justify-items: start;
+}
+.banner-inner > * { max-width: 880px; }
+.banner h1 {
+  margin-bottom: 5px;
+  font-size: clamp(2rem, 3.9vw, 3.3rem);
+  color: var(--on-photo);
+  text-shadow: 0 2px 22px rgba(4, 12, 26, 0.5);
+}
+.banner .lede {
+  color: var(--on-photo-2);
+  max-width: 60ch;
+  font-size: clamp(0.99rem, 1.15vw, 1.1rem);
+}
+.banner .eyebrow { color: #b9d8f4; }
+.banner .card .eyebrow { color: var(--accent-2); }
+.banner .card h2, .banner .card h3 { color: var(--ink); text-shadow: none; }
+.banner .crumbs { color: rgba(255, 255, 255, 0.66); }
+.banner .crumbs a { color: rgba(255, 255, 255, 0.86); }
+.banner .crumbs a:hover { color: #fff; }
+.banner .hero-actions { margin-top: 8px; }
+
+@media (max-width: 720px) {
+  .banner { --banner-h: clamp(260px, 52vw, 330px); }
+  .banner-scrim {
+    background:
+      linear-gradient(to bottom, rgba(6, 16, 32, 0.62), rgba(6, 16, 32, 0.86));
+  }
+}
+
+/* The landing page runs the same band, with the headline on the left and the
+   record on the right in a pane of glass. */
+.banner.banner-home .banner-inner { max-width: none; }
+.banner-home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  gap: clamp(24px, 3.4vw, 54px);
+  align-items: center;
+}
+@media (max-width: 1000px) {
+  .banner-home-grid { grid-template-columns: 1fr; }
+  .banner-proof { display: none; }
+}
+
+/* The proof pane: three figures on glass. Glass rather than a solid card
+   because the photograph behind it should still be legible — the numbers are
+   the claim, the picture is the evidence. */
+.banner-proof {
+  display: grid;
+  gap: 16px;
+  padding: 22px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--r-lg);
+  background: rgba(10, 24, 46, 0.42);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 20px 50px -30px rgba(0, 0, 0, 0.8);
+}
+.banner-proof-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.64);
+}
+/* Figure over label, not beside it: "consignments moved each year" is a long
+   label and a two-column row broke it across three lines. */
+.banner-proof-row {
+  display: grid;
+  gap: 2px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+.banner-proof-row:first-of-type { border-top: 0; padding-top: 0; }
+.banner-proof-row strong {
+  font-family: var(--display);
+  font-size: clamp(1.3rem, 1.9vw, 1.7rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--on-photo);
+}
+.banner-proof-row span {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* The console band, directly under the banner. */
+.track-band { padding-top: clamp(26px, 3.4vw, 46px); padding-bottom: clamp(26px, 3.4vw, 44px); }
+.track-band-inner { display: grid; gap: 22px; max-width: 1020px; margin-inline: auto; }
+
 .crumbs {
   display: flex;
   gap: 8px;
@@ -1986,7 +2172,8 @@ form { display: grid; gap: 18px; }
   }
   [data-reveal] { opacity: 1; transform: none; }
   .tilt:hover { transform: translateY(-3px); }
-  .hero h1 .line > span { transform: none; animation: none; }
+  .banner h1 .line > span { transform: none; animation: none; }
+  .banner-img { transform: none !important; }
 }
 
 
@@ -1997,13 +2184,69 @@ form { display: grid; gap: 18px; }
 /* The portal leads with a job to do — sign in, or read your consignments — so
    its header is deliberately smaller than a marketing page's. Without this the
    sign-in card starts below the fold on a laptop. */
-.page-portal .page-hero { padding-bottom: clamp(18px, 2.5vw, 30px); }
-.page-portal .page-hero h1 { font-size: clamp(2rem, 3.6vw, 3.1rem); }
-.page-portal .page-hero .lede { font-size: 1rem; max-width: 58ch; }
+/* The portal gate.
 
-.pm-gate { display: grid; place-items: center; padding-block: 0 clamp(20px, 5vw, 60px); }
-.pm-gate .card { width: min(100%, 460px); display: grid; gap: 14px; }
-.pm-gate .card h2 { font-size: clamp(1.4rem, 2.6vw, 1.9rem); }
+   Signed out this is a sign-in screen, so it is sized to put the whole card on
+   screen: tall enough to breathe, never taller than the viewport, with the form
+   in the right column level with the reason to fill it in. Signed in, the right
+   column empties and the section drops back to the standard banner height —
+   portal.js sets .pm-open on <body> when it swaps to the shell. */
+.pm-hero {
+  min-height: min(720px, calc(100vh - var(--nav-h)));
+  transition: min-height 0.5s var(--ease);
+}
+.pm-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 480px);
+  gap: clamp(26px, 4vw, 60px);
+  align-items: center;
+  max-width: none;
+}
+.pm-hero-copy { display: grid; gap: 14px; align-content: center; }
+.pm-hero-copy h1 { font-size: clamp(1.9rem, 3.4vw, 2.9rem); }
+.pm-hero-copy .lede { font-size: 1rem; max-width: 46ch; }
+
+.pm-hero-points { display: grid; gap: 11px; margin-top: 6px; }
+.pm-hero-points li {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: var(--on-photo-2);
+  font-size: 0.93rem;
+}
+.pm-hero-points svg { flex: 0 0 auto; color: #9ecbf0; }
+
+.pm-hero-panel { display: grid; }
+
+body.pm-open .pm-hero { min-height: var(--banner-h); }
+body.pm-open .pm-hero-grid { grid-template-columns: 1fr; }
+body.pm-open .pm-hero-points { display: none; }
+body.pm-open .pm-hero-panel { display: none; }
+
+@media (max-width: 940px) {
+  .pm-hero { min-height: 0; padding-block: clamp(30px, 6vw, 56px); }
+  .pm-hero-grid { grid-template-columns: 1fr; }
+  .pm-hero-points { display: none; }
+}
+
+/* The card itself is glass, because it is sitting on a photograph: a solid
+   panel would punch a white hole in the picture. */
+.pm-gate { display: grid; }
+.pm-gate .card {
+  width: 100%;
+  display: grid;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.93);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 34px 80px -34px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+[data-theme='dark'] .pm-gate .card { background: rgba(12, 26, 48, 0.9); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .pm-gate .card { background: rgba(12, 26, 48, 0.9); }
+}
+.pm-gate .card h2 { font-size: clamp(1.35rem, 2.4vw, 1.75rem); }
 
 .pm-auth .btn { margin-top: 4px; }
 .pm-auth-links {
@@ -2168,24 +2411,49 @@ form { display: grid; gap: 18px; }
   border-bottom: 1px solid var(--line);
 }
 .fleet-head h2 { font-size: clamp(1.15rem, 1.9vw, 1.5rem); margin-top: 8px; }
-.fleet-head-end { display: flex; align-items: center; gap: 14px; }
+.fleet-head-copy { max-width: 62ch; }
+/* What the chart is and is not, said once, where someone would ask. */
+.fleet-note {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--ink-3);
+}
+.fleet-head-end {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.fleet-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.fleet-stamp {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
 .fleet-count { font-size: 0.82rem; white-space: nowrap; }
 
 .fleet-live {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 12px;
+  padding: 5px 13px;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--signal) 40%, transparent);
-  background: color-mix(in srgb, var(--signal) 10%, transparent);
-  color: var(--signal);
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, var(--go) 36%, transparent);
+  background: color-mix(in srgb, var(--go) 9%, transparent);
+  color: var(--ink-2);
+  font-size: 0.78rem;
   white-space: nowrap;
 }
+.fleet-live b { color: var(--ink); font-weight: 500; }
+.fleet-live .dot { color: var(--go); }
 .fleet-live .dot {
   width: 7px;
   height: 7px;
@@ -2474,33 +2742,120 @@ body.drawer-open { overflow: hidden; }
 
 /* The time-lapse switch. It says which mode it is in rather than what it will
    do, because the chart behind it changes and the label has to match. */
-.fleet-lapse {
+/* Chart speed. A segmented control, not a button that renames itself: both
+   speeds are on screen, and the pressed one is the one running — so nobody has
+   to work out whether the label is the state or the action. */
+.fleet-mode {
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 13px 5px 10px;
+  padding: 3px;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
   background: var(--panel);
-  color: var(--ink-2);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+.fleet-mode button {
+  padding: 6px 15px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-3);
   font-family: var(--display);
   font-weight: 600;
   font-size: 0.76rem;
-  cursor: pointer;
   white-space: nowrap;
-  transition: color 0.25s, border-color 0.25s, box-shadow 0.25s, background 0.25s;
+  cursor: pointer;
+  transition: color 0.25s, background 0.3s var(--ease), box-shadow 0.3s;
 }
-.fleet-lapse:hover { color: var(--ink); border-color: var(--accent-2); }
-.fleet-lapse.is-on {
-  color: var(--accent-2);
-  border-color: var(--accent-2);
-  background: var(--grad-soft);
-  box-shadow: var(--glow);
+.fleet-mode button:hover { color: var(--ink); }
+.fleet-mode button.is-on {
+  color: var(--accent-ink);
+  background: var(--accent);
+  box-shadow: 0 4px 12px -6px rgba(12, 31, 61, 0.6);
 }
-.fleet-lapse.is-on svg { animation: sweep 2.6s linear infinite; }
-@keyframes sweep { to { transform: rotate(360deg); } }
+/* While the clock is wound forward the chart says so, quietly. */
+.fleet.is-lapsing .fleet-chart { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-2) 26%, transparent); }
 
 /* Markers ease between ticks in real time; under a time-lapse they are redrawn
    often enough that a transition would smear them. */
 .fleet-vessel { transition: transform 1s linear; }
 .fleet.is-lapsing .fleet-vessel { transition: transform 0.12s linear; }
+
+
+/* =========================================================================
+   Motion, the rest of it
+
+   House rules: nothing loops, nothing moves more than a few pixels, every
+   duration is under half a second unless it is a page-level entrance, and
+   everything here is transform or opacity so none of it costs a layout.
+   ========================================================================= */
+
+/* Forms answer immediately. A field that is being filled in lifts its border
+   and drops its ring in one move, so the focus is unambiguous without a flash. */
+input, select, textarea {
+  transition: border-color 0.22s var(--ease), box-shadow 0.22s var(--ease), background 0.22s;
+}
+
+/* A card knows it is being pointed at before it is clicked. */
+.card, .svc-card, .role {
+  transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease), border-color 0.3s;
+}
+
+/* Artwork inside a card breathes when the card is hovered — a slow, small
+   scale, clipped by the frame, so the picture moves and the layout does not. */
+.svc-media, .split-media { overflow: hidden; }
+.svc-media img, .split-media img {
+  transition: transform 0.85s var(--ease);
+  will-change: transform;
+}
+.svc-card:hover .svc-media img { transform: scale(1.045); }
+
+/* The drawer's links arrive in sequence rather than all at once: eight items
+   landing together reads as a flash, eight landing over a fifth of a second
+   reads as a list opening. */
+.drawer.open .drawer-links a {
+  animation: drawer-in 0.42s var(--ease) both;
+}
+.drawer.open .drawer-links a:nth-child(1) { animation-delay: 0.04s; }
+.drawer.open .drawer-links a:nth-child(2) { animation-delay: 0.07s; }
+.drawer.open .drawer-links a:nth-child(3) { animation-delay: 0.1s; }
+.drawer.open .drawer-links a:nth-child(4) { animation-delay: 0.13s; }
+.drawer.open .drawer-links a:nth-child(5) { animation-delay: 0.16s; }
+.drawer.open .drawer-links a:nth-child(6) { animation-delay: 0.19s; }
+.drawer.open .drawer-links a:nth-child(7) { animation-delay: 0.22s; }
+@keyframes drawer-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* A button that is waiting on the network says so, rather than going grey and
+   leaving the visitor to guess whether the click landed. */
+.btn[disabled][data-submit],
+.btn[disabled][data-track-submit],
+.btn[disabled]#portal-auth-submit {
+  opacity: 0.8;
+  position: relative;
+  color: transparent;
+}
+.btn[disabled][data-submit]::before,
+.btn[disabled][data-track-submit]::before,
+.btn[disabled]#portal-auth-submit::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 15px;
+  height: 15px;
+  margin: -7.5px 0 0 -7.5px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.62s linear infinite;
+}
+.btn[disabled] svg { opacity: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .svc-card:hover .svc-media img { transform: none; }
+  .drawer.open .drawer-links a { animation: none; }
+}

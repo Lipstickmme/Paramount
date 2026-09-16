@@ -149,16 +149,31 @@ async function until(check, what, timeout = 10000) {
     // From the header box, which is on every page and is how most people
     // arrive at a tracking result.
     await visitor.goto(`${base}/`, { waitUntil: 'networkidle' });
+    await visitor.goto(`${base}/contact`, { waitUntil: 'networkidle' });
     await visitor.fill('#nav-track-number', number.toLowerCase());
     await Promise.all([
-      visitor.waitForURL(/\/track\?number=/, { timeout: 15000 }),
+      visitor.waitForURL(/\/\?number=/, { timeout: 15000 }),
       visitor.click('.nav-track [data-track-submit]'),
     ]);
     await visitor.waitForSelector('.result-number', { timeout: 15000 });
     assert.match(await visitor.textContent('.result-number'), new RegExp(number));
     assert.match(await visitor.textContent('.status-badge'), /Booking registered/);
     assert.strictEqual(await visitor.$$eval('.timeline li', (n) => n.length), 1);
-    console.log('  ok  the landing-page console hands a lower-case number to /track and it resolves');
+    console.log('  ok  the header console hands a lower-case number to the landing page and it resolves');
+
+    // And the console on the landing page itself resolves in place.
+    await visitor.goto(`${base}/`, { waitUntil: 'networkidle' });
+    await visitor.fill('#tracker-number', number);
+    await visitor.click('#tracker [data-track-submit]');
+    await visitor.waitForSelector('.result-number', { timeout: 15000 });
+    assert.match(await visitor.textContent('.result-number'), new RegExp(number));
+    console.log('  ok  the landing-page console resolves without leaving the page');
+
+    // The retired consignment page still honours an emailed link.
+    const redirected = await visitor.goto(`${base}/track?number=${number}`, { waitUntil: 'networkidle' });
+    assert.match(redirected.url(), /\/\?number=/, '/track redirects to the landing console');
+    await visitor.waitForSelector('.result-number', { timeout: 15000 });
+    console.log('  ok  an old /track link still lands on the consignment');
 
     // Nothing commercial or internal may appear on the public page.
     const publicText = await visitor.textContent('body');
@@ -209,9 +224,9 @@ async function until(check, what, timeout = 10000) {
     console.log('  ok  an internal note is kept off the public timeline');
 
     /* ---------------- an unknown number is refused kindly ---------------- */
-    await visitor.goto(`${base}/track`, { waitUntil: 'networkidle' });
-    await visitor.fill('#page-tracker-number', 'PMT-2026-4F7K2QX9');
-    await visitor.click('#page-tracker [data-track-submit]');
+    await visitor.goto(`${base}/`, { waitUntil: 'networkidle' });
+    await visitor.fill('#tracker-number', 'PMT-2026-4F7K2QX9');
+    await visitor.click('#tracker [data-track-submit]');
     await visitor.waitForSelector('.result-note.bad', { timeout: 10000 });
     assert.match(await visitor.textContent('.result-note.bad'), /No consignment found/);
     console.log('  ok  an unknown number gets an explanation, not an empty page');
@@ -470,7 +485,7 @@ async function until(check, what, timeout = 10000) {
 
     await staff.fill('#setting-address', 'Wijnhaven 3, 3011 WG Rotterdam, NL');
     await staff.fill('#setting-email', 'desk@paramount.test');
-    await staff.fill('#setting-phone', '+31 (0)20 111 2222');
+    await staff.fill('#setting-hours', 'Desk 06:00-22:00 CET');
     await staff.fill('#setting-chat_agent_name', 'Paramount Control');
     await staff.click('.admin-settings-form button[type="submit"]');
     await until(
@@ -491,13 +506,15 @@ async function until(check, what, timeout = 10000) {
       'mailto:desk@paramount.test',
       'the mailto follows the address'
     );
-    assert.strictEqual((await reader2.textContent('[data-site="phone"]')).trim(), '+31 (0)20 111 2222');
+    assert.strictEqual((await reader2.textContent('[data-site="hours"]')).trim(), 'Desk 06:00-22:00 CET');
+    assert.ok(!/href="tel:/.test(await reader2.content()), 'no telephone number is published on the page');
+    assert.strictEqual(await staff.$('#setting-phone'), null, 'and the desk is not offered one to publish');
     console.log('  ok  the change reaches the public pages with no rebuild');
     await reader2.close();
 
     /* ---------------- every reveal actually reveals ---------------- */
     const reader = await newPage(visitorCtx);
-    for (const path of ['/', '/services', '/network', '/about', '/careers', '/track', '/portal']) {
+    for (const path of ['/', '/services', '/network', '/about', '/careers', '/quote', '/portal']) {
       await reader.goto(base + path, { waitUntil: 'networkidle' });
       await reader.evaluate(async () => {
         // Walk the page so every section enters the viewport at least once.
@@ -549,7 +566,7 @@ async function until(check, what, timeout = 10000) {
     console.log('  ok  company mail reads as a thread');
 
     /* ---------------- no unexpected console errors ---------------- */
-    const expected = [/fonts\.googleapis\.com/, /fonts\.gstatic\.com/, /grant_type=password/, /favicon/, /\/api\/track\//];
+    const expected = [/grant_type=password/, /favicon/, /\/api\/track\//];
     const bad = log
       .filter((line) => /^\[(error|pageerror|netfail|http)/.test(line))
       .filter((line) => !expected.some((re) => re.test(line)))

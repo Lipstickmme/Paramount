@@ -73,14 +73,45 @@ function underlay() {
 }
 
 /**
+ * The slim photographic band every page opens on.
+ *
+ * One height across the whole site (set in CSS, not here), one scrim, one
+ * picture per page. `slot` picks the photograph — src/data/images.json maps the
+ * slots, so swapping a page's picture is a file drop, not an edit here.
+ *
+ * The picture is a background rather than an <img> because it is decoration: it
+ * carries no information a screen reader needs, and a background can be
+ * cropped by the box rather than by a wrapper.
+ */
+function banner({ slot, crumbs = '', kicker = '', title, lede = '', actions = '', aside = '', className = '' }) {
+  const words = `
+        ${crumbs ? `<div class="crumbs">${crumbs}</div>` : ''}
+        ${kicker ? `<span class="eyebrow">${kicker}</span>` : ''}
+        <h1>${title}</h1>
+        ${lede ? `<p class="lede">${lede}</p>` : ''}
+        ${actions ? `<div class="hero-actions">${actions}</div>` : ''}`;
+
+  return `
+    <section class="banner on-photo${className ? ` ${className}` : ''}">
+      <div class="banner-img" aria-hidden="true" style="background-image:url('${images.forBanner(slot)}')"></div>
+      <div class="banner-scrim" aria-hidden="true"></div>
+      <div class="wrap banner-inner">
+        ${aside
+          ? `<div class="banner-home-grid"><div class="banner-words">${words}</div>${aside}</div>`
+          : words}
+      </div>
+    </section>`;
+}
+
+/**
  * The tracking console.
  *
- * Shared, because it is the point of the site: it sits in the landing page hero
- * and again at the top of /track.
+ * Shared, because it is the point of the site: the landing page carries it
+ * with its result panel, and the header carries a cut-down copy on every page.
  *
- * `compact` leaves out the result container. The hero column is too narrow to
- * read a timeline and a map in, so the console there hands the number to
- * /track, which is also the page worth linking to from an email.
+ * `compact` leaves out the result container. A console with nowhere to show a
+ * result — the one in the header — hands the number to the landing page, which
+ * is also the link worth putting in an email.
  */
 function tracker({ id = 'tracker', autofocus = false, compact = false } = {}) {
   return `
@@ -173,9 +204,9 @@ function head({ title, description, noindex = false, styles = [] }) {
   <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="icon" href="/favicon.png" sizes="64x64" type="image/png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="preload" href="/assets/fonts/public-sans.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/assets/fonts/fonts.css" />
   <link rel="stylesheet" href="/css/styles.css" />
   ${styles.map((href) => `<link rel="stylesheet" href="${href}" />`).join('\n  ')}
   <script>
@@ -242,7 +273,7 @@ function nav(active = '') {
   return `
   <header class="nav" id="nav">
     <button class="nav-menu" id="navtoggle" aria-label="Open the menu" aria-expanded="false" aria-controls="drawer">
-      <span></span><span></span><span></span>
+      <span class="nav-menu-bars" aria-hidden="true"><span></span><span></span><span></span></span>
       <span class="nav-menu-word">Menu</span>
     </button>
 
@@ -284,7 +315,7 @@ function nav(active = '') {
 
     <nav class="drawer-links">
       ${link('/', 'Home', 'home', icons.compass)}
-      ${link('/track', 'Track a consignment', 'track', icons.radar)}
+      ${link('/#track', 'Track a consignment', 'track', icons.radar)}
       ${link('/services', 'Services', 'services', icons.container)}
       ${link('/network', 'Global network', 'network', icons.globe)}
       ${link('/about', 'About us', 'about', icons.anchor)}
@@ -301,7 +332,7 @@ function nav(active = '') {
 
     <div class="drawer-foot">
       <span class="eyebrow">Control tower</span>
-      <a class="drawer-call" href="tel:${esc(site.support_phone).replace(/\s+/g, '')}" data-site="support_phone">${esc(site.support_phone)}</a>
+      <a class="drawer-call" href="mailto:${esc(site.email)}" data-site="email">${esc(site.email)}</a>
       <p class="muted">Staffed 24/7, every day of the year.</p>
     </div>
   </aside>`;
@@ -332,15 +363,14 @@ function footer() {
       </div>
       <div class="col">
         <h5>Support</h5>
-        <a href="/track">Track a consignment</a>
+        <a href="/#track">Track a consignment</a>
         <a href="/portal">Customer portal</a>
         <a href="mailto:${esc(site.email)}" data-site="email">${esc(site.email)}</a>
-        <a href="tel:${esc(site.support_phone).replace(/\s+/g, '')}" data-site="support_phone">${esc(site.support_phone)}</a>
         <span data-site="hours">${esc(site.hours)}</span>
       </div>
     </div>
     <div class="wrap footer-bottom">
-      <span>&copy; ${YEAR} Paramount Logistics B.V. All rights reserved.</span>
+      <span>&copy; ${YEAR} Paramount Shipping B.V. All rights reserved.</span>
       <span class="mono">Control tower staffed 24/7</span>
     </div>
   </footer>`;
@@ -422,4 +452,4 @@ function page(opts) {
   ].join('\n');
 }
 
-module.exports = { page, nav, footer, chatWidget, head, contactForm, tracker, underlay, logo, mark, icons, esc, YEAR };
+module.exports = { page, nav, footer, chatWidget, head, contactForm, tracker, banner, underlay, logo, mark, icons, esc, YEAR };

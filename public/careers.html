@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Careers | Paramount Logistics</title>
-  <meta name="description" content="Open roles across operations, compliance, commercial and technology at Paramount Logistics." />
+  <title>Careers | Paramount Shipping</title>
+  <meta name="description" content="Open roles across operations, compliance, commercial and technology at Paramount Shipping." />
   <meta name="theme-color" content="#0c1f3d" />
-  <meta property="og:title" content="Careers | Paramount Logistics" />
-  <meta property="og:description" content="Open roles across operations, compliance, commercial and technology at Paramount Logistics." />
+  <meta property="og:title" content="Careers | Paramount Shipping" />
+  <meta property="og:description" content="Open roles across operations, compliance, commercial and technology at Paramount Shipping." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Paramount Shipping" />
   <meta property="og:image" content="/assets/img/paramount-og.png" />
@@ -18,9 +18,9 @@
   <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="icon" href="/favicon.png" sizes="64x64" type="image/png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="preload" href="/assets/fonts/public-sans.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/assets/fonts/fonts.css" />
   <link rel="stylesheet" href="/css/styles.css" />
   
   <script>
@@ -43,14 +43,14 @@
   <div class="scroll-progress" id="progress"></div>
 
   <div class="underlay" aria-hidden="true">
-    <div class="underlay-img" style="background-image:url('/assets/img/ph-underlay.svg')"></div>
+    <div class="underlay-img" style="background-image:url('/assets/photo/paramount-underlay.webp')"></div>
     <div class="underlay-grid"></div>
     <div class="underlay-scrim"></div>
   </div>
 
   <header class="nav" id="nav">
     <button class="nav-menu" id="navtoggle" aria-label="Open the menu" aria-expanded="false" aria-controls="drawer">
-      <span></span><span></span><span></span>
+      <span class="nav-menu-bars" aria-hidden="true"><span></span><span></span><span></span></span>
       <span class="nav-menu-word">Menu</span>
     </button>
 
@@ -112,7 +112,7 @@
           <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2 5.2-5.2 2 2-5.2z"/></svg></span>Home
         </a>
       
-        <a href="/track">
+        <a href="/#track">
           <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.6"/><path d="M12 12l6-4.4"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg></span>Track a consignment
         </a>
       
@@ -152,17 +152,23 @@
 
     <div class="drawer-foot">
       <span class="eyebrow">Control tower</span>
-      <a class="drawer-call" href="tel:+18622249080" data-site="support_phone">+1 862 224 9080</a>
+      <a class="drawer-call" href="mailto:info@paramountshipping.com" data-site="email">info@paramountshipping.com</a>
       <p class="muted">Staffed 24/7, every day of the year.</p>
     </div>
   </aside>
 
   <main id="main">
-    <section class="page-hero">
-      <div class="wrap inner">
+    
+    <section class="banner on-photo">
+      <div class="banner-img" aria-hidden="true" style="background-image:url('/assets/photo/banner-careers.webp')"></div>
+      <div class="banner-scrim" aria-hidden="true"></div>
+      <div class="wrap banner-inner">
+        
         <div class="crumbs"><a href="/">Home</a> <span>/</span> <span>Careers</span></div>
-        <h1>Work where the <span class="grad-text">detail matters.</span></h1>
+        <span class="eyebrow">Careers</span>
+        <h1>Work where the detail matters.</h1>
         <p class="lede">Three thousand people across six control hubs. We hire for judgement under pressure and a low tolerance for a status nobody can explain.</p>
+        
       </div>
     </section>
 
@@ -225,7 +231,7 @@
 
     <section class="section">
       <div class="wrap split">
-        <div class="split-media" data-reveal><img src="/assets/img/ph-careers.svg" alt="Working at Paramount" loading="lazy" width="1600" height="1000" /></div>
+        <div class="split-media" data-reveal><img src="/assets/photo/paramount-careers.webp" alt="Working at Paramount" loading="lazy" width="1600" height="1000" /></div>
         <div>
           
       <div class="section-head" data-reveal>
@@ -278,15 +284,14 @@
       </div>
       <div class="col">
         <h5>Support</h5>
-        <a href="/track">Track a consignment</a>
+        <a href="/#track">Track a consignment</a>
         <a href="/portal">Customer portal</a>
-        <a href="mailto:ops@paramountlogistics.com" data-site="email">ops@paramountlogistics.com</a>
-        <a href="tel:+18622249080" data-site="support_phone">+1 862 224 9080</a>
+        <a href="mailto:info@paramountshipping.com" data-site="email">info@paramountshipping.com</a>
         <span data-site="hours">Control tower staffed 24/7 · Desk Mon–Fri 07:00–19:00 CET</span>
       </div>
     </div>
     <div class="wrap footer-bottom">
-      <span>&copy; 2026 Paramount Logistics B.V. All rights reserved.</span>
+      <span>&copy; 2026 Paramount Shipping B.V. All rights reserved.</span>
       <span class="mono">Control tower staffed 24/7</span>
     </div>
   </footer>

@@ -5,6 +5,11 @@
 # Local runtime storage at the repo root
 /data/
 
+# The original photographs. scripts/build-photos.py derives the web-sized crops
+# into public/assets/photo/ and those are committed, so the deploy never needs
+# the 46 MB of source PNGs.
+/media/
+
 # Not needed by the deployment
 /docs/
 /supabase/

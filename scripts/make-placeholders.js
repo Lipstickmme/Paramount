@@ -82,7 +82,7 @@ function plate({ w = 1600, h = 1000, palette = 'deep', label = '', kicker = '', 
       </g>`,
   };
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${label || 'Paramount Logistics placeholder'}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${label || 'Paramount Shipping placeholder'}">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="${c0}"/>
@@ -124,7 +124,7 @@ const SET = [
   ['ph-road.svg', { palette: 'steel', kicker: 'Road haulage', label: 'Placeholder artwork', glyph: 'box', w: 1200, h: 900 }],
   ['ph-rail.svg', { palette: 'deep', kicker: 'Rail freight', label: 'Placeholder artwork', glyph: 'route', w: 1200, h: 900 }],
   ['ph-express.svg', { palette: 'ember', kicker: 'Express courier', label: 'Placeholder artwork', glyph: 'box', w: 1200, h: 900 }],
-  ['ph-og.svg', { palette: 'deep', kicker: 'Paramount Logistics', label: 'Track every consignment', glyph: 'globe', w: 1200, h: 630 }],
+  ['ph-og.svg', { palette: 'deep', kicker: 'Paramount Shipping', label: 'Track every consignment', glyph: 'globe', w: 1200, h: 630 }],
 ];
 
 fs.mkdirSync(OUT, { recursive: true });

@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Paramount Logistics — track every consignment, end to end</title>
+  <title>Paramount Shipping — track every consignment, end to end</title>
   <meta name="description" content="Global freight forwarding and contract logistics. Air, ocean, road, rail, express and warehousing, with live consignment tracking on one number." />
   <meta name="theme-color" content="#0c1f3d" />
-  <meta property="og:title" content="Paramount Logistics — track every consignment, end to end" />
+  <meta property="og:title" content="Paramount Shipping — track every consignment, end to end" />
   <meta property="og:description" content="Global freight forwarding and contract logistics. Air, ocean, road, rail, express and warehousing, with live consignment tracking on one number." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Paramount Shipping" />
@@ -18,9 +18,9 @@
   <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="icon" href="/favicon.png" sizes="64x64" type="image/png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="preload" href="/assets/fonts/public-sans.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/assets/fonts/fonts.css" />
   <link rel="stylesheet" href="/css/styles.css" />
   
   <script>
@@ -43,14 +43,14 @@
   <div class="scroll-progress" id="progress"></div>
 
   <div class="underlay" aria-hidden="true">
-    <div class="underlay-img" style="background-image:url('/assets/img/ph-underlay.svg')"></div>
+    <div class="underlay-img" style="background-image:url('/assets/photo/paramount-underlay.webp')"></div>
     <div class="underlay-grid"></div>
     <div class="underlay-scrim"></div>
   </div>
 
   <header class="nav" id="nav">
     <button class="nav-menu" id="navtoggle" aria-label="Open the menu" aria-expanded="false" aria-controls="drawer">
-      <span></span><span></span><span></span>
+      <span class="nav-menu-bars" aria-hidden="true"><span></span><span></span><span></span></span>
       <span class="nav-menu-word">Menu</span>
     </button>
 
@@ -112,7 +112,7 @@
           <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2 5.2-5.2 2 2-5.2z"/></svg></span>Home
         </a>
       
-        <a href="/track">
+        <a href="/#track">
           <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.6"/><path d="M12 12l6-4.4"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg></span>Track a consignment
         </a>
       
@@ -152,51 +152,110 @@
 
     <div class="drawer-foot">
       <span class="eyebrow">Control tower</span>
-      <a class="drawer-call" href="tel:+18622249080" data-site="support_phone">+1 862 224 9080</a>
+      <a class="drawer-call" href="mailto:info@paramountshipping.com" data-site="email">info@paramountshipping.com</a>
       <p class="muted">Staffed 24/7, every day of the year.</p>
     </div>
   </aside>
 
   <main id="main">
-    <section class="hero">
-      <div class="wrap">
-        <div class="hero-grid">
-          <div class="hero-copy">
-            <span class="eyebrow" data-reveal>Freight forwarding &amp; contract logistics</span>
-            <h1>
+    
+    <section class="banner on-photo banner-home">
+      <div class="banner-img" aria-hidden="true" style="background-image:url('/assets/photo/banner-home.webp')"></div>
+      <div class="banner-scrim" aria-hidden="true"></div>
+      <div class="wrap banner-inner">
+        <div class="banner-home-grid"><div class="banner-words">
+        
+        <span class="eyebrow">Freight forwarding &amp; contract logistics</span>
+        <h1>
               <span class="line"><span>Every consignment,</span></span>
-              <span class="line"><span class="grad-text">accounted for.</span></span>
-            </h1>
-            <p class="lede" data-reveal>Freight that arrives where it said it would, when it said it would. Air, ocean, road, rail and warehousing on one file, one number and one honest timeline.</p>
-          </div>
+              <span class="line"><span>accounted for.</span></span></h1>
+        <p class="lede">Freight that arrives where it said it would, when it said it would. Air, ocean, road, rail and warehousing on one file, one number and one honest timeline.</p>
+        <div class="hero-actions">
+              <a class="btn" href="#track">Track a consignment <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
+              <a class="btn ghost" href="/quote">Get a rate</a></div></div>
+            <div class="banner-proof">
+              <div class="banner-proof-head"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.6"/><path d="M12 12l6-4.4"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg><span>The record</span></div>
+              <div class="banner-proof-row">
+                <strong data-count="2400000" data-suffix="+">2,400,000+</strong>
+                <span>Consignments moved each year</span>
+              </div>
+              <div class="banner-proof-row">
+                <strong data-count="172" data-suffix="">172</strong>
+                <span>Countries served</span>
+              </div>
+              <div class="banner-proof-row">
+                <strong data-count="98" data-suffix="%">98%</strong>
+                <span>On-time delivery</span>
+              </div>
+            </div></div>
+      </div>
+    </section>
 
-          <div class="hero-aside">
-            <div class="hero-actions" data-reveal>
-              <a class="btn" href="/quote">Get a rate <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
-              <a class="btn ghost" href="/services">See what we move</a>
-            </div>
-            <div class="hero-proof" data-reveal>
-              <div><strong data-count="2400000" data-suffix="+">2,400,000+</strong><span>Consignments moved each year</span></div>
-              <div><strong data-count="172" data-suffix="">172</strong><span>Countries served</span></div>
-              <div><strong data-count="98" data-suffix="%">98%</strong><span>On-time delivery</span></div>
-            </div>
-          </div>
+    <!-- The tracking console sits directly under the banner, on its own ground.
+         It is the reason most people open this site, so nothing is above it but
+         the headline, and nothing about it needs a second page. -->
+    <section class="section track-band" id="track">
+      <div class="wrap track-band-inner">
+        
+      <div class="tracker" id="tracker" data-tracker data-reveal>
+        <div class="tracker-head">
+          <h2>Track a consignment</h2>
+          <span class="pill"><span class="dot"></span>Live</span>
         </div>
+        <form class="tracker-form" data-track-form novalidate>
+          <div class="tracker-input">
+            <label class="sr-only" for="tracker-number">Tracking number</label>
+            <input
+              type="text"
+              id="tracker-number"
+              name="number"
+              inputmode="latin"
+              autocomplete="off"
+              spellcheck="false"
+              maxlength="32"
+              placeholder="e.g. PMT-2026-4F7K2QX9"
+              
+              required />
+            <button type="submit" class="btn" data-track-submit>
+              Track <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+          <div class="tracker-hint">
+            <span>Air, ocean, road, rail and express all share one number.</span>
+            <span class="tracker-recent" data-track-recent hidden></span>
+          </div>
+          <div class="err" data-track-error role="alert"></div>
+        </form>
+      </div>
+      <div class="result" id="track-result" data-track-result hidden></div>
+      </div>
+    </section>
 
+    <section class="section" id="fleet-section" style="padding-top:0">
+      <div class="wrap">
         
       <section class="fleet" id="fleet" aria-label="Live fleet tracker">
         <header class="fleet-head">
-          <div>
-            <span class="eyebrow">Live fleet</span>
+          <div class="fleet-head-copy">
+            <span class="eyebrow">Fleet operations</span>
             <h2>Every vessel, where it actually is.</h2>
+            <p class="fleet-note">
+              Each position is computed from the vessel's route, service speed and
+              voyage clock, so a ship moves at exactly the speed it reports. Real
+              time is honest and almost invisible &mdash; a ship crosses a pixel in
+              about a quarter of an hour &mdash; so the chart opens wound forward.
+            </p>
           </div>
+
           <div class="fleet-head-end">
-            <span class="fleet-live"><span class="dot"></span>Live positions</span>
-            <button type="button" class="fleet-lapse" data-fleet-lapse aria-pressed="false"
-                    title="Wind the clock forward to watch the fleet move">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.6"/><path d="M12 12l6-4.4"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg><span> Live</span>
-            </button>
-            <span class="fleet-count muted" data-fleet-count></span>
+            <div class="fleet-mode" role="group" aria-label="Chart speed">
+              <button type="button" data-fleet-lapse="off" aria-pressed="false">Real time</button>
+              <button type="button" data-fleet-lapse="on" aria-pressed="true">Time-lapse</button>
+            </div>
+            <div class="fleet-status">
+              <span class="fleet-live"><span class="dot"></span><span data-fleet-count>Loading&hellip;</span></span>
+              <span class="fleet-stamp mono" data-fleet-stamp></span>
+            </div>
           </div>
         </header>
 
@@ -236,7 +295,7 @@
           
         <article class="card tilt svc-card" data-tilt data-reveal style="--delay:0ms">
           <div class="svc-media">
-            <img src="/assets/img/ph-air.svg" alt="" loading="lazy" width="1200" height="900" />
+            <img src="/assets/photo/service-air.webp" alt="" loading="lazy" width="1200" height="900" />
           </div>
           <span class="code">PM-01</span>
           <h3>Air Freight</h3>
@@ -248,7 +307,7 @@
 
         <article class="card tilt svc-card" data-tilt data-reveal style="--delay:70ms">
           <div class="svc-media">
-            <img src="/assets/img/ph-ocean.svg" alt="" loading="lazy" width="1200" height="900" />
+            <img src="/assets/photo/service-ocean.webp" alt="" loading="lazy" width="1200" height="900" />
           </div>
           <span class="code">PM-02</span>
           <h3>Ocean Freight</h3>
@@ -260,7 +319,7 @@
 
         <article class="card tilt svc-card" data-tilt data-reveal style="--delay:140ms">
           <div class="svc-media">
-            <img src="/assets/img/ph-road.svg" alt="" loading="lazy" width="1200" height="900" />
+            <img src="/assets/photo/service-road.webp" alt="" loading="lazy" width="1200" height="900" />
           </div>
           <span class="code">PM-03</span>
           <h3>Road Haulage</h3>
@@ -272,7 +331,7 @@
 
         <article class="card tilt svc-card" data-tilt data-reveal style="--delay:210ms">
           <div class="svc-media">
-            <img src="/assets/img/ph-rail.svg" alt="" loading="lazy" width="1200" height="900" />
+            <img src="/assets/photo/service-rail.webp" alt="" loading="lazy" width="1200" height="900" />
           </div>
           <span class="code">PM-04</span>
           <h3>Rail Freight</h3>
@@ -284,7 +343,7 @@
 
         <article class="card tilt svc-card" data-tilt data-reveal style="--delay:280ms">
           <div class="svc-media">
-            <img src="/assets/img/ph-express.svg" alt="" loading="lazy" width="1200" height="900" />
+            <img src="/assets/photo/service-express.webp" alt="" loading="lazy" width="1200" height="900" />
           </div>
           <span class="code">PM-05</span>
           <h3>Express Courier</h3>
@@ -296,7 +355,7 @@
 
         <article class="card tilt svc-card" data-tilt data-reveal style="--delay:350ms">
           <div class="svc-media">
-            <img src="/assets/img/ph-warehouse.svg" alt="" loading="lazy" width="1200" height="900" />
+            <img src="/assets/photo/service-warehousing.webp" alt="" loading="lazy" width="1200" height="900" />
           </div>
           <span class="code">PM-06</span>
           <h3>Warehousing &amp; Fulfilment</h3>
@@ -366,7 +425,7 @@
     <section class="section">
       <div class="wrap split">
         <div class="split-media" data-reveal>
-          <img src="/assets/img/ph-control.svg" alt="Paramount control tower" loading="lazy" width="1600" height="1000" />
+          <img src="/assets/photo/paramount-control.webp" alt="Paramount control tower" loading="lazy" width="1600" height="1000" />
           <div class="badge"><b>24/7</b><span>Control tower</span></div>
         </div>
         <div>
@@ -484,15 +543,14 @@
       </div>
       <div class="col">
         <h5>Support</h5>
-        <a href="/track">Track a consignment</a>
+        <a href="/#track">Track a consignment</a>
         <a href="/portal">Customer portal</a>
-        <a href="mailto:ops@paramountlogistics.com" data-site="email">ops@paramountlogistics.com</a>
-        <a href="tel:+18622249080" data-site="support_phone">+1 862 224 9080</a>
+        <a href="mailto:info@paramountshipping.com" data-site="email">info@paramountshipping.com</a>
         <span data-site="hours">Control tower staffed 24/7 · Desk Mon–Fri 07:00–19:00 CET</span>
       </div>
     </div>
     <div class="wrap footer-bottom">
-      <span>&copy; 2026 Paramount Logistics B.V. All rights reserved.</span>
+      <span>&copy; 2026 Paramount Shipping B.V. All rights reserved.</span>
       <span class="mono">Control tower staffed 24/7</span>
     </div>
   </footer>

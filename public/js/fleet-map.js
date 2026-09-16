@@ -20,6 +20,7 @@
   if (!root || !world) return;
 
   const $ = (sel, ctx = root) => ctx.querySelector(sel);
+  const $$ = (sel, ctx = root) => Array.from(ctx.querySelectorAll(sel));
   const esc = (s) =>
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
       { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
@@ -31,20 +32,22 @@
   const KN_TO_DEG_LAT = 1 / 60; // one nautical mile of latitude is one minute
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Ships move about a thousandth of a pixel a second on a chart this size,
+  // which is honest and completely invisible. The time-lapse winds the clock
+  // forward so a visitor can watch the fleet actually travel — so that is what
+  // the chart opens on, with the control saying plainly which one is running.
+  // Real time is one click away, and it is what someone checking a position
+  // wants; nobody arriving at the page wants a still picture.
+  const LAPSE = 26000;
+
   const state = {
     vessels: [],
     ports: {},
     types: [],
     selected: null,
     lastSync: 0,
-    // Ships move about a thousandth of a pixel a second on a chart this size,
-    // which is honest and completely invisible. The time-lapse winds the clock
-    // forward so a visitor can watch the fleet actually travel, and it says so
-    // on the button rather than pretending that is real time.
-    lapse: 1,
+    lapse: LAPSE,
   };
-
-  const LAPSE = 26000;
 
   const elapsed = () => ((Date.now() - state.lastSync) / 1000) * state.lapse;
 
@@ -401,6 +404,14 @@
     const underway = state.vessels.filter((v) => !v.inPort).length;
     $('[data-fleet-count]').innerHTML =
       `<b class="mono">${state.vessels.length}</b> vessels · <b class="mono">${underway}</b> under way`;
+
+    // The desk reads UTC, and so does every document on a consignment file.
+    const stamp = $('[data-fleet-stamp]');
+    if (stamp) {
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      stamp.textContent = `Fixed ${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())} UTC`;
+    }
   }
 
   /* -------------------------------------------------------------- wire --- */
@@ -420,21 +431,20 @@
     state.vessels.forEach((v) => {
       v.distanceRunNm = v._lastRun == null ? v.distanceRunNm : v._lastRun;
     });
-    const button = $('[data-fleet-lapse]');
-    if (button) {
-      button.classList.toggle('is-on', on);
-      button.setAttribute('aria-pressed', String(on));
-      // The span, not lastChild: there is a whitespace text node after it, and
-      // writing to that appends a second label instead of replacing the first.
-      const word = button.querySelector('span');
-      if (word) word.textContent = on ? ' Time-lapse' : ' Live';
-    }
+    // A segmented control rather than one button that renames itself: both
+    // speeds are visible, and the pressed one says which is running.
+    $$('[data-fleet-lapse]').forEach((button) => {
+      const mine = button.getAttribute('data-fleet-lapse') === 'on';
+      button.classList.toggle('is-on', mine === on);
+      button.setAttribute('aria-pressed', String(mine === on));
+    });
     root.classList.toggle('is-lapsing', on);
   }
 
   root.addEventListener('click', (event) => {
-    if (event.target.closest('[data-fleet-lapse]')) {
-      setLapse(state.lapse === 1);
+    const mode = event.target.closest('[data-fleet-lapse]');
+    if (mode) {
+      setLapse(mode.getAttribute('data-fleet-lapse') === 'on');
       return;
     }
     const hit = event.target.closest('[data-vessel]');
@@ -498,6 +508,9 @@
 
   sync()
     .then(() => {
+      // Wound forward on arrival, unless the visitor has asked the system for
+      // less motion — then the chart holds still and says so.
+      setLapse(!reduceMotion);
       // A slow tick is enough for real time; the time-lapse needs a smooth one.
       if (!reduceMotion) {
         setInterval(() => {

@@ -18,7 +18,8 @@ const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
 // Preference order, best format first. WebP wins, so a converted copy is used
 // in place of a heavy original without anyone having to delete the original.
 const EXTENSIONS = ['.webp', '.avif', '.jpg', '.jpeg', '.png', '.svg'];
-const DIRS = ['/assets/img/', '/assets/slides/'];
+// /assets/photo/ first: the derived, web-sized crops beat a loose original.
+const DIRS = ['/assets/photo/', '/assets/img/', '/assets/slides/'];
 
 const found = [];
 
@@ -67,7 +68,15 @@ const images = {};
 Object.entries(data.slots).forEach(([slot, spec]) => {
   images[slot] = resolve(spec);
 });
-images.heroSlides = data.heroSlides.map(resolve);
+
+/** One slim banner per page, so no two pages open on the same photograph. */
+images.banners = {};
+Object.entries(data.banners || {}).forEach(([slot, spec]) => {
+  images.banners[slot] = resolve(spec);
+});
+
+/** The banner for a page, falling back to the landing page's. */
+images.forBanner = (slot) => images.banners[slot] || images.banners.home;
 
 /** One per service id, so a service card can carry its own artwork. */
 images.services = {};

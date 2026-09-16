@@ -33,6 +33,10 @@
     Object.keys(screens).forEach((key) => {
       if (screens[key]) screens[key].hidden = key !== name;
     });
+    // The signed-out screen is a full-height sign-in panel; once the shell is
+    // up there is nothing left in the right column, so the banner collapses to
+    // the same slim band the rest of the site opens on.
+    document.body.classList.toggle('pm-open', name === 'shell');
   }
 
   const state = {

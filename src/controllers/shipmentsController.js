@@ -236,7 +236,7 @@ exports.create = async (req, res, next) => {
       location: columns.current_location || [columns.origin_city, columns.origin_country].filter(Boolean).join(', '),
       lat: columns.origin_lat,
       lng: columns.origin_lng,
-      note: req.body.event_note || 'Booking registered with Paramount Logistics.',
+      note: req.body.event_note || 'Booking registered with Paramount Shipping.',
       occurred_at: created.created_at,
     });
 

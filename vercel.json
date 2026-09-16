@@ -6,14 +6,51 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/services/:id", "destination": "/service.html" }
+    {
+      "source": "/services/:id",
+      "destination": "/service.html"
+    }
   ],
   "headers": [
     {
       "source": "/assets/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=604800, immutable" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800, immutable"
+        }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/track",
+      "has": [
+        {
+          "type": "query",
+          "key": "number",
+          "value": "(?<n>.*)"
+        }
+      ],
+      "destination": "/?number=$n#track",
+      "permanent": true
+    },
+    {
+      "source": "/track",
+      "has": [
+        {
+          "type": "query",
+          "key": "tracking",
+          "value": "(?<n>.*)"
+        }
+      ],
+      "destination": "/?number=$n#track",
+      "permanent": true
+    },
+    {
+      "source": "/track",
+      "destination": "/#track",
+      "permanent": true
     }
   ]
 }

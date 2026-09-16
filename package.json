@@ -1,7 +1,7 @@
 {
   "name": "paramount-logistics",
   "version": "1.0.0",
-  "description": "Paramount Logistics website, shipment tracking API and operations desk",
+  "description": "Paramount Shipping website, shipment tracking API and operations desk",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
@@ -23,7 +23,7 @@
     "express",
     "supabase"
   ],
-  "author": "Paramount Logistics",
+  "author": "Paramount Shipping",
   "license": "UNLICENSED",
   "private": true,
   "dependencies": {

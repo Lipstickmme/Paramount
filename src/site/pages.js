@@ -9,7 +9,7 @@
  * each entry through src/site/layout.js into public/*.html.
  */
 
-const { contactForm, tracker, icons, esc, YEAR } = require('./layout');
+const { contactForm, tracker, banner, icons, esc, YEAR } = require('./layout');
 const images = require('./images');
 
 const site = require('../data/site.json');
@@ -20,7 +20,7 @@ const careers = require('../data/careers.json');
 const atlas = require('../data/world-map.json');
 const leadership = require('../data/leadership.json');
 
-const BRAND = 'Paramount Logistics';
+const BRAND = 'Paramount Shipping';
 
 /**
  * A headline figure, written into the HTML as its final value.
@@ -177,17 +177,26 @@ function fleetTracker() {
   return `
       <section class="fleet" id="fleet" aria-label="Live fleet tracker">
         <header class="fleet-head">
-          <div>
-            <span class="eyebrow">Live fleet</span>
+          <div class="fleet-head-copy">
+            <span class="eyebrow">Fleet operations</span>
             <h2>Every vessel, where it actually is.</h2>
+            <p class="fleet-note">
+              Each position is computed from the vessel's route, service speed and
+              voyage clock, so a ship moves at exactly the speed it reports. Real
+              time is honest and almost invisible &mdash; a ship crosses a pixel in
+              about a quarter of an hour &mdash; so the chart opens wound forward.
+            </p>
           </div>
+
           <div class="fleet-head-end">
-            <span class="fleet-live"><span class="dot"></span>Live positions</span>
-            <button type="button" class="fleet-lapse" data-fleet-lapse aria-pressed="false"
-                    title="Wind the clock forward to watch the fleet move">
-              ${icons.radar}<span> Live</span>
-            </button>
-            <span class="fleet-count muted" data-fleet-count></span>
+            <div class="fleet-mode" role="group" aria-label="Chart speed">
+              <button type="button" data-fleet-lapse="off" aria-pressed="false">Real time</button>
+              <button type="button" data-fleet-lapse="on" aria-pressed="true">Time-lapse</button>
+            </div>
+            <div class="fleet-status">
+              <span class="fleet-live"><span class="dot"></span><span data-fleet-count>Loading&hellip;</span></span>
+              <span class="fleet-stamp mono" data-fleet-stamp></span>
+            </div>
           </div>
         </header>
 
@@ -209,34 +218,43 @@ function fleetTracker() {
 
 const homeContent = `
   <main id="main">
-    <section class="hero">
-      <div class="wrap">
-        <div class="hero-grid">
-          <div class="hero-copy">
-            <span class="eyebrow" data-reveal>Freight forwarding &amp; contract logistics</span>
-            <h1>
+    ${banner({
+      slot: 'home',
+      className: 'banner-home',
+      kicker: 'Freight forwarding &amp; contract logistics',
+      title: `
               <span class="line"><span>Every consignment,</span></span>
-              <span class="line"><span class="grad-text">accounted for.</span></span>
-            </h1>
-            <p class="lede" data-reveal>${esc(site.tagline)} Air, ocean, road, rail and warehousing on one file, one number and one honest timeline.</p>
-          </div>
-
-          <div class="hero-aside">
-            <div class="hero-actions" data-reveal>
-              <a class="btn" href="/quote">Get a rate ${icons.arrow}</a>
-              <a class="btn ghost" href="/services">See what we move</a>
-            </div>
-            <div class="hero-proof" data-reveal>
+              <span class="line"><span>accounted for.</span></span>`,
+      lede: `${esc(site.tagline)} Air, ocean, road, rail and warehousing on one file, one number and one honest timeline.`,
+      actions: `
+              <a class="btn" href="#track">Track a consignment ${icons.arrow}</a>
+              <a class="btn ghost" href="/quote">Get a rate</a>`,
+      aside: `
+            <div class="banner-proof">
+              <div class="banner-proof-head">${icons.radar}<span>The record</span></div>
               ${network.stats
                 .slice(0, 3)
                 .map(
-                  (s) => `<div><strong data-count="${s.value}" data-suffix="${s.suffix}">${figure(s.value, s.suffix)}</strong><span>${esc(s.label)}</span></div>`
+                  (s) => `<div class="banner-proof-row">
+                <strong data-count="${s.value}" data-suffix="${s.suffix}">${figure(s.value, s.suffix)}</strong>
+                <span>${esc(s.label)}</span>
+              </div>`
                 )
                 .join('\n              ')}
-            </div>
-          </div>
-        </div>
+            </div>`,
+    })}
 
+    <!-- The tracking console sits directly under the banner, on its own ground.
+         It is the reason most people open this site, so nothing is above it but
+         the headline, and nothing about it needs a second page. -->
+    <section class="section track-band" id="track">
+      <div class="wrap track-band-inner">
+        ${tracker({ id: 'tracker', autofocus: false })}
+      </div>
+    </section>
+
+    <section class="section" id="fleet-section" style="padding-top:0">
+      <div class="wrap">
         ${fleetTracker()}
       </div>
     </section>
@@ -371,52 +389,17 @@ const homeContent = `
     </section>
   </main>`;
 
-/* ----------------------------------------------------------------- track --- */
-
-const trackContent = `
-  <main id="main">
-    <section class="page-hero">
-      <div class="wrap inner">
-        <div class="crumbs"><a href="/">Home</a> <span>/</span> <span>Track</span></div>
-        <h1>Where is it?</h1>
-        <p class="lede">Enter the tracking number from your booking confirmation, waybill or label. Every movement we have recorded is shown, newest first — including the ones we would rather not have had.</p>
-      </div>
-    </section>
-
-    <section class="section" style="padding-top:0">
-      <div class="wrap" style="display:grid;gap:26px">
-        ${tracker({ id: 'page-tracker', autofocus: true })}
-
-        <div class="grid three" data-reveal>
-          ${[
-            ['Lost the number?', 'The desk can find a consignment from the booking reference, the container number or the consignee address. Call the support line or start a chat.'],
-            ['Nothing has moved?', "Between long-haul legs a consignment can sit legitimately — an ocean leg posts one event every few days. The estimated delivery is the number to watch."],
-            ['Held in customs?', 'Clearance holds show as their own status with the reason attached. If paperwork is missing, the note says which document is outstanding.'],
-          ]
-            .map(
-              ([t, p], i) => `
-          <article class="card tilt step" data-tilt style="--delay:${i * 60}ms">
-            <h3>${t}</h3>
-            <p>${p}</p>
-          </article>`
-            )
-            .join('')}
-        </div>
-      </div>
-    </section>
-  </main>`;
-
 /* -------------------------------------------------------------- services --- */
 
 const servicesContent = `
   <main id="main">
-    <section class="page-hero">
-      <div class="wrap inner">
-        <div class="crumbs"><a href="/">Home</a> <span>/</span> <span>Services</span></div>
-        <h1>Freight, moved <span class="grad-text">deliberately.</span></h1>
-        <p class="lede">Six services that share one operating system: one file, one tracking number, one specialist who knows the lane and answers the phone.</p>
-      </div>
-    </section>
+    ${banner({
+      slot: 'services',
+      crumbs: '<a href="/">Home</a> <span>/</span> <span>Services</span>',
+      kicker: 'What we move',
+      title: 'Freight, moved deliberately.',
+      lede: 'Six services that share one operating system: one file, one tracking number, one specialist who knows the lane and answers the phone.',
+    })}
 
     <section class="section" style="padding-top:clamp(20px,3vw,40px)">
       <div class="wrap">
@@ -463,15 +446,23 @@ const servicesContent = `
 
 const serviceDetailContent = `
   <main id="main" data-service-detail>
-    <section class="page-hero">
-      <div class="wrap inner">
+    <!-- Which photograph belongs to which service is resolved at build time,
+         from the files that actually exist; the page is rendered once for all
+         six, so the map rides along and service.js picks its row. -->
+    <script type="application/json" id="svc-images">${JSON.stringify(images.services)}</script>
+
+    <section class="banner on-photo">
+      <div class="banner-img" aria-hidden="true" data-svc="banner"
+           style="background-image:url('${images.forBanner('services')}')"></div>
+      <div class="banner-scrim" aria-hidden="true"></div>
+      <div class="wrap banner-inner">
         <div class="crumbs"><a href="/">Home</a> <span>/</span> <a href="/services">Services</a> <span>/</span> <span data-svc="title">Service</span></div>
         <span class="eyebrow" data-svc="code"></span>
         <h1 data-svc="heading">Loading service&hellip;</h1>
         <p class="lede" data-svc="summary"></p>
         <div class="hero-actions">
           <a class="btn" href="/quote">Get a rate for this lane ${icons.arrow}</a>
-          <a class="btn ghost" href="/track">Track a consignment</a>
+          <a class="btn ghost" href="/#track">Track a consignment</a>
         </div>
       </div>
     </section>
@@ -505,13 +496,13 @@ const serviceDetailContent = `
 
 const networkContent = `
   <main id="main">
-    <section class="page-hero">
-      <div class="wrap inner">
-        <div class="crumbs"><a href="/">Home</a> <span>/</span> <span>Network</span></div>
-        <h1>A network you can <span class="grad-text">point at.</span></h1>
-        <p class="lede">Eight control hubs of our own, vetted partners in 172 countries, and one event standard applied to every one of them so a consignment reads the same wherever it is.</p>
-      </div>
-    </section>
+    ${banner({
+      slot: 'network',
+      crumbs: `<a href="/">Home</a> <span>/</span> <span>Network</span>`,
+      kicker: 'Global network',
+      title: 'A network you can point at.',
+      lede: 'Eight control hubs of our own, vetted partners in 172 countries, and one event standard applied to every one of them so a consignment reads the same wherever it is.',
+    })}
 
     <section class="section" style="padding-top:clamp(18px,3vw,36px)">
       <div class="wrap">
@@ -568,13 +559,13 @@ const networkContent = `
 
 const aboutContent = `
   <main id="main">
-    <section class="page-hero">
-      <div class="wrap inner">
-        <div class="crumbs"><a href="/">Home</a> <span>/</span> <span>About</span></div>
-        <h1>Freight is a <span class="grad-text">promise business.</span></h1>
-        <p class="lede">Paramount was built by people who got tired of finding out about a delay from the customer. So we built the company around the event trail first and the sales pitch second.</p>
-      </div>
-    </section>
+    ${banner({
+      slot: 'about',
+      crumbs: '<a href="/">Home</a> <span>/</span> <span>About</span>',
+      kicker: 'About Paramount',
+      title: 'Freight is a promise business.',
+      lede: 'Paramount was built by people who got tired of finding out about a delay from the customer. So we built the company around the event trail first and the sales pitch second.',
+    })}
 
     <section class="section" style="padding-top:clamp(18px,3vw,36px)">
       <div class="wrap split">
@@ -643,13 +634,13 @@ const aboutContent = `
 
 const quoteContent = `
   <main id="main">
-    <section class="page-hero">
-      <div class="wrap inner">
-        <div class="crumbs"><a href="/">Home</a> <span>/</span> <span>Quote</span></div>
-        <h1>Get a rate.</h1>
-        <p class="lede">Tell us what moves and when. A lane specialist — not a form robot — comes back with rates, transit times and anything about the corridor you should know before you commit.</p>
-      </div>
-    </section>
+    ${banner({
+      slot: 'quote',
+      crumbs: '<a href="/">Home</a> <span>/</span> <span>Quote</span>',
+      kicker: 'Request a rate',
+      title: 'Get a rate.',
+      lede: 'Tell us what moves and when. A lane specialist — not a form robot — comes back with rates, transit times and anything about the corridor you should know before you commit.',
+    })}
 
     <section class="section" style="padding-top:clamp(18px,3vw,36px)">
       <div class="wrap contact-grid">
@@ -662,7 +653,6 @@ const quoteContent = `
           </ul>
           <dl class="contact-lines">
             <div class="contact-line"><dt>Rate desk</dt><dd><a href="mailto:${esc(site.email)}" data-site="email">${esc(site.email)}</a></dd></div>
-            <div class="contact-line"><dt>Support line</dt><dd><a href="tel:${esc(site.support_phone).replace(/\s+/g, '')}" data-site="support_phone">${esc(site.support_phone)}</a></dd></div>
             <div class="contact-line"><dt>Desk hours</dt><dd data-site="hours">${esc(site.hours)}</dd></div>
           </dl>
         </div>
@@ -716,27 +706,25 @@ const quoteContent = `
 
 const contactContent = `
   <main id="main">
-    <section class="page-hero">
-      <div class="wrap inner">
-        <div class="crumbs"><a href="/">Home</a> <span>/</span> <span>Contact</span></div>
-        <h1>Talk to a person.</h1>
-        <p class="lede">The control tower is staffed around the clock. Anything about a live consignment gets picked up immediately; everything else within one working day.</p>
-      </div>
-    </section>
+    ${banner({
+      slot: 'contact',
+      crumbs: '<a href="/">Home</a> <span>/</span> <span>Contact</span>',
+      kicker: 'Contact',
+      title: 'Talk to a person.',
+      lede: 'The control tower is staffed around the clock. Anything about a live consignment gets picked up immediately; everything else within one working day.',
+    })}
 
     <section class="section" style="padding-top:clamp(18px,3vw,36px)">
       <div class="wrap contact-grid">
         <div>
-          ${head({ kicker: 'Paramount Logistics', title: 'Rotterdam, and wherever your cargo is.' })}
+          ${head({ kicker: 'Paramount Shipping', title: 'Rotterdam, and wherever your cargo is.' })}
           <dl class="contact-lines">
             <div class="contact-line"><dt>Head office</dt><dd data-site="address">${esc(site.address)}</dd></div>
-            <div class="contact-line"><dt>General</dt><dd><a href="mailto:${esc(site.email)}" data-site="email">${esc(site.email)}</a></dd></div>
-            <div class="contact-line"><dt>Switchboard</dt><dd><a href="tel:${esc(site.phone).replace(/\s+/g, '')}" data-site="phone">${esc(site.phone)}</a></dd></div>
-            <div class="contact-line"><dt>24/7 support</dt><dd><a href="tel:${esc(site.support_phone).replace(/\s+/g, '')}" data-site="support_phone">${esc(site.support_phone)}</a></dd></div>
-            <div class="contact-line"><dt>Cargo emergency</dt><dd><a href="tel:${esc(site.emergency_phone).replace(/\s+/g, '')}" data-site="emergency_phone">${esc(site.emergency_phone)}</a></dd></div>
+            <div class="contact-line"><dt>Email</dt><dd><a href="mailto:${esc(site.email)}" data-site="email">${esc(site.email)}</a></dd></div>
+            <div class="contact-line"><dt>A live consignment</dt><dd>Open the chat, bottom right &mdash; a tracking number gets an answer from the record.</dd></div>
             <div class="contact-line"><dt>Hours</dt><dd data-site="hours">${esc(site.hours)}</dd></div>
           </dl>
-          <div class="hero-actions"><a class="btn ghost" href="/track">Track a consignment ${icons.arrow}</a></div>
+          <div class="hero-actions"><a class="btn ghost" href="/#track">Track a consignment ${icons.arrow}</a></div>
         </div>
         <div class="card" data-reveal>
           <h3 style="margin-bottom:18px">Send us a message</h3>
@@ -773,13 +761,13 @@ const contactContent = `
 
 const careersContent = `
   <main id="main">
-    <section class="page-hero">
-      <div class="wrap inner">
-        <div class="crumbs"><a href="/">Home</a> <span>/</span> <span>Careers</span></div>
-        <h1>Work where the <span class="grad-text">detail matters.</span></h1>
-        <p class="lede">Three thousand people across six control hubs. We hire for judgement under pressure and a low tolerance for a status nobody can explain.</p>
-      </div>
-    </section>
+    ${banner({
+      slot: 'careers',
+      crumbs: '<a href="/">Home</a> <span>/</span> <span>Careers</span>',
+      kicker: 'Careers',
+      title: 'Work where the detail matters.',
+      lede: 'Three thousand people across six control hubs. We hire for judgement under pressure and a low tolerance for a status nobody can explain.',
+    })}
 
     <section class="section" style="padding-top:clamp(18px,3vw,36px)">
       <div class="wrap">
@@ -822,13 +810,13 @@ const careersContent = `
 
 const applyContent = `
   <main id="main">
-    <section class="page-hero">
-      <div class="wrap inner">
-        <div class="crumbs"><a href="/">Home</a> <span>/</span> <a href="/careers">Careers</a> <span>/</span> <span>Apply</span></div>
-        <h1>Apply.</h1>
-        <p class="lede" id="apply-lede">Tell us what you have run and where it got hard. A person on the team reads every application.</p>
-      </div>
-    </section>
+    ${banner({
+      slot: 'apply',
+      crumbs: '<a href="/">Home</a> <span>/</span> <a href="/careers">Careers</a> <span>/</span> <span>Apply</span>',
+      kicker: 'Join the crew',
+      title: 'Apply.',
+      lede: '<span id="apply-lede">Tell us what you have run and where it got hard. A person on the team reads every application.</span>',
+    })}
 
     <section class="section" style="padding-top:clamp(18px,3vw,36px)">
       <div class="wrap" style="max-width:820px">
@@ -863,53 +851,74 @@ const applyContent = `
 
 const portalContent = `
   <main id="main">
-    <section class="page-hero">
-      <div class="wrap inner">
-        <div class="crumbs"><a href="/">Home</a> <span>/</span> <span>My consignments</span></div>
-        <h1>Your shipments, <span class="grad-text">all of them.</span></h1>
-        <p class="lede">One account, every consignment booked to or from your address — plus anything you add by tracking number. The same timeline the control tower reads.</p>
+    <!-- The gate is the page.
+         Signed out, this is a sign-in screen with a reason to sign in beside
+         it: the card sits in the right column, level with the copy, so the
+         password field and the button are on screen the moment the page opens
+         rather than a scroll below the fold. Signed in, the right column
+         empties, the section collapses to the same slim band every other page
+         opens on, and the consignments take over underneath. -->
+    <div id="portal">
+    <section class="banner on-photo pm-hero">
+      <div class="banner-img" aria-hidden="true" style="background-image:url('${images.forBanner('portal')}')"></div>
+      <div class="banner-scrim" aria-hidden="true"></div>
+
+      <div class="wrap banner-inner pm-hero-grid">
+        <div class="pm-hero-copy">
+          <div class="crumbs"><a href="/">Home</a> <span>/</span> <span>My consignments</span></div>
+          <span class="eyebrow">Customer portal</span>
+          <h1>Your shipments, all of them.</h1>
+          <p class="lede">One account, every consignment booked to or from your address — plus anything you add by tracking number. The same timeline the control tower reads.</p>
+          <ul class="pm-hero-points">
+            <li>${icons.radar}<span>Every movement, as the desk recorded it</span></li>
+            <li>${icons.container}<span>Air, ocean, road, rail and express on one list</span></li>
+            <li>${icons.clipboard}<span>Documents and delivery evidence on the file</span></li>
+          </ul>
+        </div>
+
+        <div class="pm-hero-panel">
+          <div class="pm-gate" id="portal-boot">
+            <div class="card"><p class="muted">Checking your session&hellip;</p></div>
+          </div>
+
+          <div class="pm-gate" id="portal-unavailable" hidden>
+            <div class="card">
+              <span class="eyebrow">Customer portal</span>
+              <h2 style="margin-top:14px">Accounts are not available here yet.</h2>
+              <p class="muted" style="margin-top:12px">This deployment has no account service connected, so there is nothing to sign in to. You can still track any consignment with its number.</p>
+              <div class="hero-actions"><a class="btn" href="/#track">Track a consignment ${icons.arrow}</a></div>
+            </div>
+          </div>
+
+          <div class="pm-gate" id="portal-auth" hidden>
+            <form class="card pm-auth" id="portal-auth-form" novalidate>
+              <span class="eyebrow">Sign in</span>
+              <h2 id="portal-auth-title">Your consignments, in one place.</h2>
+              <p class="muted" id="portal-auth-note"></p>
+              <div class="field">
+                <label for="portal-email">Email</label>
+                <input type="email" id="portal-email" name="email" autocomplete="email" required />
+              </div>
+              <div class="field" id="portal-password-field">
+                <label for="portal-password">Password</label>
+                <input type="password" id="portal-password" name="password" autocomplete="current-password" minlength="8" />
+              </div>
+              <div class="err" id="portal-auth-error" role="alert"></div>
+              <div class="form-status" id="portal-auth-note-out" role="status" aria-live="polite"></div>
+              <button type="submit" class="btn block" id="portal-auth-submit">Sign in</button>
+              <div class="pm-auth-links">
+                <button type="button" class="link" id="portal-auth-alt">Create an account</button>
+                <button type="button" class="link" id="portal-auth-forgot">Forgot password?</button>
+              </div>
+              <p class="muted" style="font-size:.84rem">Tracking a single consignment needs no account at all — <a class="link" href="/#track">use the console on the home page</a>.</p>
+            </form>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="section" style="padding-top:clamp(12px,2vw,28px)">
-      <div class="wrap" id="portal">
-
-        <div class="pm-gate" id="portal-boot">
-          <div class="card"><p class="muted">Checking your session&hellip;</p></div>
-        </div>
-
-        <div class="pm-gate" id="portal-unavailable" hidden>
-          <div class="card">
-            <span class="eyebrow">Customer portal</span>
-            <h2 style="margin-top:14px">Accounts are not available here yet.</h2>
-            <p class="muted" style="margin-top:12px">This deployment has no account service connected, so there is nothing to sign in to. You can still track any consignment with its number.</p>
-            <div class="hero-actions"><a class="btn" href="/track">Track a consignment ${icons.arrow}</a></div>
-          </div>
-        </div>
-
-        <div class="pm-gate" id="portal-auth" hidden>
-          <form class="card pm-auth" id="portal-auth-form" novalidate>
-            <span class="eyebrow">Customer portal</span>
-            <h2 id="portal-auth-title">Your consignments, in one place.</h2>
-            <p class="muted" id="portal-auth-note"></p>
-            <div class="field">
-              <label for="portal-email">Email</label>
-              <input type="email" id="portal-email" name="email" autocomplete="email" required />
-            </div>
-            <div class="field" id="portal-password-field">
-              <label for="portal-password">Password</label>
-              <input type="password" id="portal-password" name="password" autocomplete="current-password" minlength="8" />
-            </div>
-            <div class="err" id="portal-auth-error" role="alert"></div>
-            <div class="form-status" id="portal-auth-note-out" role="status" aria-live="polite"></div>
-            <button type="submit" class="btn block" id="portal-auth-submit">Sign in</button>
-            <div class="pm-auth-links">
-              <button type="button" class="link" id="portal-auth-alt">Create an account</button>
-              <button type="button" class="link" id="portal-auth-forgot">Forgot password?</button>
-            </div>
-            <p class="muted" style="font-size:.84rem">Tracking a single consignment needs no account at all — <a class="link" href="/track">use the tracking page</a>.</p>
-          </form>
-        </div>
+    <section class="section pm-section" style="padding-top:clamp(18px,3vw,40px)">
+      <div class="wrap">
 
         <div id="portal-shell" hidden>
           <div class="pm-bar">
@@ -942,23 +951,22 @@ const portalContent = `
 
       </div>
     </section>
+    </div>
   </main>`;
 
 /* ------------------------------------------------------------------- 404 --- */
 
 const notFoundContent = `
   <main id="main">
-    <section class="section">
-      <div class="wrap oops">
-        <span class="code">404</span>
-        <h1>That page has been rerouted.</h1>
-        <p class="lede">The link is wrong or the page has moved. If you were looking for a consignment, the tracking console will find it.</p>
-        <div class="hero-actions">
-          <a class="btn" href="/track">Track a consignment ${icons.arrow}</a>
-          <a class="btn ghost" href="/">Back to the home page</a>
-        </div>
-      </div>
-    </section>
+    ${banner({
+      slot: 'notfound',
+      kicker: '404',
+      title: 'That page has been rerouted.',
+      lede: 'The link is wrong or the page has moved. If you were looking for a consignment, the tracking console on the home page will find it.',
+      actions: `
+              <a class="btn" href="/#track">Track a consignment ${icons.arrow}</a>
+              <a class="btn ghost" href="/">Back to the home page</a>`,
+    })}
   </main>`;
 
 /* ----------------------------------------------------------------- pages --- */
@@ -976,14 +984,6 @@ module.exports = [
     extraScripts: ['/assets/map/world.js', '/js/fleet-map.js'],
   },
   {
-    file: 'track.html',
-    title: `Track a consignment | ${BRAND}`,
-    description: 'Enter a Paramount tracking number to see every recorded movement, the current location and the estimated delivery.',
-    active: 'track',
-    bodyClass: 'page-track',
-    content: trackContent,
-  },
-  {
     file: 'services.html',
     title: `Services | ${BRAND}`,
     description: 'Air freight, ocean freight, road haulage, rail freight, express courier and contract warehousing from one operating standard.',
@@ -994,7 +994,7 @@ module.exports = [
   {
     file: 'service.html',
     title: `Service | ${BRAND}`,
-    description: 'How this Paramount Logistics service runs, what it covers and where it operates.',
+    description: 'How this Paramount Shipping service runs, what it covers and where it operates.',
     active: 'services',
     bodyClass: 'page-service',
     content: serviceDetailContent,
@@ -1028,7 +1028,7 @@ module.exports = [
   {
     file: 'contact.html',
     title: `Contact | ${BRAND}`,
-    description: 'Reach the Paramount control tower, the rate desk or the cargo emergency line.',
+    description: 'Reach the Paramount control tower or the rate desk.',
     active: 'contact',
     bodyClass: 'page-contact',
     content: contactContent,
@@ -1036,7 +1036,7 @@ module.exports = [
   {
     file: 'careers.html',
     title: `Careers | ${BRAND}`,
-    description: 'Open roles across operations, compliance, commercial and technology at Paramount Logistics.',
+    description: 'Open roles across operations, compliance, commercial and technology at Paramount Shipping.',
     active: 'careers',
     bodyClass: 'page-careers',
     content: careersContent,

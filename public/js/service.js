@@ -25,7 +25,7 @@
     try {
       const svc = await fetchJSON(`/api/services/${encodeURIComponent(id)}`);
 
-      document.title = `${svc.title} | Paramount Logistics`;
+      document.title = `${svc.title} | Paramount Shipping`;
       set('title', esc(svc.title));
       set('code', `${esc(svc.code)} · ${esc(svc.tagline)}`);
       set('heading', esc(svc.title));
@@ -39,8 +39,22 @@
           .join('')
       );
 
+      // The service's own photograph, in the banner and in the figure below it.
+      let artwork = null;
+      try {
+        const map = document.getElementById('svc-images');
+        artwork = map ? JSON.parse(map.textContent)[svc.id] : null;
+      } catch (e) {
+        /* the page renders with the generic picture rather than not at all */
+      }
+
       const image = root.querySelector('[data-svc="image"]');
-      if (image) image.alt = svc.title;
+      if (image) {
+        image.alt = svc.title;
+        if (artwork) image.src = artwork;
+      }
+      const bannerImg = root.querySelector('[data-svc="banner"]');
+      if (bannerImg && artwork) bannerImg.style.backgroundImage = `url('${artwork}')`;
 
       const { services } = await fetchJSON('/api/services');
       set(

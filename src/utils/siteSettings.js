@@ -25,10 +25,15 @@ const { getSupabase } = require('./supabase');
 const TABLE = 'site_settings';
 const ROW_ID = 'default';
 
-/** Public details, printed on the pages. */
+/**
+ * Public details, printed on the pages.
+ *
+ * No telephone numbers: the site does not publish one, so the desk cannot set
+ * one here either. The columns are still in site_settings — dropping a column
+ * throws away whatever is in it — they are simply never read or written.
+ */
 const PUBLIC_FIELDS = [
-  'company_name', 'tagline', 'address', 'email', 'phone',
-  'support_phone', 'emergency_phone', 'whatsapp', 'hours',
+  'company_name', 'tagline', 'address', 'email', 'hours',
 ];
 
 /** Delivery settings. Never sent to the browser except to the desk itself. */

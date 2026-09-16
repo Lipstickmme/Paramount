@@ -6,11 +6,11 @@ generated at request time:
 
     python3 scripts/build-brand.py
 
-Source: public/assets/img/Logoshipping.png — a navy-and-red container-ship
+Source: media/Logoshipping.png — a navy-and-red container-ship
 emblem on a white ground. What the site needs from it:
 
   * the lockup with the white ground knocked out, so it sits on any panel
-  * a light-ink variant, because navy on a dark theme is invisible
+  * a white cut of the same artwork, because navy on a dark theme is invisible
   * the ship mark alone, for the favicon and anywhere too small for the words
   * a link-card image, which needs its own framing rather than a squeezed logo
 """
@@ -21,7 +21,7 @@ from collections import deque
 from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, 'public', 'assets', 'img', 'Logoshipping.png')
+SRC = os.path.join(ROOT, 'media', 'Logoshipping.png')
 BRAND = os.path.join(ROOT, 'public', 'assets', 'brand')
 PUBLIC = os.path.join(ROOT, 'public')
 
@@ -83,36 +83,33 @@ def trim(img, padding=0):
     ))
 
 
-def to_light_ink(img):
-    """Recolour the navy for a dark ground, leaving the red alone.
+def to_white(img, gain=1.3, floor=0.12):
+    """A one-colour white cut of the same artwork, for dark backgrounds.
 
-    The emblem reads as navy line-work with a red waterline. On a dark panel the
-    navy disappears, so it is lifted to near-white; the red is only brightened,
-    because it is the one piece of colour the mark has.
+    Not a recolour and not a silhouette. Ink coverage becomes opacity: the
+    darker a pixel was, the more opaque the white that replaces it. The navy
+    line-work and the lettering come back solid white, the ship's white
+    superstructure drops away to the background, and the drawing keeps its
+    structure — so it reads as the same logo rather than a second one.
+
+    A flat inversion was the alternative, and it hollowed the wordmark out into
+    outlines. `gain` steepens the ramp so mid-tones commit to white; `floor`
+    keeps the palest ink from vanishing entirely.
     """
     img = img.convert('RGBA')
     px = img.load()
     w, h = img.size
+    out = Image.new('RGBA', img.size, (255, 255, 255, 0))
+    op = out.load()
     for y in range(h):
         for x in range(w):
             r, g, b, a = px[x, y]
             if a == 0:
                 continue
-            reddish = r > g + 35 and r > b + 35
-            if reddish:
-                px[x, y] = (min(255, int(r * 1.35) + 30), min(255, int(g * 1.3) + 20), min(255, int(b * 1.3) + 20), a)
-                continue
-            luma = 0.2126 * r + 0.7152 * g + 0.0722 * b
-            if luma < 150:
-                # Dark ink becomes light ink, keeping the antialiasing ramp.
-                t = 1 - (luma / 150)
-                px[x, y] = (
-                    int(255 - (255 - LIGHT_INK[0]) * t),
-                    int(255 - (255 - LIGHT_INK[1]) * t),
-                    int(255 - (255 - LIGHT_INK[2]) * t),
-                    a,
-                )
-    return img
+            luma = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0
+            cover = min(1.0, max(0.0, (1.0 - luma) * gain + floor))
+            op[x, y] = (255, 255, 255, int(a * cover))
+    return out
 
 
 def rounded_plate(size, radius, colour):
@@ -152,7 +149,7 @@ def save_pair(img, name):
 
 
 save_pair(lockup, 'paramount-logo')
-save_pair(to_light_ink(lockup), 'paramount-logo-light')
+save_pair(to_white(lockup), 'paramount-logo-light')
 
 # --- the ship alone ---------------------------------------------------------
 # The emblem is ship, then wordmark, then compass. Everything above the words
@@ -163,7 +160,7 @@ mark_sized = mark.resize((360, int(360 * mark.size[1] / mark.size[0])), Image.LA
 mark_sized.save(os.path.join(BRAND, 'paramount-mark.png'), optimize=True)
 mark_sized.save(os.path.join(BRAND, 'paramount-mark.webp'), quality=88, method=6)
 
-light_mark = to_light_ink(mark).resize(mark_sized.size, Image.LANCZOS)
+light_mark = to_white(mark).resize(mark_sized.size, Image.LANCZOS)
 light_mark.save(os.path.join(BRAND, 'paramount-mark-light.png'), optimize=True)
 light_mark.save(os.path.join(BRAND, 'paramount-mark-light.webp'), quality=88, method=6)
 
@@ -172,7 +169,7 @@ light_mark.save(os.path.join(BRAND, 'paramount-mark-light.webp'), quality=88, me
 # browser's light tab strip on its own.
 for size, name in ((180, 'apple-touch-icon.png'), (64, 'favicon.png'), (32, 'favicon-32.png')):
     plate = rounded_plate((size, size), int(size * 0.22), NAVY)
-    centre(plate, fit(to_light_ink(mark), (int(size * 0.84), int(size * 0.62))))
+    centre(plate, fit(to_white(mark), (int(size * 0.84), int(size * 0.62))))
     plate.save(os.path.join(PUBLIC, name), optimize=True)
 
 # --- link card --------------------------------------------------------------
@@ -182,7 +179,7 @@ draw = ImageDraw.Draw(card)
 for i in range(180):  # a soft horizon, so the card is not a flat rectangle
     alpha = int(26 * (1 - i / 180))
     draw.line((0, 630 - i, 1200, 630 - i), fill=(255, 255, 255, alpha))
-centre(card, fit(to_light_ink(lockup), (760, 430)), dy=-6)
+centre(card, fit(to_white(lockup), (760, 430)), dy=-6)
 card.convert('RGB').save(os.path.join(PUBLIC, 'assets', 'img', 'paramount-og.png'), quality=92, optimize=True)
 
 for name in ('paramount-logo.png', 'paramount-logo.webp', 'paramount-logo-light.png',

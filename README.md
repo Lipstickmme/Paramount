@@ -1,4 +1,4 @@
-# Paramount Logistics
+# Paramount Shipping
 
 Shipment tracking, freight-forwarding website and operations desk for **Paramount
 Logistics**. A dependency-light Node/Express backend serves a multi-page frontend,
@@ -26,8 +26,7 @@ works from.
 
 | URL             | Page                                                                |
 | --------------- | ------------------------------------------------------------------- |
-| `/`             | Landing page, with the tracking console in the hero                 |
-| `/track`        | Full tracking: timeline, route map, milestones and consignment facts |
+| `/`             | Landing page: banner, the tracking console, the fleet chart          |
 | `/services`     | The six services, each linking to its own page                      |
 | `/services/:id` | One service: how it runs, what it covers, the numbers behind it     |
 | `/network`      | Hubs, trade lanes and the world map                                 |
@@ -41,6 +40,16 @@ works from.
 | `404`           | Styled not-found page                                               |
 
 A live-chat widget is on every page except the desk.
+
+Every page opens on the same thing: a slim photographic banner at one fixed
+height, a navy scrim over it, and the page title on the scrim. Only the
+photograph changes, and no two pages share one.
+
+`/track` was a page of its own until the console — with its result panel, its
+timeline and its route map — moved onto the landing page; two pages were saying
+the same thing. The route still exists as a 301 to `/?number=…#track`, in both
+`src/app.js` and `vercel.json`, so tracking links already emailed or printed on
+a label keep working.
 
 ## The fleet tracker
 
@@ -63,9 +72,11 @@ nothing downstream changes. The badge on the chart says "Live positions", not
 "AIS", for that reason.
 
 **The time-lapse.** A ship at 20 knots crosses about a thousandth of a pixel per
-second on a world chart, so the button in the tracker header winds the clock
-forward to make the movement watchable. It is labelled Live or Time-lapse, so
-what you are looking at is never in doubt.
+second on a world chart — honest, and completely invisible. So the chart opens
+wound forward, and a segmented control in the header says which clock is
+running: **Real time** or **Time-lapse**. Both speeds are on screen, and the
+pressed one is the one you are watching, so what you are looking at is never in
+doubt. A visitor who has asked their system for reduced motion gets real time.
 
 The chart's coastlines are Natural Earth 110m land data (public domain), built
 into `public/assets/map/world.js` by `scripts/build-world-map.js`.
@@ -82,7 +93,7 @@ The product, end to end:
    transhipment and clearance is a row in `shipment_events` with a time, a place
    and optional coordinates. A trigger rolls the newest public event up onto the
    consignment, so the desk list and the customer's timeline cannot disagree.
-3. **Anyone holding the number can read it** at `/track?number=…` or through
+3. **Anyone holding the number can read it** at `/?number=…#track` or through
    `GET /api/track/:number`. No account, no sign-in. The response is a deliberate
    projection: no costs, no internal notes, no contact details for the other party.
 4. **The desk can keep a note to itself.** An event marked internal is recorded
@@ -176,11 +187,13 @@ public/                 static frontend (built pages + assets)
   css/styles.css        design system: tokens, components, motion
   css/admin.css         the desk
   js/main.js            shared runtime: nav, theme, reveals, tilt, counters, forms
-  js/track-view.js      how a consignment is drawn, shared by /track and /portal
+  js/track-view.js      how a consignment is drawn, shared by the console and /portal
   js/track.js           the tracking console and its lookups
   js/portal.js          the customer portal
   js/fleet-map.js       the chart on the home page
   assets/map/world.js   coastlines, generated from Natural Earth data
+  assets/photo/         web-sized crops, derived from media/
+  assets/fonts/         the three faces, self-hosted
   js/chat.js            live chat, visitor side
   js/admin.js           the desk
   js/supabase-lite.js   a tiny Supabase client (auth + PostgREST over fetch)
@@ -205,6 +218,9 @@ scripts/
   make-placeholders.js  regenerates the placeholder artwork
   build-world-map.js    coastlines -> an SVG path the chart draws
   build-brand.py        every brand asset, derived from the one logo file
+  build-photos.py       media/ originals -> the sized crops the pages serve
+  build-fonts.sh        refreshes the self-hosted webfonts
+media/                  the original photographs; never served, never deployed
 test/                   API, browser and fallback suites
 ```
 
@@ -302,14 +318,40 @@ contract, for a client that would rather call Postgres directly.
 
 ## Images
 
-Every image is a slot. `src/data/images.json` names the files each slot would
-rather have and the placeholder it uses until one exists, so adding real
-photography is a file drop rather than a code change: put `hero-1.jpg`,
-`service-air.jpg`, `paramount-about.webp` and so on into `public/assets/img/` and
-rebuild. The build log says which real files it picked up.
+Originals live in `media/` and are never served. They are 1-8 MB PNGs, which is
+right for an archive and wrong for a web page, so:
 
+```
+python3 scripts/build-photos.py
+```
+
+derives every crop the layout asks for into `public/assets/photo/` — a 2400x820
+banner per page, a 1200x900 card per service, 1600x1000 figures, the leadership
+portrait, and the blurred plate behind every page. 46 MB of source becomes about
+3 MB of WebP. The outputs are committed, because the Vercel build image has no
+Pillow; `media/` is in `.vercelignore`, so the originals never deploy.
+
+Which photograph goes where is `scripts/build-photos.py`'s three tables
+(`BANNERS`, `CARDS`, `WIDES`) — one line each, and the naming is the slot, not
+the subject, so re-pointing a page at a different picture is a one-word edit.
+
+`src/data/images.json` then names the files each slot would rather have and the
+placeholder it falls back to, and `src/site/images.js` resolves them at build
+time against what is actually on disk. A loose file dropped straight into
+`public/assets/img/` under one of the `prefer` names still wins, so the
+file-drop workflow survives. The build log says which real files it picked up.
+
+`docs/IMAGES.md` lists every slot with its size and a brief for the artwork.
 The placeholders that ship with the site are generated:
 `node scripts/make-placeholders.js`.
+
+### Fonts
+
+Archivo, Public Sans and Roboto Mono are served from `public/assets/fonts/` —
+six variable-font files, 188 KB, latin and latin-ext. Self-hosted rather than
+pulled from Google: a webfont from a third party is a render-blocking request
+to a host we do not control. `bash scripts/build-fonts.sh` refreshes the
+binaries; the `@font-face` rules are hand-written in `fonts.css`.
 
 ## Configuration
 

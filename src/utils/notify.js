@@ -36,7 +36,7 @@ function defaultTo() {
 
 /** Verified sender identity, from the environment. */
 function defaultFrom() {
-  return process.env.FORM_FROM || process.env.NOTIFY_FROM || 'Paramount Logistics <onboarding@resend.dev>';
+  return process.env.FORM_FROM || process.env.NOTIFY_FROM || 'Paramount Shipping <onboarding@resend.dev>';
 }
 
 /** The desk's configured delivery settings, with the environment behind them. */
@@ -253,7 +253,7 @@ function shipmentBody(shipment, extra = []) {
 function trackingUrl(number) {
   const base = (process.env.SITE_URL || process.env.VERCEL_URL || '').replace(/\/+$/, '');
   const origin = base ? (base.startsWith('http') ? base : `https://${base}`) : '';
-  return `${origin}/track?number=${encodeURIComponent(number)}`;
+  return `${origin}/?number=${encodeURIComponent(number)}#track`;
 }
 
 /**
@@ -288,11 +288,11 @@ async function shipmentCreated(shipment) {
         text: [
           `Hello ${shipment.receiver_name || 'there'},`,
           '',
-          'Your consignment has been registered with Paramount Logistics.',
+          'Your consignment has been registered with Paramount Shipping.',
           '',
           shipmentBody(shipment),
           '',
-          configured.signature || 'Paramount Logistics',
+          configured.signature || 'Paramount Shipping',
         ].join('\n'),
       })
     : { ok: false, error: 'not_sent' };
@@ -322,7 +322,7 @@ async function shipmentUpdated(shipment, event) {
       '',
       shipmentBody(shipment),
       '',
-      configured.signature || 'Paramount Logistics',
+      configured.signature || 'Paramount Shipping',
     ].filter((line) => line !== null).join('\n'),
   });
 

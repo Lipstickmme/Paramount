@@ -29,7 +29,7 @@
   const POLL_MS = 4000;
   const COLUMNS = 'id,created_at,sender,body';
   let GREETING =
-    "You're through to Paramount Logistics. Quote a tracking number and I'll tell you exactly where it is.";
+    "You're through to Paramount Shipping. Quote a tracking number and I'll tell you exactly where it is.";
 
   const store = {
     get(key) {

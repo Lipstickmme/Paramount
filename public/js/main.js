@@ -1,10 +1,10 @@
 'use strict';
 
 /* =========================================================================
-   Paramount Logistics — shared frontend runtime.
+   Paramount Shipping — shared frontend runtime.
 
    Owns the things every page has: the nav, the theme, scroll reveals, card
-   tilt, counters, the hero slideshow, and the two forms that post to the API.
+   tilt, counters, the banner's parallax, and the forms that post to the API.
    Exposes a few helpers on window.PARAMOUNT for the per-page scripts.
 
    Everything here is progressive: the pages are complete static HTML, so a
@@ -115,12 +115,31 @@
 
   const progress = $('#progress');
 
+  /*
+   * The banner's parallax.
+   *
+   * The photograph moves at about four fifths of the page's speed while the
+   * band is on screen, so the words lift off it rather than sliding with it.
+   * Kept small on purpose: enough to register as depth, not enough to notice as
+   * an effect. Transform only — no layout, no paint, one property the
+   * compositor already handles.
+   */
+  const bannerImg = $('.banner-img');
+  const banner = bannerImg ? bannerImg.closest('.banner') : null;
+  const PARALLAX = 0.18;
+
   function onScroll() {
     const y = window.scrollY;
     if (nav) nav.classList.toggle('stuck', y > 12);
     if (progress) {
       const height = document.documentElement.scrollHeight - window.innerHeight;
       progress.style.width = `${height > 0 ? Math.min(100, (y / height) * 100) : 0}%`;
+    }
+    if (banner && !reduceMotion) {
+      const h = banner.offsetHeight;
+      // Once the band has scrolled past there is nothing to move, and holding
+      // the transform at its last value keeps the compositor layer quiet.
+      if (y < h) bannerImg.style.transform = `translate3d(0, ${(y * PARALLAX).toFixed(1)}px, 0)`;
     }
   }
 
@@ -255,18 +274,6 @@
   if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
     document.addEventListener('pointermove', onPointerMove, { passive: true });
     document.addEventListener('pointerout', onPointerLeave, { passive: true });
-  }
-
-  /* --------------------------------------------------------- hero slides --- */
-
-  const slides = $$('.hero-slide');
-  if (slides.length > 1 && !reduceMotion) {
-    let i = 0;
-    setInterval(() => {
-      slides[i].classList.remove('on');
-      i = (i + 1) % slides.length;
-      slides[i].classList.add('on');
-    }, 6000);
   }
 
   /* ------------------------------------------------------------- forms --- */

@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>My consignments | Paramount Logistics</title>
+  <title>My consignments | Paramount Shipping</title>
   <meta name="description" content="Sign in to see every Paramount consignment on your account, with its live timeline." />
   <meta name="robots" content="noindex, nofollow" />
   <meta name="theme-color" content="#0c1f3d" />
-  <meta property="og:title" content="My consignments | Paramount Logistics" />
+  <meta property="og:title" content="My consignments | Paramount Shipping" />
   <meta property="og:description" content="Sign in to see every Paramount consignment on your account, with its live timeline." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Paramount Shipping" />
@@ -19,9 +19,9 @@
   <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="icon" href="/favicon.png" sizes="64x64" type="image/png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="preload" href="/assets/fonts/public-sans.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/assets/fonts/fonts.css" />
   <link rel="stylesheet" href="/css/styles.css" />
   
   <script>
@@ -44,14 +44,14 @@
   <div class="scroll-progress" id="progress"></div>
 
   <div class="underlay" aria-hidden="true">
-    <div class="underlay-img" style="background-image:url('/assets/img/ph-underlay.svg')"></div>
+    <div class="underlay-img" style="background-image:url('/assets/photo/paramount-underlay.webp')"></div>
     <div class="underlay-grid"></div>
     <div class="underlay-scrim"></div>
   </div>
 
   <header class="nav" id="nav">
     <button class="nav-menu" id="navtoggle" aria-label="Open the menu" aria-expanded="false" aria-controls="drawer">
-      <span></span><span></span><span></span>
+      <span class="nav-menu-bars" aria-hidden="true"><span></span><span></span><span></span></span>
       <span class="nav-menu-word">Menu</span>
     </button>
 
@@ -113,7 +113,7 @@
           <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2 5.2-5.2 2 2-5.2z"/></svg></span>Home
         </a>
       
-        <a href="/track">
+        <a href="/#track">
           <span class="drawer-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.6"/><path d="M12 12l6-4.4"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg></span>Track a consignment
         </a>
       
@@ -153,59 +153,80 @@
 
     <div class="drawer-foot">
       <span class="eyebrow">Control tower</span>
-      <a class="drawer-call" href="tel:+18622249080" data-site="support_phone">+1 862 224 9080</a>
+      <a class="drawer-call" href="mailto:info@paramountshipping.com" data-site="email">info@paramountshipping.com</a>
       <p class="muted">Staffed 24/7, every day of the year.</p>
     </div>
   </aside>
 
   <main id="main">
-    <section class="page-hero">
-      <div class="wrap inner">
-        <div class="crumbs"><a href="/">Home</a> <span>/</span> <span>My consignments</span></div>
-        <h1>Your shipments, <span class="grad-text">all of them.</span></h1>
-        <p class="lede">One account, every consignment booked to or from your address — plus anything you add by tracking number. The same timeline the control tower reads.</p>
+    <!-- The gate is the page.
+         Signed out, this is a sign-in screen with a reason to sign in beside
+         it: the card sits in the right column, level with the copy, so the
+         password field and the button are on screen the moment the page opens
+         rather than a scroll below the fold. Signed in, the right column
+         empties, the section collapses to the same slim band every other page
+         opens on, and the consignments take over underneath. -->
+    <div id="portal">
+    <section class="banner on-photo pm-hero">
+      <div class="banner-img" aria-hidden="true" style="background-image:url('/assets/photo/banner-portal.webp')"></div>
+      <div class="banner-scrim" aria-hidden="true"></div>
+
+      <div class="wrap banner-inner pm-hero-grid">
+        <div class="pm-hero-copy">
+          <div class="crumbs"><a href="/">Home</a> <span>/</span> <span>My consignments</span></div>
+          <span class="eyebrow">Customer portal</span>
+          <h1>Your shipments, all of them.</h1>
+          <p class="lede">One account, every consignment booked to or from your address — plus anything you add by tracking number. The same timeline the control tower reads.</p>
+          <ul class="pm-hero-points">
+            <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.6"/><path d="M12 12l6-4.4"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg><span>Every movement, as the desk recorded it</span></li>
+            <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="1.2"/><path d="M7.5 7v10M12 7v10M16.5 7v10"/></svg><span>Air, ocean, road, rail and express on one list</span></li>
+            <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M9 4h6v3H9z"/><path d="M15 5.5h2.5A1.5 1.5 0 0 1 19 7v12.5A1.5 1.5 0 0 1 17.5 21h-11A1.5 1.5 0 0 1 5 19.5V7a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M8.5 12h7M8.5 16h4.5"/></svg><span>Documents and delivery evidence on the file</span></li>
+          </ul>
+        </div>
+
+        <div class="pm-hero-panel">
+          <div class="pm-gate" id="portal-boot">
+            <div class="card"><p class="muted">Checking your session&hellip;</p></div>
+          </div>
+
+          <div class="pm-gate" id="portal-unavailable" hidden>
+            <div class="card">
+              <span class="eyebrow">Customer portal</span>
+              <h2 style="margin-top:14px">Accounts are not available here yet.</h2>
+              <p class="muted" style="margin-top:12px">This deployment has no account service connected, so there is nothing to sign in to. You can still track any consignment with its number.</p>
+              <div class="hero-actions"><a class="btn" href="/#track">Track a consignment <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a></div>
+            </div>
+          </div>
+
+          <div class="pm-gate" id="portal-auth" hidden>
+            <form class="card pm-auth" id="portal-auth-form" novalidate>
+              <span class="eyebrow">Sign in</span>
+              <h2 id="portal-auth-title">Your consignments, in one place.</h2>
+              <p class="muted" id="portal-auth-note"></p>
+              <div class="field">
+                <label for="portal-email">Email</label>
+                <input type="email" id="portal-email" name="email" autocomplete="email" required />
+              </div>
+              <div class="field" id="portal-password-field">
+                <label for="portal-password">Password</label>
+                <input type="password" id="portal-password" name="password" autocomplete="current-password" minlength="8" />
+              </div>
+              <div class="err" id="portal-auth-error" role="alert"></div>
+              <div class="form-status" id="portal-auth-note-out" role="status" aria-live="polite"></div>
+              <button type="submit" class="btn block" id="portal-auth-submit">Sign in</button>
+              <div class="pm-auth-links">
+                <button type="button" class="link" id="portal-auth-alt">Create an account</button>
+                <button type="button" class="link" id="portal-auth-forgot">Forgot password?</button>
+              </div>
+              <p class="muted" style="font-size:.84rem">Tracking a single consignment needs no account at all — <a class="link" href="/#track">use the console on the home page</a>.</p>
+            </form>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="section" style="padding-top:clamp(12px,2vw,28px)">
-      <div class="wrap" id="portal">
-
-        <div class="pm-gate" id="portal-boot">
-          <div class="card"><p class="muted">Checking your session&hellip;</p></div>
-        </div>
-
-        <div class="pm-gate" id="portal-unavailable" hidden>
-          <div class="card">
-            <span class="eyebrow">Customer portal</span>
-            <h2 style="margin-top:14px">Accounts are not available here yet.</h2>
-            <p class="muted" style="margin-top:12px">This deployment has no account service connected, so there is nothing to sign in to. You can still track any consignment with its number.</p>
-            <div class="hero-actions"><a class="btn" href="/track">Track a consignment <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a></div>
-          </div>
-        </div>
-
-        <div class="pm-gate" id="portal-auth" hidden>
-          <form class="card pm-auth" id="portal-auth-form" novalidate>
-            <span class="eyebrow">Customer portal</span>
-            <h2 id="portal-auth-title">Your consignments, in one place.</h2>
-            <p class="muted" id="portal-auth-note"></p>
-            <div class="field">
-              <label for="portal-email">Email</label>
-              <input type="email" id="portal-email" name="email" autocomplete="email" required />
-            </div>
-            <div class="field" id="portal-password-field">
-              <label for="portal-password">Password</label>
-              <input type="password" id="portal-password" name="password" autocomplete="current-password" minlength="8" />
-            </div>
-            <div class="err" id="portal-auth-error" role="alert"></div>
-            <div class="form-status" id="portal-auth-note-out" role="status" aria-live="polite"></div>
-            <button type="submit" class="btn block" id="portal-auth-submit">Sign in</button>
-            <div class="pm-auth-links">
-              <button type="button" class="link" id="portal-auth-alt">Create an account</button>
-              <button type="button" class="link" id="portal-auth-forgot">Forgot password?</button>
-            </div>
-            <p class="muted" style="font-size:.84rem">Tracking a single consignment needs no account at all — <a class="link" href="/track">use the tracking page</a>.</p>
-          </form>
-        </div>
+    <section class="section pm-section" style="padding-top:clamp(18px,3vw,40px)">
+      <div class="wrap">
 
         <div id="portal-shell" hidden>
           <div class="pm-bar">
@@ -238,6 +259,7 @@
 
       </div>
     </section>
+    </div>
   </main>
 
   <footer class="footer">
@@ -271,15 +293,14 @@
       </div>
       <div class="col">
         <h5>Support</h5>
-        <a href="/track">Track a consignment</a>
+        <a href="/#track">Track a consignment</a>
         <a href="/portal">Customer portal</a>
-        <a href="mailto:ops@paramountlogistics.com" data-site="email">ops@paramountlogistics.com</a>
-        <a href="tel:+18622249080" data-site="support_phone">+1 862 224 9080</a>
+        <a href="mailto:info@paramountshipping.com" data-site="email">info@paramountshipping.com</a>
         <span data-site="hours">Control tower staffed 24/7 · Desk Mon–Fri 07:00–19:00 CET</span>
       </div>
     </div>
     <div class="wrap footer-bottom">
-      <span>&copy; 2026 Paramount Logistics B.V. All rights reserved.</span>
+      <span>&copy; 2026 Paramount Shipping B.V. All rights reserved.</span>
       <span class="mono">Control tower staffed 24/7</span>
     </div>
   </footer>

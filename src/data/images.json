@@ -1,5 +1,5 @@
 {
-  "_comment": "Each slot names the files it would rather have and the placeholder it falls back to. Drop a real photograph into public/assets/img/ under any of the `prefer` names, in any common format, and the next build picks it up. No code change needed. docs/IMAGES.md lists every one with the size and a brief.",
+  "_comment": "Each slot names the files it would rather have and the placeholder it falls back to. Originals live in media/ and are never served; python3 scripts/build-photos.py derives the sized WebP the pages use into public/assets/photo/. A loose file dropped into public/assets/img/ under one of the `prefer` names still wins if it is there. docs/IMAGES.md lists every slot with its size and a brief.",
   "slots": {
     "underlay": {
       "prefer": [
@@ -32,6 +32,7 @@
     "leadership": {
       "prefer": [
         "paramount-ceo",
+        "newceoimage",
         "ceo",
         "leadership"
       ],
@@ -110,27 +111,76 @@
       "fallback": "/assets/img/ph-warehouse.svg"
     }
   },
-  "heroSlides": [
-    {
+  "banners": {
+    "home": {
       "prefer": [
-        "hero-1",
-        "paramount-hero-1"
+        "banner-home",
+        "paramount-banner-home"
       ],
       "fallback": "/assets/img/ph-hero-1.svg"
     },
-    {
+    "services": {
       "prefer": [
-        "hero-2",
-        "paramount-hero-2"
+        "banner-services",
+        "paramount-banner-services"
       ],
-      "fallback": "/assets/img/ph-hero-2.svg"
+      "fallback": "/assets/img/ph-hero-1.svg"
     },
-    {
+    "network": {
       "prefer": [
-        "hero-3",
-        "paramount-hero-3"
+        "banner-network",
+        "paramount-banner-network"
       ],
-      "fallback": "/assets/img/ph-hero-3.svg"
+      "fallback": "/assets/img/ph-hero-1.svg"
+    },
+    "about": {
+      "prefer": [
+        "banner-about",
+        "paramount-banner-about"
+      ],
+      "fallback": "/assets/img/ph-hero-1.svg"
+    },
+    "careers": {
+      "prefer": [
+        "banner-careers",
+        "paramount-banner-careers"
+      ],
+      "fallback": "/assets/img/ph-hero-1.svg"
+    },
+    "contact": {
+      "prefer": [
+        "banner-contact",
+        "paramount-banner-contact"
+      ],
+      "fallback": "/assets/img/ph-hero-1.svg"
+    },
+    "quote": {
+      "prefer": [
+        "banner-quote",
+        "paramount-banner-quote"
+      ],
+      "fallback": "/assets/img/ph-hero-1.svg"
+    },
+    "portal": {
+      "prefer": [
+        "banner-portal",
+        "paramount-banner-portal"
+      ],
+      "fallback": "/assets/img/ph-hero-1.svg"
+    },
+    "apply": {
+      "prefer": [
+        "banner-apply",
+        "paramount-banner-apply"
+      ],
+      "fallback": "/assets/img/ph-hero-1.svg"
+    },
+    "notfound": {
+      "prefer": [
+        "banner-notfound",
+        "paramount-banner-notfound"
+      ],
+      "fallback": "/assets/img/ph-hero-1.svg"
     }
-  ]
+  }
 }

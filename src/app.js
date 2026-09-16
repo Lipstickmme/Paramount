@@ -66,7 +66,15 @@ app.use(
 const sendPage = (file) => (req, res) => res.sendFile(path.join(publicDir, file));
 
 app.get('/', sendPage('index.html'));
-app.get('/track', sendPage('track.html'));
+// The consignment page was folded into the landing page, which carries the
+// console and its result panel. Old links — emailed tracking links, labels
+// already printed — keep working: the number rides across in the query string
+// and the console looks it up on load. vercel.json carries the same rule for
+// the static deployment.
+app.get('/track', (req, res) => {
+  const number = String(req.query.number || req.query.tracking || '').trim();
+  res.redirect(301, number ? `/?number=${encodeURIComponent(number)}#track` : '/#track');
+});
 app.get('/services', sendPage('services.html'));
 // Service detail pages resolve the id client-side from the path.
 app.get('/services/:id', sendPage('service.html'));

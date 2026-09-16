@@ -174,7 +174,7 @@ async function withApp(env, fn) {
         SUPABASE_URL: `http://127.0.0.1:${receiving.address().port}`,
         SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY,
         SUPABASE_ANON_KEY: mock.ANON_KEY,
-        MAILBOX_ADDRESS: 'Paramount Logistics <ops@paramount.test>',
+        MAILBOX_ADDRESS: 'Paramount Shipping <ops@paramount.test>',
       },
       async (base) => {
         const res = await req(base, 'GET', '/api/health?probe=1');
@@ -360,6 +360,9 @@ async function withApp(env, fn) {
         assert.strictEqual(before.body.source, 'database');
 
         sb.db.site_settings.rows[0].email = 'desk@example.com';
+        sb.db.site_settings.rows[0].hours = 'Desk 06:00-22:00 CET';
+        // The site publishes no telephone number, so the desk cannot set one:
+        // the column is still there, it is simply never read.
         sb.db.site_settings.rows[0].phone = '+31 (0)20 111 2222';
         // Settings are cached for a few seconds, since every page load reads
         // them; `?fresh=1` is the read that skips it.
@@ -367,7 +370,8 @@ async function withApp(env, fn) {
         assert.strictEqual(cached.body.email, defaults.email, 'the cached read is still the old value');
         const after = await req(base, 'GET', '/api/site?fresh=1');
         assert.strictEqual(after.body.email, 'desk@example.com');
-        assert.strictEqual(after.body.phone, '+31 (0)20 111 2222');
+        assert.strictEqual(after.body.hours, 'Desk 06:00-22:00 CET');
+        assert.strictEqual(after.body.phone, undefined, 'a telephone number is never published');
         assert.strictEqual(after.body.address, defaults.address, 'a field left blank keeps the built-in value');
         console.log('  ok  edited contact details are served, blanks fall back');
       }
@@ -397,7 +401,7 @@ async function withApp(env, fn) {
         SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY,
         SUPABASE_ANON_KEY: mock.ANON_KEY,
         RESEND_WEBHOOK_SECRET: SECRET,
-        MAILBOX_ADDRESS: 'Paramount Logistics <ops@paramount.test>',
+        MAILBOX_ADDRESS: 'Paramount Shipping <ops@paramount.test>',
         // No forwarding here: this asserts the archive that /admin reads.
         FORWARD_TO: '',
         RESEND_API_KEY: '',
@@ -603,7 +607,7 @@ async function withApp(env, fn) {
         assert.strictEqual(sentMail[0].headers['In-Reply-To'], '<ada-1@example.com>');
         // A bare MAILBOX_ADDRESS would otherwise show in the recipient's inbox
         // as "ops", the local part, rather than as the company.
-        assert.strictEqual(sentMail[0].from, 'Paramount Logistics <ops@paramount.test>');
+        assert.strictEqual(sentMail[0].from, 'Paramount Shipping <ops@paramount.test>');
         // Written by a person, so no monospace HTML part goes with it.
         assert.strictEqual(sentMail[0].html, undefined);
         assert.strictEqual(sentMail[0].text, 'Quoting next week.');

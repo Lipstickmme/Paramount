@@ -3,11 +3,12 @@
 /* =========================================================================
    Consignment tracking, visitor side.
 
-   The console appears twice — in the landing-page hero and at the top of
-   /track — and both behave identically: submit, call GET /api/track/:number,
-   render the result underneath. The landing page has no result container of
-   its own, so a lookup there sends the visitor to /track with the number in
-   the query string, which is also what makes a tracking link emailable.
+   The console appears twice — full, with its result panel, on the landing
+   page, and cut down in the header of every page. Both behave identically:
+   submit, call GET /api/track/:number, render the result underneath. The
+   header copy has no result container, so a lookup there sends the visitor to
+   the landing page with the number in the query string, which is also what
+   makes a tracking link emailable.
    ========================================================================= */
 
 (function () {
@@ -111,7 +112,7 @@
       paint(view.render(body.shipment));
 
       if (push && window.history && window.history.replaceState) {
-        const url = `${window.location.pathname}?number=${encodeURIComponent(body.shipment.tracking_number)}`;
+        const url = `${window.location.pathname}?number=${encodeURIComponent(body.shipment.tracking_number)}#track`;
         window.history.replaceState({ number: body.shipment.tracking_number }, '', url);
       }
     } catch (err) {
@@ -139,10 +140,11 @@
         return;
       }
 
-      // On a page with nowhere to show a result — the landing page hero — the
-      // lookup happens on /track, which is also the link people share.
+      // On a page with nowhere to show a result — the header console on every
+      // page but the landing page — the lookup happens on the landing page,
+      // which is also the link people share.
       if (!resultBox) {
-        window.location.href = `/track?number=${encodeURIComponent(number)}`;
+        window.location.href = `/?number=${encodeURIComponent(number)}#track`;
         return;
       }
 
