@@ -278,6 +278,7 @@
         </div>
         <div class="result">${view.render(data.shipment)}</div>`;
       if (window.PARAMOUNT_OBSERVE) window.PARAMOUNT_OBSERVE(detail);
+      if (view.activate) view.activate(detail, data.shipment);
       // The bar animates from zero, so it is set once the node is in the DOM.
       requestAnimationFrame(() => {
         detail.querySelectorAll('[data-progress]').forEach((node) => {

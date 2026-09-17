@@ -1159,6 +1159,94 @@ async function withApp(env, fn) {
     console.log('  ok  the fleet is still sailing a month from now');
   }
 
+  /* ---- the lane suggestions the booking form runs on ---- */
+  {
+    const places = require(ROOT + '/src/utils/places');
+
+    assert.strictEqual(places.search('rotter')[0].locode, 'NLRTM', 'a partial city name finds the port');
+    assert.strictEqual(places.search('nlrtm')[0].name, 'Rotterdam', 'and so does its LOCODE');
+    assert.strictEqual(places.search('')[0], undefined, 'an empty query suggests nothing');
+
+    // The mode has to survive the cases a single distance rule gets wrong.
+    const mode = (a, b) => places.suggestLane(a, b).mode;
+    assert.strictEqual(mode('Rotterdam', 'Hamburg'), 'road_haulage', 'a short hop on one landmass drives');
+    assert.strictEqual(mode('Auckland', 'Sydney'), 'ocean_freight', 'a lorry cannot cross the Tasman Sea');
+    assert.strictEqual(mode('Tokyo', 'Seoul'), 'air_freight', 'nor the Sea of Japan');
+    assert.strictEqual(mode('Los Angeles', 'New York'), 'rail_freight', 'coast to coast goes overland, not via Panama');
+    assert.strictEqual(mode('Shanghai', 'Rotterdam'), 'ocean_freight', 'a seaport at both ends beats the block train');
+    assert.strictEqual(mode('Chengdu', 'Duisburg'), 'rail_freight', 'two inland hubs on the rail network take it');
+    assert.strictEqual(mode('Nairobi', 'London'), 'air_freight', 'there is no rail out of East Africa');
+    console.log('  ok  a lane is offered the mode it would actually book');
+
+    // Transit times are what the customer is quoted, so they are checked
+    // against published port-to-port figures rather than left to a formula.
+    const days = (a, b) => places.suggestLane(a, b).transit_days;
+    const near = (got, want, slack, what) =>
+      assert.ok(Math.abs(got - want) <= slack, `${what}: got ${got}d, expected about ${want}d`);
+    near(days('Shanghai', 'Rotterdam'), 30, 4, 'Asia to Europe through Suez');
+    near(days('Busan', 'Long Beach'), 20, 4, 'trans-Pacific');
+    near(days('Ningbo', 'New York'), 33, 5, 'Asia to the US east coast through Panama');
+    near(days('Valencia', 'New York'), 14, 4, 'trans-Atlantic');
+    // The basin split is the point: the same origin, two American coasts.
+    assert.ok(
+      days('Ningbo', 'New York') - days('Shanghai', 'Oakland') > 8,
+      'the east coast is a long way further than the west'
+    );
+    console.log('  ok  transit times land near the published figures');
+  }
+
+  /* ---- where a consignment is between scans ---- */
+  {
+    const voyage = require(ROOT + '/src/utils/voyage');
+    const searoute = require(ROOT + '/src/utils/searoute');
+    const now = Date.parse('2026-06-01T00:00:00Z');
+
+    const box = {
+      mode: 'ocean_freight',
+      status: 'in_transit',
+      origin_lat: 31.2304, origin_lng: 121.4737,
+      destination_lat: 51.9244, destination_lng: 4.4777,
+      departed_at: new Date(now - 12 * 86400000).toISOString(),
+      estimated_delivery: new Date(now + 18 * 86400000).toISOString(),
+    };
+
+    const here = voyage.position(box, [], now);
+    assert.ok(here, 'a consignment with both ends gets a position');
+    // Twelve days out of thirty: in the Arabian Sea, not over Siberia, which
+    // is where the great circle between these two ports runs.
+    assert.ok(here.lat > 0 && here.lat < 20, `should be in the tropics, got ${here.lat}`);
+    assert.ok(here.lng > 55 && here.lng < 95, `should be in the Indian Ocean, got ${here.lng}`);
+    assert.ok(here.route.length > 10, 'and it follows the lane network, not a straight line');
+    assert.ok(here.route_nm > 9500 && here.route_nm < 11500, `Shanghai-Rotterdam is about 10,500 nm, got ${here.route_nm}`);
+
+    // It advances, and it never overshoots the destination.
+    const later = voyage.position(box, [], now + 6 * 86400000);
+    assert.ok(later.progress > here.progress, 'the position advances with the clock');
+    const overdue = voyage.position(box, [], now + 60 * 86400000);
+    assert.strictEqual(overdue.progress, 1, 'and stops at the destination rather than sailing past it');
+    assert.strictEqual(overdue.remaining_nm, 0);
+
+    // A recorded scan outranks the estimate: the marker jumps to the fix.
+    const scanned = voyage.position(
+      box,
+      [{ status: 'in_transit', occurred_at: new Date(now - 1 * 86400000).toISOString(), lat: 12.5, lng: 43.3 }],
+      now
+    );
+    assert.strictEqual(scanned.anchor.location, null);
+    assert.ok(scanned.lng < 43.4, `a scan at Bab el-Mandeb moves the marker past it, got ${scanned.lng}`);
+
+    // Nothing to say is said as nothing, not as a guess.
+    assert.strictEqual(voyage.position({ mode: 'ocean_freight', status: 'in_transit' }, []), null);
+    assert.strictEqual(voyage.position({ ...box, status: 'pending' }, [], now).progress, 0);
+    assert.strictEqual(voyage.position({ ...box, status: 'delivered' }, [], now).progress, 1);
+
+    // Every sea route stays on the water it was routed through.
+    const suez = searoute.route({ lat: 31.23, lng: 121.47 }, { lat: 51.92, lng: 4.48 });
+    assert.ok(suez.some((p) => p.name === 'Suez'), 'Asia to Europe goes through the canal');
+    assert.ok(suez.some((p) => p.name === 'Malacca Strait'), 'and through Malacca');
+    console.log('  ok  a consignment is placed on real water and moves with the clock');
+  }
+
   /* ---- tracking numbers ---- */
   {
     const tracking = require(ROOT + '/src/utils/tracking');

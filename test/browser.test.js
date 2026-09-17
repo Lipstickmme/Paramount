@@ -205,8 +205,14 @@ async function until(check, what, timeout = 10000) {
     // passed stay marked even when the status moves on.
     const done = await visitor.$$eval('.milestone.done', (n) => n.length);
     assert.ok(done >= 3, `milestones fill from history, got ${done}`);
-    // Coordinates on both ends and a scan between them are enough to draw it.
-    assert.strictEqual(await visitor.$$eval('.map-card svg', (n) => n.length), 1, 'the route map is drawn');
+    // Coordinates on both ends are enough to draw the chart, and the marker
+    // lands on real water rather than on the great circle through Siberia.
+    assert.strictEqual(await visitor.$$eval('.cm-chart', (n) => n.length), 1, 'the route chart is drawn');
+    assert.ok(await visitor.$('.cm-mark .cm-hull'), 'the consignment is marked with a ship');
+    assert.match(await visitor.textContent('[data-cm-read="lat"]'), /\d+°\d+\.\d'[NS]/, 'and reports a latitude');
+    const runNm = Number((await visitor.textContent('[data-cm-read="run"]')).replace(/[^\d]/g, ''));
+    const toGo = Number((await visitor.textContent('[data-cm-read="remaining"]')).replace(/[^\d]/g, ''));
+    assert.ok(runNm > 0 && toGo > 0, `the chart reports a run and a remainder, got ${runNm}/${toGo}`);
     console.log('  ok  the visitor sees the movement, the map and the filled milestones');
 
     /* ---------------- an internal note stays internal ---------------- */
@@ -406,7 +412,12 @@ async function until(check, what, timeout = 10000) {
     await visitor.fill('#contact-form-message', 'Quay wall spares, 320m of it, live berth.');
     await visitor.click('#contact-form [data-submit]');
     await until(() => sb.db.enquiries.rows.length === 1, 'the enquiry to reach the database');
-    console.log('  ok  the enquiry form writes to the inbox');
+    // The row landing is the server's half of it. Wait for the form to say so
+    // as well before navigating: leaving while the response is still on the
+    // wire aborts it, which is a red line in the console and a visitor who
+    // never found out whether their enquiry went.
+    await visitor.waitForSelector('#contact-form .form-status.ok', { timeout: 10000 });
+    console.log('  ok  the enquiry form writes to the inbox, and says so');
 
     await visitor.goto(`${base}/quote`, { waitUntil: 'networkidle' });
     await visitor.fill('#q-name', 'Dana Okafor');
@@ -417,8 +428,9 @@ async function until(check, what, timeout = 10000) {
     await visitor.fill('#q-weight', '8200');
     await visitor.click('#quote-form [data-submit]');
     await until(() => sb.db.quote_requests.rows.length === 1, 'the rate request to reach the database');
+    await visitor.waitForSelector('#quote-form .form-status.ok', { timeout: 10000 });
     assert.strictEqual(sb.db.quote_requests.rows[0].weight_kg, 8200, 'numbers arrive as numbers');
-    console.log('  ok  the quote form writes a rate request');
+    console.log('  ok  the quote form writes a rate request, and says so');
 
     await staff.click('.admin-tab[data-tab="quotes"]');
     await staff.waitForSelector('#quote-list .admin-row', { timeout: 15000 });
@@ -453,6 +465,7 @@ async function until(check, what, timeout = 10000) {
     await visitor.fill('#a-message', 'Six years of entries, mostly pharma and industrial, plus two audits.');
     await visitor.click('#apply-form [data-submit]');
     await until(() => sb.db.applications.rows.length === 1, 'the application to reach the database');
+    await visitor.waitForSelector('#apply-form .form-status.ok', { timeout: 10000 });
     assert.strictEqual(sb.db.applications.rows[0].email, 'sanne@example.nl');
     console.log('  ok  the application is stored with the role it names');
 

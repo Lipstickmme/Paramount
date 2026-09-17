@@ -1,0 +1,2833 @@
+{
+  "_comment": "Ports, airports and inland hubs the desk books through, with the coordinates that go on a consignment. Used by GET /api/places for the booking form's typeahead: the desk types a city, picks a row, and the country, latitude and longitude fill themselves in. `kinds` says what a place can handle, `region` groups it commercially, and `landmass` says what a lorry can reach without boarding a ship (the Channel Tunnel puts Britain on the European landmass; Japan and New Zealand are on their own). Together they are what lets the form propose a mode for a lane, so it never suggests driving across the Tasman Sea. Add a row to extend it; nothing here is generated. A North American seaport also carries `coast`, because Shanghai to Los Angeles and Shanghai to New York are the same ocean crossing on a map and three weeks apart in practice \u2014 one is a Pacific run, the other goes through Panama.",
+  "places": [
+    {
+      "name": "Rotterdam",
+      "country": "Netherlands",
+      "iso2": "NL",
+      "lat": 51.9244,
+      "lng": 4.4777,
+      "locode": "NLRTM",
+      "kinds": [
+        "sea",
+        "inland"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Amsterdam",
+      "country": "Netherlands",
+      "iso2": "NL",
+      "lat": 52.3676,
+      "lng": 4.9041,
+      "locode": "NLAMS",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Antwerp",
+      "country": "Belgium",
+      "iso2": "BE",
+      "lat": 51.2194,
+      "lng": 4.4025,
+      "locode": "BEANR",
+      "kinds": [
+        "sea",
+        "inland"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Zeebrugge",
+      "country": "Belgium",
+      "iso2": "BE",
+      "lat": 51.3311,
+      "lng": 3.2076,
+      "locode": "BEZEE",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Hamburg",
+      "country": "Germany",
+      "iso2": "DE",
+      "lat": 53.5511,
+      "lng": 9.9937,
+      "locode": "DEHAM",
+      "kinds": [
+        "sea",
+        "inland"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Bremerhaven",
+      "country": "Germany",
+      "iso2": "DE",
+      "lat": 53.5396,
+      "lng": 8.5809,
+      "locode": "DEBRV",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Frankfurt",
+      "country": "Germany",
+      "iso2": "DE",
+      "lat": 50.1109,
+      "lng": 8.6821,
+      "locode": "DEFRA",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Duisburg",
+      "country": "Germany",
+      "iso2": "DE",
+      "lat": 51.4344,
+      "lng": 6.7623,
+      "locode": "DEDUI",
+      "kinds": [
+        "inland"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Munich",
+      "country": "Germany",
+      "iso2": "DE",
+      "lat": 48.1351,
+      "lng": 11.582,
+      "locode": "DEMUC",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Berlin",
+      "country": "Germany",
+      "iso2": "DE",
+      "lat": 52.52,
+      "lng": 13.405,
+      "locode": "DEBER",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Felixstowe",
+      "country": "United Kingdom",
+      "iso2": "GB",
+      "lat": 51.9617,
+      "lng": 1.3513,
+      "locode": "GBFXT",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Southampton",
+      "country": "United Kingdom",
+      "iso2": "GB",
+      "lat": 50.9097,
+      "lng": -1.4044,
+      "locode": "GBSOU",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "London",
+      "country": "United Kingdom",
+      "iso2": "GB",
+      "lat": 51.5072,
+      "lng": -0.1276,
+      "locode": "GBLON",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Liverpool",
+      "country": "United Kingdom",
+      "iso2": "GB",
+      "lat": 53.4084,
+      "lng": -2.9916,
+      "locode": "GBLIV",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Le Havre",
+      "country": "France",
+      "iso2": "FR",
+      "lat": 49.4944,
+      "lng": 0.1079,
+      "locode": "FRLEH",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Marseille",
+      "country": "France",
+      "iso2": "FR",
+      "lat": 43.2965,
+      "lng": 5.3698,
+      "locode": "FRMRS",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Paris",
+      "country": "France",
+      "iso2": "FR",
+      "lat": 48.8566,
+      "lng": 2.3522,
+      "locode": "FRPAR",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Dublin",
+      "country": "Ireland",
+      "iso2": "IE",
+      "lat": 53.3498,
+      "lng": -6.2603,
+      "locode": "IEDUB",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Gothenburg",
+      "country": "Sweden",
+      "iso2": "SE",
+      "lat": 57.7089,
+      "lng": 11.9746,
+      "locode": "SEGOT",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Stockholm",
+      "country": "Sweden",
+      "iso2": "SE",
+      "lat": 59.3293,
+      "lng": 18.0686,
+      "locode": "SESTO",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Copenhagen",
+      "country": "Denmark",
+      "iso2": "DK",
+      "lat": 55.6761,
+      "lng": 12.5683,
+      "locode": "DKCPH",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Aarhus",
+      "country": "Denmark",
+      "iso2": "DK",
+      "lat": 56.1629,
+      "lng": 10.2039,
+      "locode": "DKAAR",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Oslo",
+      "country": "Norway",
+      "iso2": "NO",
+      "lat": 59.9139,
+      "lng": 10.7522,
+      "locode": "NOOSL",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Helsinki",
+      "country": "Finland",
+      "iso2": "FI",
+      "lat": 60.1699,
+      "lng": 24.9384,
+      "locode": "FIHEL",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Gdansk",
+      "country": "Poland",
+      "iso2": "PL",
+      "lat": 54.352,
+      "lng": 18.6466,
+      "locode": "PLGDN",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Warsaw",
+      "country": "Poland",
+      "iso2": "PL",
+      "lat": 52.2297,
+      "lng": 21.0122,
+      "locode": "PLWAW",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Riga",
+      "country": "Latvia",
+      "iso2": "LV",
+      "lat": 56.9496,
+      "lng": 24.1052,
+      "locode": "LVRIX",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Klaipeda",
+      "country": "Lithuania",
+      "iso2": "LT",
+      "lat": 55.7033,
+      "lng": 21.1443,
+      "locode": "LTKLJ",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Tallinn",
+      "country": "Estonia",
+      "iso2": "EE",
+      "lat": 59.437,
+      "lng": 24.7536,
+      "locode": "EETLL",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "St Petersburg",
+      "country": "Russia",
+      "iso2": "RU",
+      "lat": 59.9311,
+      "lng": 30.3609,
+      "locode": "RULED",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Algeciras",
+      "country": "Spain",
+      "iso2": "ES",
+      "lat": 36.1408,
+      "lng": -5.4562,
+      "locode": "ESALG",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Valencia",
+      "country": "Spain",
+      "iso2": "ES",
+      "lat": 39.4699,
+      "lng": -0.3763,
+      "locode": "ESVLC",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Barcelona",
+      "country": "Spain",
+      "iso2": "ES",
+      "lat": 41.3874,
+      "lng": 2.1686,
+      "locode": "ESBCN",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Madrid",
+      "country": "Spain",
+      "iso2": "ES",
+      "lat": 40.4168,
+      "lng": -3.7038,
+      "locode": "ESMAD",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Bilbao",
+      "country": "Spain",
+      "iso2": "ES",
+      "lat": 43.263,
+      "lng": -2.935,
+      "locode": "ESBIO",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Lisbon",
+      "country": "Portugal",
+      "iso2": "PT",
+      "lat": 38.7223,
+      "lng": -9.1393,
+      "locode": "PTLIS",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Sines",
+      "country": "Portugal",
+      "iso2": "PT",
+      "lat": 37.956,
+      "lng": -8.869,
+      "locode": "PTSIE",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Genoa",
+      "country": "Italy",
+      "iso2": "IT",
+      "lat": 44.4056,
+      "lng": 8.9463,
+      "locode": "ITGOA",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Gioia Tauro",
+      "country": "Italy",
+      "iso2": "IT",
+      "lat": 38.4244,
+      "lng": 15.8986,
+      "locode": "ITGIT",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "La Spezia",
+      "country": "Italy",
+      "iso2": "IT",
+      "lat": 44.1025,
+      "lng": 9.8241,
+      "locode": "ITSPE",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Milan",
+      "country": "Italy",
+      "iso2": "IT",
+      "lat": 45.4642,
+      "lng": 9.19,
+      "locode": "ITMIL",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Trieste",
+      "country": "Italy",
+      "iso2": "IT",
+      "lat": 45.6495,
+      "lng": 13.7768,
+      "locode": "ITTRS",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Piraeus",
+      "country": "Greece",
+      "iso2": "GR",
+      "lat": 37.942,
+      "lng": 23.6465,
+      "locode": "GRPIR",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Thessaloniki",
+      "country": "Greece",
+      "iso2": "GR",
+      "lat": 40.6401,
+      "lng": 22.9444,
+      "locode": "GRSKG",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Koper",
+      "country": "Slovenia",
+      "iso2": "SI",
+      "lat": 45.5481,
+      "lng": 13.7302,
+      "locode": "SIKOP",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Rijeka",
+      "country": "Croatia",
+      "iso2": "HR",
+      "lat": 45.3271,
+      "lng": 14.4422,
+      "locode": "HRRJK",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Constanta",
+      "country": "Romania",
+      "iso2": "RO",
+      "lat": 44.1598,
+      "lng": 28.6348,
+      "locode": "ROCND",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Istanbul",
+      "country": "Turkiye",
+      "iso2": "TR",
+      "lat": 41.0082,
+      "lng": 28.9784,
+      "locode": "TRIST",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Mersin",
+      "country": "Turkiye",
+      "iso2": "TR",
+      "lat": 36.8121,
+      "lng": 34.6415,
+      "locode": "TRMER",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Izmir",
+      "country": "Turkiye",
+      "iso2": "TR",
+      "lat": 38.4237,
+      "lng": 27.1428,
+      "locode": "TRIZM",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "europe"
+    },
+    {
+      "name": "Malta Freeport",
+      "country": "Malta",
+      "iso2": "MT",
+      "lat": 35.8236,
+      "lng": 14.535,
+      "locode": "MTMAR",
+      "kinds": [
+        "sea"
+      ],
+      "region": "europe",
+      "landmass": "malta"
+    },
+    {
+      "name": "Jebel Ali",
+      "country": "United Arab Emirates",
+      "iso2": "AE",
+      "lat": 25.011,
+      "lng": 55.061,
+      "locode": "AEJEA",
+      "kinds": [
+        "sea"
+      ],
+      "region": "mideast",
+      "landmass": "mideast"
+    },
+    {
+      "name": "Dubai",
+      "country": "United Arab Emirates",
+      "iso2": "AE",
+      "lat": 25.2048,
+      "lng": 55.2708,
+      "locode": "AEDXB",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "mideast",
+      "landmass": "mideast"
+    },
+    {
+      "name": "Abu Dhabi",
+      "country": "United Arab Emirates",
+      "iso2": "AE",
+      "lat": 24.4539,
+      "lng": 54.3773,
+      "locode": "AEAUH",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "mideast",
+      "landmass": "mideast"
+    },
+    {
+      "name": "Jeddah",
+      "country": "Saudi Arabia",
+      "iso2": "SA",
+      "lat": 21.4858,
+      "lng": 39.1925,
+      "locode": "SAJED",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "mideast",
+      "landmass": "mideast"
+    },
+    {
+      "name": "Dammam",
+      "country": "Saudi Arabia",
+      "iso2": "SA",
+      "lat": 26.4207,
+      "lng": 50.0888,
+      "locode": "SADMM",
+      "kinds": [
+        "sea"
+      ],
+      "region": "mideast",
+      "landmass": "mideast"
+    },
+    {
+      "name": "Riyadh",
+      "country": "Saudi Arabia",
+      "iso2": "SA",
+      "lat": 24.7136,
+      "lng": 46.6753,
+      "locode": "SARUH",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "mideast",
+      "landmass": "mideast"
+    },
+    {
+      "name": "Doha",
+      "country": "Qatar",
+      "iso2": "QA",
+      "lat": 25.2854,
+      "lng": 51.531,
+      "locode": "QADOH",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "mideast",
+      "landmass": "mideast"
+    },
+    {
+      "name": "Salalah",
+      "country": "Oman",
+      "iso2": "OM",
+      "lat": 17.0151,
+      "lng": 54.0924,
+      "locode": "OMSLL",
+      "kinds": [
+        "sea"
+      ],
+      "region": "mideast",
+      "landmass": "mideast"
+    },
+    {
+      "name": "Sohar",
+      "country": "Oman",
+      "iso2": "OM",
+      "lat": 24.3643,
+      "lng": 56.7468,
+      "locode": "OMSOH",
+      "kinds": [
+        "sea"
+      ],
+      "region": "mideast",
+      "landmass": "mideast"
+    },
+    {
+      "name": "Kuwait City",
+      "country": "Kuwait",
+      "iso2": "KW",
+      "lat": 29.3759,
+      "lng": 47.9774,
+      "locode": "KWKWI",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "mideast",
+      "landmass": "mideast"
+    },
+    {
+      "name": "Haifa",
+      "country": "Israel",
+      "iso2": "IL",
+      "lat": 32.794,
+      "lng": 34.9896,
+      "locode": "ILHFA",
+      "kinds": [
+        "sea"
+      ],
+      "region": "mideast",
+      "landmass": "mideast"
+    },
+    {
+      "name": "Aqaba",
+      "country": "Jordan",
+      "iso2": "JO",
+      "lat": 29.5267,
+      "lng": 35.0078,
+      "locode": "JOAQJ",
+      "kinds": [
+        "sea"
+      ],
+      "region": "mideast",
+      "landmass": "mideast"
+    },
+    {
+      "name": "Bandar Abbas",
+      "country": "Iran",
+      "iso2": "IR",
+      "lat": 27.1832,
+      "lng": 56.2666,
+      "locode": "IRBND",
+      "kinds": [
+        "sea"
+      ],
+      "region": "mideast",
+      "landmass": "mideast"
+    },
+    {
+      "name": "Port Said",
+      "country": "Egypt",
+      "iso2": "EG",
+      "lat": 31.2653,
+      "lng": 32.3019,
+      "locode": "EGPSD",
+      "kinds": [
+        "sea"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Alexandria",
+      "country": "Egypt",
+      "iso2": "EG",
+      "lat": 31.2001,
+      "lng": 29.9187,
+      "locode": "EGALY",
+      "kinds": [
+        "sea"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Cairo",
+      "country": "Egypt",
+      "iso2": "EG",
+      "lat": 30.0444,
+      "lng": 31.2357,
+      "locode": "EGCAI",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Tanger Med",
+      "country": "Morocco",
+      "iso2": "MA",
+      "lat": 35.8838,
+      "lng": -5.5,
+      "locode": "MAPTM",
+      "kinds": [
+        "sea"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Casablanca",
+      "country": "Morocco",
+      "iso2": "MA",
+      "lat": 33.5731,
+      "lng": -7.5898,
+      "locode": "MACAS",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Algiers",
+      "country": "Algeria",
+      "iso2": "DZ",
+      "lat": 36.7538,
+      "lng": 3.0588,
+      "locode": "DZALG",
+      "kinds": [
+        "sea"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Tunis",
+      "country": "Tunisia",
+      "iso2": "TN",
+      "lat": 36.8065,
+      "lng": 10.1815,
+      "locode": "TNTUN",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Lagos",
+      "country": "Nigeria",
+      "iso2": "NG",
+      "lat": 6.4531,
+      "lng": 3.3958,
+      "locode": "NGLOS",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Lekki",
+      "country": "Nigeria",
+      "iso2": "NG",
+      "lat": 6.427,
+      "lng": 3.715,
+      "locode": "NGLKK",
+      "kinds": [
+        "sea"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Apapa",
+      "country": "Nigeria",
+      "iso2": "NG",
+      "lat": 6.444,
+      "lng": 3.36,
+      "locode": "NGAPP",
+      "kinds": [
+        "sea"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Tema",
+      "country": "Ghana",
+      "iso2": "GH",
+      "lat": 5.6698,
+      "lng": -0.0166,
+      "locode": "GHTEM",
+      "kinds": [
+        "sea"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Accra",
+      "country": "Ghana",
+      "iso2": "GH",
+      "lat": 5.6037,
+      "lng": -0.187,
+      "locode": "GHACC",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Abidjan",
+      "country": "Cote d'Ivoire",
+      "iso2": "CI",
+      "lat": 5.36,
+      "lng": -4.0083,
+      "locode": "CIABJ",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Dakar",
+      "country": "Senegal",
+      "iso2": "SN",
+      "lat": 14.6928,
+      "lng": -17.4467,
+      "locode": "SNDKR",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Douala",
+      "country": "Cameroon",
+      "iso2": "CM",
+      "lat": 4.0511,
+      "lng": 9.7679,
+      "locode": "CMDLA",
+      "kinds": [
+        "sea"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Pointe-Noire",
+      "country": "Congo",
+      "iso2": "CG",
+      "lat": -4.7889,
+      "lng": 11.8653,
+      "locode": "CGPNR",
+      "kinds": [
+        "sea"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Luanda",
+      "country": "Angola",
+      "iso2": "AO",
+      "lat": -8.839,
+      "lng": 13.2894,
+      "locode": "AOLAD",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Walvis Bay",
+      "country": "Namibia",
+      "iso2": "NA",
+      "lat": -22.9576,
+      "lng": 14.5053,
+      "locode": "NAWVB",
+      "kinds": [
+        "sea"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Cape Town",
+      "country": "South Africa",
+      "iso2": "ZA",
+      "lat": -33.9249,
+      "lng": 18.4241,
+      "locode": "ZACPT",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Durban",
+      "country": "South Africa",
+      "iso2": "ZA",
+      "lat": -29.8587,
+      "lng": 31.0218,
+      "locode": "ZADUR",
+      "kinds": [
+        "sea"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Port Elizabeth",
+      "country": "South Africa",
+      "iso2": "ZA",
+      "lat": -33.9608,
+      "lng": 25.6022,
+      "locode": "ZAPLZ",
+      "kinds": [
+        "sea"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Johannesburg",
+      "country": "South Africa",
+      "iso2": "ZA",
+      "lat": -26.2041,
+      "lng": 28.0473,
+      "locode": "ZAJNB",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Mombasa",
+      "country": "Kenya",
+      "iso2": "KE",
+      "lat": -4.0435,
+      "lng": 39.6682,
+      "locode": "KEMBA",
+      "kinds": [
+        "sea"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Nairobi",
+      "country": "Kenya",
+      "iso2": "KE",
+      "lat": -1.2864,
+      "lng": 36.8172,
+      "locode": "KENBO",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Dar es Salaam",
+      "country": "Tanzania",
+      "iso2": "TZ",
+      "lat": -6.7924,
+      "lng": 39.2083,
+      "locode": "TZDAR",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Djibouti",
+      "country": "Djibouti",
+      "iso2": "DJ",
+      "lat": 11.5721,
+      "lng": 43.1456,
+      "locode": "DJJIB",
+      "kinds": [
+        "sea"
+      ],
+      "region": "africa",
+      "landmass": "africa"
+    },
+    {
+      "name": "Port Louis",
+      "country": "Mauritius",
+      "iso2": "MU",
+      "lat": -20.1609,
+      "lng": 57.5012,
+      "locode": "MUPLU",
+      "kinds": [
+        "sea"
+      ],
+      "region": "africa",
+      "landmass": "mauritius"
+    },
+    {
+      "name": "Nhava Sheva",
+      "country": "India",
+      "iso2": "IN",
+      "lat": 18.949,
+      "lng": 72.949,
+      "locode": "INNSA",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "india"
+    },
+    {
+      "name": "Mumbai",
+      "country": "India",
+      "iso2": "IN",
+      "lat": 19.076,
+      "lng": 72.8777,
+      "locode": "INBOM",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "asia",
+      "landmass": "india"
+    },
+    {
+      "name": "Mundra",
+      "country": "India",
+      "iso2": "IN",
+      "lat": 22.839,
+      "lng": 69.722,
+      "locode": "INMUN",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "india"
+    },
+    {
+      "name": "Chennai",
+      "country": "India",
+      "iso2": "IN",
+      "lat": 13.0827,
+      "lng": 80.2707,
+      "locode": "INMAA",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "india"
+    },
+    {
+      "name": "Kolkata",
+      "country": "India",
+      "iso2": "IN",
+      "lat": 22.5726,
+      "lng": 88.3639,
+      "locode": "INCCU",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "india"
+    },
+    {
+      "name": "Cochin",
+      "country": "India",
+      "iso2": "IN",
+      "lat": 9.9312,
+      "lng": 76.2673,
+      "locode": "INCOK",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "india"
+    },
+    {
+      "name": "Delhi",
+      "country": "India",
+      "iso2": "IN",
+      "lat": 28.6139,
+      "lng": 77.209,
+      "locode": "INDEL",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "asia",
+      "landmass": "india"
+    },
+    {
+      "name": "Bengaluru",
+      "country": "India",
+      "iso2": "IN",
+      "lat": 12.9716,
+      "lng": 77.5946,
+      "locode": "INBLR",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "asia",
+      "landmass": "india"
+    },
+    {
+      "name": "Colombo",
+      "country": "Sri Lanka",
+      "iso2": "LK",
+      "lat": 6.9271,
+      "lng": 79.8612,
+      "locode": "LKCMB",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "srilanka"
+    },
+    {
+      "name": "Karachi",
+      "country": "Pakistan",
+      "iso2": "PK",
+      "lat": 24.8607,
+      "lng": 67.0011,
+      "locode": "PKKHI",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "india"
+    },
+    {
+      "name": "Chittagong",
+      "country": "Bangladesh",
+      "iso2": "BD",
+      "lat": 22.3569,
+      "lng": 91.7832,
+      "locode": "BDCGP",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "india"
+    },
+    {
+      "name": "Dhaka",
+      "country": "Bangladesh",
+      "iso2": "BD",
+      "lat": 23.8103,
+      "lng": 90.4125,
+      "locode": "BDDAC",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "asia",
+      "landmass": "india"
+    },
+    {
+      "name": "Singapore",
+      "country": "Singapore",
+      "iso2": "SG",
+      "lat": 1.2644,
+      "lng": 103.84,
+      "locode": "SGSIN",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "indochina"
+    },
+    {
+      "name": "Port Klang",
+      "country": "Malaysia",
+      "iso2": "MY",
+      "lat": 3.0,
+      "lng": 101.4,
+      "locode": "MYPKG",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "indochina"
+    },
+    {
+      "name": "Tanjung Pelepas",
+      "country": "Malaysia",
+      "iso2": "MY",
+      "lat": 1.3667,
+      "lng": 103.55,
+      "locode": "MYTPP",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "indochina"
+    },
+    {
+      "name": "Kuala Lumpur",
+      "country": "Malaysia",
+      "iso2": "MY",
+      "lat": 3.139,
+      "lng": 101.6869,
+      "locode": "MYKUL",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "asia",
+      "landmass": "indochina"
+    },
+    {
+      "name": "Penang",
+      "country": "Malaysia",
+      "iso2": "MY",
+      "lat": 5.4141,
+      "lng": 100.3288,
+      "locode": "MYPEN",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "indochina"
+    },
+    {
+      "name": "Laem Chabang",
+      "country": "Thailand",
+      "iso2": "TH",
+      "lat": 13.0827,
+      "lng": 100.8833,
+      "locode": "THLCH",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "indochina"
+    },
+    {
+      "name": "Bangkok",
+      "country": "Thailand",
+      "iso2": "TH",
+      "lat": 13.7563,
+      "lng": 100.5018,
+      "locode": "THBKK",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "asia",
+      "landmass": "indochina"
+    },
+    {
+      "name": "Ho Chi Minh City",
+      "country": "Vietnam",
+      "iso2": "VN",
+      "lat": 10.8231,
+      "lng": 106.6297,
+      "locode": "VNSGN",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "indochina"
+    },
+    {
+      "name": "Cai Mep",
+      "country": "Vietnam",
+      "iso2": "VN",
+      "lat": 10.523,
+      "lng": 107.023,
+      "locode": "VNCMT",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "indochina"
+    },
+    {
+      "name": "Haiphong",
+      "country": "Vietnam",
+      "iso2": "VN",
+      "lat": 20.8449,
+      "lng": 106.6881,
+      "locode": "VNHPH",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "indochina"
+    },
+    {
+      "name": "Hanoi",
+      "country": "Vietnam",
+      "iso2": "VN",
+      "lat": 21.0278,
+      "lng": 105.8342,
+      "locode": "VNHAN",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "asia",
+      "landmass": "indochina"
+    },
+    {
+      "name": "Jakarta",
+      "country": "Indonesia",
+      "iso2": "ID",
+      "lat": -6.2088,
+      "lng": 106.8456,
+      "locode": "IDJKT",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "indonesia"
+    },
+    {
+      "name": "Tanjung Priok",
+      "country": "Indonesia",
+      "iso2": "ID",
+      "lat": -6.105,
+      "lng": 106.88,
+      "locode": "IDTPP",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "indonesia"
+    },
+    {
+      "name": "Surabaya",
+      "country": "Indonesia",
+      "iso2": "ID",
+      "lat": -7.2575,
+      "lng": 112.7521,
+      "locode": "IDSUB",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "indonesia"
+    },
+    {
+      "name": "Manila",
+      "country": "Philippines",
+      "iso2": "PH",
+      "lat": 14.5995,
+      "lng": 120.9842,
+      "locode": "PHMNL",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "philippines"
+    },
+    {
+      "name": "Cebu",
+      "country": "Philippines",
+      "iso2": "PH",
+      "lat": 10.3157,
+      "lng": 123.8854,
+      "locode": "PHCEB",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "philippines"
+    },
+    {
+      "name": "Yangon",
+      "country": "Myanmar",
+      "iso2": "MM",
+      "lat": 16.8661,
+      "lng": 96.1951,
+      "locode": "MMRGN",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "indochina"
+    },
+    {
+      "name": "Sihanoukville",
+      "country": "Cambodia",
+      "iso2": "KH",
+      "lat": 10.627,
+      "lng": 103.522,
+      "locode": "KHKOS",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "indochina"
+    },
+    {
+      "name": "Shanghai",
+      "country": "China",
+      "iso2": "CN",
+      "lat": 31.2304,
+      "lng": 121.4737,
+      "locode": "CNSHA",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "east-asia"
+    },
+    {
+      "name": "Ningbo",
+      "country": "China",
+      "iso2": "CN",
+      "lat": 29.8683,
+      "lng": 121.544,
+      "locode": "CNNGB",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "east-asia"
+    },
+    {
+      "name": "Shenzhen",
+      "country": "China",
+      "iso2": "CN",
+      "lat": 22.5431,
+      "lng": 114.0579,
+      "locode": "CNSZX",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "east-asia"
+    },
+    {
+      "name": "Yantian",
+      "country": "China",
+      "iso2": "CN",
+      "lat": 22.58,
+      "lng": 114.27,
+      "locode": "CNYTN",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "east-asia"
+    },
+    {
+      "name": "Guangzhou",
+      "country": "China",
+      "iso2": "CN",
+      "lat": 23.1291,
+      "lng": 113.2644,
+      "locode": "CNCAN",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "east-asia"
+    },
+    {
+      "name": "Qingdao",
+      "country": "China",
+      "iso2": "CN",
+      "lat": 36.0671,
+      "lng": 120.3826,
+      "locode": "CNTAO",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "east-asia"
+    },
+    {
+      "name": "Tianjin",
+      "country": "China",
+      "iso2": "CN",
+      "lat": 39.0842,
+      "lng": 117.2009,
+      "locode": "CNTSN",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "east-asia"
+    },
+    {
+      "name": "Xiamen",
+      "country": "China",
+      "iso2": "CN",
+      "lat": 24.4798,
+      "lng": 118.0894,
+      "locode": "CNXMN",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "east-asia"
+    },
+    {
+      "name": "Dalian",
+      "country": "China",
+      "iso2": "CN",
+      "lat": 38.914,
+      "lng": 121.6147,
+      "locode": "CNDLC",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "east-asia"
+    },
+    {
+      "name": "Beijing",
+      "country": "China",
+      "iso2": "CN",
+      "lat": 39.9042,
+      "lng": 116.4074,
+      "locode": "CNBJS",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "asia",
+      "landmass": "east-asia"
+    },
+    {
+      "name": "Chongqing",
+      "country": "China",
+      "iso2": "CN",
+      "lat": 29.563,
+      "lng": 106.5516,
+      "locode": "CNCKG",
+      "kinds": [
+        "inland",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "east-asia"
+    },
+    {
+      "name": "Chengdu",
+      "country": "China",
+      "iso2": "CN",
+      "lat": 30.5728,
+      "lng": 104.0668,
+      "locode": "CNCTU",
+      "kinds": [
+        "inland",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "east-asia"
+    },
+    {
+      "name": "Xi'an",
+      "country": "China",
+      "iso2": "CN",
+      "lat": 34.3416,
+      "lng": 108.9398,
+      "locode": "CNSIA",
+      "kinds": [
+        "inland",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "east-asia"
+    },
+    {
+      "name": "Hong Kong",
+      "country": "Hong Kong SAR",
+      "iso2": "HK",
+      "lat": 22.3193,
+      "lng": 114.1694,
+      "locode": "HKHKG",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "east-asia"
+    },
+    {
+      "name": "Kaohsiung",
+      "country": "Taiwan",
+      "iso2": "TW",
+      "lat": 22.6273,
+      "lng": 120.3014,
+      "locode": "TWKHH",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "taiwan"
+    },
+    {
+      "name": "Taipei",
+      "country": "Taiwan",
+      "iso2": "TW",
+      "lat": 25.033,
+      "lng": 121.5654,
+      "locode": "TWTPE",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "asia",
+      "landmass": "taiwan"
+    },
+    {
+      "name": "Busan",
+      "country": "South Korea",
+      "iso2": "KR",
+      "lat": 35.1796,
+      "lng": 129.0756,
+      "locode": "KRPUS",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "korea"
+    },
+    {
+      "name": "Incheon",
+      "country": "South Korea",
+      "iso2": "KR",
+      "lat": 37.4563,
+      "lng": 126.7052,
+      "locode": "KRINC",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "korea"
+    },
+    {
+      "name": "Seoul",
+      "country": "South Korea",
+      "iso2": "KR",
+      "lat": 37.5665,
+      "lng": 126.978,
+      "locode": "KRSEL",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "asia",
+      "landmass": "korea"
+    },
+    {
+      "name": "Tokyo",
+      "country": "Japan",
+      "iso2": "JP",
+      "lat": 35.6762,
+      "lng": 139.6503,
+      "locode": "JPTYO",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "japan"
+    },
+    {
+      "name": "Yokohama",
+      "country": "Japan",
+      "iso2": "JP",
+      "lat": 35.4437,
+      "lng": 139.638,
+      "locode": "JPYOK",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "japan"
+    },
+    {
+      "name": "Kobe",
+      "country": "Japan",
+      "iso2": "JP",
+      "lat": 34.6901,
+      "lng": 135.1955,
+      "locode": "JPUKB",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "japan"
+    },
+    {
+      "name": "Nagoya",
+      "country": "Japan",
+      "iso2": "JP",
+      "lat": 35.1815,
+      "lng": 136.9066,
+      "locode": "JPNGO",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "japan"
+    },
+    {
+      "name": "Osaka",
+      "country": "Japan",
+      "iso2": "JP",
+      "lat": 34.6937,
+      "lng": 135.5023,
+      "locode": "JPOSA",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "asia",
+      "landmass": "japan"
+    },
+    {
+      "name": "Vladivostok",
+      "country": "Russia",
+      "iso2": "RU",
+      "lat": 43.1332,
+      "lng": 131.9113,
+      "locode": "RUVVO",
+      "kinds": [
+        "sea"
+      ],
+      "region": "asia",
+      "landmass": "east-asia"
+    },
+    {
+      "name": "Sydney",
+      "country": "Australia",
+      "iso2": "AU",
+      "lat": -33.8688,
+      "lng": 151.2093,
+      "locode": "AUSYD",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "oceania",
+      "landmass": "australia"
+    },
+    {
+      "name": "Melbourne",
+      "country": "Australia",
+      "iso2": "AU",
+      "lat": -37.8136,
+      "lng": 144.9631,
+      "locode": "AUMEL",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "oceania",
+      "landmass": "australia"
+    },
+    {
+      "name": "Brisbane",
+      "country": "Australia",
+      "iso2": "AU",
+      "lat": -27.4698,
+      "lng": 153.0251,
+      "locode": "AUBNE",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "oceania",
+      "landmass": "australia"
+    },
+    {
+      "name": "Fremantle",
+      "country": "Australia",
+      "iso2": "AU",
+      "lat": -32.0569,
+      "lng": 115.7439,
+      "locode": "AUFRE",
+      "kinds": [
+        "sea"
+      ],
+      "region": "oceania",
+      "landmass": "australia"
+    },
+    {
+      "name": "Perth",
+      "country": "Australia",
+      "iso2": "AU",
+      "lat": -31.9523,
+      "lng": 115.8613,
+      "locode": "AUPER",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "oceania",
+      "landmass": "australia"
+    },
+    {
+      "name": "Adelaide",
+      "country": "Australia",
+      "iso2": "AU",
+      "lat": -34.9285,
+      "lng": 138.6007,
+      "locode": "AUADL",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "oceania",
+      "landmass": "australia"
+    },
+    {
+      "name": "Auckland",
+      "country": "New Zealand",
+      "iso2": "NZ",
+      "lat": -36.8485,
+      "lng": 174.7633,
+      "locode": "NZAKL",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "oceania",
+      "landmass": "nz"
+    },
+    {
+      "name": "Tauranga",
+      "country": "New Zealand",
+      "iso2": "NZ",
+      "lat": -37.6878,
+      "lng": 176.1651,
+      "locode": "NZTRG",
+      "kinds": [
+        "sea"
+      ],
+      "region": "oceania",
+      "landmass": "nz"
+    },
+    {
+      "name": "Port Moresby",
+      "country": "Papua New Guinea",
+      "iso2": "PG",
+      "lat": -9.4438,
+      "lng": 147.1803,
+      "locode": "PGPOM",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "oceania",
+      "landmass": "png"
+    },
+    {
+      "name": "Suva",
+      "country": "Fiji",
+      "iso2": "FJ",
+      "lat": -18.1416,
+      "lng": 178.4419,
+      "locode": "FJSUV",
+      "kinds": [
+        "sea"
+      ],
+      "region": "oceania",
+      "landmass": "fiji"
+    },
+    {
+      "name": "Los Angeles",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 33.7395,
+      "lng": -118.261,
+      "locode": "USLAX",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "pacific"
+    },
+    {
+      "name": "Long Beach",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 33.755,
+      "lng": -118.216,
+      "locode": "USLGB",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "pacific"
+    },
+    {
+      "name": "Oakland",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 37.8044,
+      "lng": -122.2712,
+      "locode": "USOAK",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "pacific"
+    },
+    {
+      "name": "Seattle",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 47.6062,
+      "lng": -122.3321,
+      "locode": "USSEA",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "pacific"
+    },
+    {
+      "name": "Tacoma",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 47.2529,
+      "lng": -122.4443,
+      "locode": "USTIW",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "pacific"
+    },
+    {
+      "name": "New York",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 40.7128,
+      "lng": -74.006,
+      "locode": "USNYC",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Newark",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 40.7357,
+      "lng": -74.1724,
+      "locode": "USEWR",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Savannah",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 32.0809,
+      "lng": -81.0912,
+      "locode": "USSAV",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Charleston",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 32.7765,
+      "lng": -79.9311,
+      "locode": "USCHS",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Norfolk",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 36.8508,
+      "lng": -76.2859,
+      "locode": "USORF",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Houston",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 29.7604,
+      "lng": -95.3698,
+      "locode": "USHOU",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Miami",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 25.7617,
+      "lng": -80.1918,
+      "locode": "USMIA",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Baltimore",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 39.2904,
+      "lng": -76.6122,
+      "locode": "USBAL",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Chicago",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 41.8781,
+      "lng": -87.6298,
+      "locode": "USCHI",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "namerica",
+      "landmass": "namerica"
+    },
+    {
+      "name": "Memphis",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 35.1495,
+      "lng": -90.049,
+      "locode": "USMEM",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "namerica",
+      "landmass": "namerica"
+    },
+    {
+      "name": "Dallas",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 32.7767,
+      "lng": -96.797,
+      "locode": "USDFW",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "namerica",
+      "landmass": "namerica"
+    },
+    {
+      "name": "Atlanta",
+      "country": "United States",
+      "iso2": "US",
+      "lat": 33.749,
+      "lng": -84.388,
+      "locode": "USATL",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "namerica",
+      "landmass": "namerica"
+    },
+    {
+      "name": "Vancouver",
+      "country": "Canada",
+      "iso2": "CA",
+      "lat": 49.2827,
+      "lng": -123.1207,
+      "locode": "CAVAN",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "pacific"
+    },
+    {
+      "name": "Prince Rupert",
+      "country": "Canada",
+      "iso2": "CA",
+      "lat": 54.315,
+      "lng": -130.3208,
+      "locode": "CAPRR",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "pacific"
+    },
+    {
+      "name": "Montreal",
+      "country": "Canada",
+      "iso2": "CA",
+      "lat": 45.5019,
+      "lng": -73.5674,
+      "locode": "CAMTR",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Toronto",
+      "country": "Canada",
+      "iso2": "CA",
+      "lat": 43.6532,
+      "lng": -79.3832,
+      "locode": "CATOR",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "namerica",
+      "landmass": "namerica"
+    },
+    {
+      "name": "Halifax",
+      "country": "Canada",
+      "iso2": "CA",
+      "lat": 44.6488,
+      "lng": -63.5752,
+      "locode": "CAHAL",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Manzanillo",
+      "country": "Mexico",
+      "iso2": "MX",
+      "lat": 19.0522,
+      "lng": -104.3158,
+      "locode": "MXZLO",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "pacific"
+    },
+    {
+      "name": "Veracruz",
+      "country": "Mexico",
+      "iso2": "MX",
+      "lat": 19.1738,
+      "lng": -96.1342,
+      "locode": "MXVER",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Lazaro Cardenas",
+      "country": "Mexico",
+      "iso2": "MX",
+      "lat": 17.9558,
+      "lng": -102.19,
+      "locode": "MXLZC",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "pacific"
+    },
+    {
+      "name": "Mexico City",
+      "country": "Mexico",
+      "iso2": "MX",
+      "lat": 19.4326,
+      "lng": -99.1332,
+      "locode": "MXMEX",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "namerica",
+      "landmass": "namerica"
+    },
+    {
+      "name": "Colon",
+      "country": "Panama",
+      "iso2": "PA",
+      "lat": 9.3592,
+      "lng": -79.9014,
+      "locode": "PACOL",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Balboa",
+      "country": "Panama",
+      "iso2": "PA",
+      "lat": 8.95,
+      "lng": -79.5667,
+      "locode": "PABLB",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "pacific"
+    },
+    {
+      "name": "Panama City",
+      "country": "Panama",
+      "iso2": "PA",
+      "lat": 8.9824,
+      "lng": -79.5199,
+      "locode": "PAPTY",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "namerica",
+      "landmass": "namerica"
+    },
+    {
+      "name": "Kingston",
+      "country": "Jamaica",
+      "iso2": "JM",
+      "lat": 17.9714,
+      "lng": -76.7931,
+      "locode": "JMKIN",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "jamaica",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Caucedo",
+      "country": "Dominican Republic",
+      "iso2": "DO",
+      "lat": 18.42,
+      "lng": -69.63,
+      "locode": "DOCAU",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "hispaniola",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Freeport",
+      "country": "Bahamas",
+      "iso2": "BS",
+      "lat": 26.5333,
+      "lng": -78.7,
+      "locode": "BSFPO",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "bahamas",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Puerto Limon",
+      "country": "Costa Rica",
+      "iso2": "CR",
+      "lat": 9.9907,
+      "lng": -83.0359,
+      "locode": "CRLIO",
+      "kinds": [
+        "sea"
+      ],
+      "region": "namerica",
+      "landmass": "namerica",
+      "coast": "atlantic"
+    },
+    {
+      "name": "Santos",
+      "country": "Brazil",
+      "iso2": "BR",
+      "lat": -23.9608,
+      "lng": -46.3336,
+      "locode": "BRSSZ",
+      "kinds": [
+        "sea"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Sao Paulo",
+      "country": "Brazil",
+      "iso2": "BR",
+      "lat": -23.5505,
+      "lng": -46.6333,
+      "locode": "BRSAO",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Rio de Janeiro",
+      "country": "Brazil",
+      "iso2": "BR",
+      "lat": -22.9068,
+      "lng": -43.1729,
+      "locode": "BRRIO",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Paranagua",
+      "country": "Brazil",
+      "iso2": "BR",
+      "lat": -25.5163,
+      "lng": -48.5222,
+      "locode": "BRPNG",
+      "kinds": [
+        "sea"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Itajai",
+      "country": "Brazil",
+      "iso2": "BR",
+      "lat": -26.9078,
+      "lng": -48.6619,
+      "locode": "BRITJ",
+      "kinds": [
+        "sea"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Suape",
+      "country": "Brazil",
+      "iso2": "BR",
+      "lat": -8.395,
+      "lng": -34.96,
+      "locode": "BRSUA",
+      "kinds": [
+        "sea"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Manaus",
+      "country": "Brazil",
+      "iso2": "BR",
+      "lat": -3.119,
+      "lng": -60.0217,
+      "locode": "BRMAO",
+      "kinds": [
+        "sea",
+        "inland"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Buenos Aires",
+      "country": "Argentina",
+      "iso2": "AR",
+      "lat": -34.6037,
+      "lng": -58.3816,
+      "locode": "ARBUE",
+      "kinds": [
+        "sea",
+        "air"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Montevideo",
+      "country": "Uruguay",
+      "iso2": "UY",
+      "lat": -34.9011,
+      "lng": -56.1645,
+      "locode": "UYMVD",
+      "kinds": [
+        "sea"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Valparaiso",
+      "country": "Chile",
+      "iso2": "CL",
+      "lat": -33.0472,
+      "lng": -71.6127,
+      "locode": "CLVAP",
+      "kinds": [
+        "sea"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "San Antonio",
+      "country": "Chile",
+      "iso2": "CL",
+      "lat": -33.593,
+      "lng": -71.605,
+      "locode": "CLSAI",
+      "kinds": [
+        "sea"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Santiago",
+      "country": "Chile",
+      "iso2": "CL",
+      "lat": -33.4489,
+      "lng": -70.6693,
+      "locode": "CLSCL",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Callao",
+      "country": "Peru",
+      "iso2": "PE",
+      "lat": -12.0566,
+      "lng": -77.1181,
+      "locode": "PECLL",
+      "kinds": [
+        "sea"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Lima",
+      "country": "Peru",
+      "iso2": "PE",
+      "lat": -12.0464,
+      "lng": -77.0428,
+      "locode": "PELIM",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Guayaquil",
+      "country": "Ecuador",
+      "iso2": "EC",
+      "lat": -2.1894,
+      "lng": -79.8891,
+      "locode": "ECGYE",
+      "kinds": [
+        "sea"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Cartagena",
+      "country": "Colombia",
+      "iso2": "CO",
+      "lat": 10.391,
+      "lng": -75.4794,
+      "locode": "COCTG",
+      "kinds": [
+        "sea"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Buenaventura",
+      "country": "Colombia",
+      "iso2": "CO",
+      "lat": 3.8801,
+      "lng": -77.0313,
+      "locode": "COBUN",
+      "kinds": [
+        "sea"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "Bogota",
+      "country": "Colombia",
+      "iso2": "CO",
+      "lat": 4.711,
+      "lng": -74.0721,
+      "locode": "COBOG",
+      "kinds": [
+        "air",
+        "inland"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    },
+    {
+      "name": "La Guaira",
+      "country": "Venezuela",
+      "iso2": "VE",
+      "lat": 10.6,
+      "lng": -66.9333,
+      "locode": "VELAG",
+      "kinds": [
+        "sea"
+      ],
+      "region": "samerica",
+      "landmass": "samerica"
+    }
+  ]
+}

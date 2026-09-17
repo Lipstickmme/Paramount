@@ -24,6 +24,10 @@ router.use('/portal', require('./portal'));
 // The live fleet behind the tracker on the home page.
 router.use('/fleet', require('./fleet'));
 
+// Ports, airports and inland hubs, with the coordinates that go on a
+// consignment. Reference data: no session, cached for a day.
+router.use('/places', require('./places'));
+
 router.use('/services', require('./services'));
 router.use('/network', require('./network'));
 router.use('/team', require('./team'));

@@ -45,6 +45,18 @@
     return node;
   }
 
+  /**
+   * Escape for the few places below that build markup rather than nodes.
+   *
+   * The rest of this file uses textContent and never needs this; a suggestion
+   * row and the lane strip are markup because they are three spans each and a
+   * node tree for them reads worse than the string does.
+   */
+  const esc = (value) =>
+    String(value == null ? '' : value).replace(/[&<>"']/g, (c) => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+
   function when(value) {
     if (!value) return '';
     const d = new Date(value);
@@ -125,6 +137,72 @@
     ['warehousing', 'Warehousing & fulfilment'],
   ];
 
+  /*
+   * The lists behind the form's dropdowns.
+   *
+   * Two kinds. A `select` is a closed set the server or the trade defines —
+   * mode, payment status, Incoterms — and typing something else into it is a
+   * mistake, so the box does not allow it. A `suggest` is an open list: the
+   * common answers are one keystroke away and anything else can still be typed,
+   * because no list of package types survives contact with real cargo.
+   */
+  const SERVICE_LEVELS = {
+    air_freight: ['Express', 'Standard', 'Deferred', 'Charter', 'Next flight out'],
+    ocean_freight: ['FCL 20\u2032', 'FCL 40\u2032', 'FCL 40\u2032 HC', 'FCL 40\u2032 reefer', 'LCL consolidation', 'Break bulk', 'Ro-ro'],
+    rail_freight: ['Block train', 'Wagon group', 'FCL 40\u2032 HC', 'LCL consolidation'],
+    road_haulage: ['FTL', 'LTL groupage', 'Dedicated vehicle', 'Temperature controlled', 'ADR'],
+    express_courier: ['Same day', 'Next day pre-10:00', 'Next day', 'Two day', 'Economy'],
+    warehousing: ['Pick and pack', 'Bonded storage', 'Cross-dock', 'Returns handling'],
+  };
+  const ALL_SERVICE_LEVELS = [...new Set(Object.values(SERVICE_LEVELS).flat())];
+
+  const PACKAGE_TYPES = [
+    'Pallets', 'Euro pallets', 'Cartons', 'Crates', 'Drums', 'Bags', 'Rolls',
+    'Container FCL', 'Container LCL', 'Loose loaded', 'Air ULD', 'Big bags', 'Bundles',
+  ];
+
+  const CURRENCIES = [
+    ['USD', 'USD \u2014 US dollar'], ['EUR', 'EUR \u2014 Euro'], ['GBP', 'GBP \u2014 Pound sterling'],
+    ['CNY', 'CNY \u2014 Chinese yuan'], ['SGD', 'SGD \u2014 Singapore dollar'], ['AED', 'AED \u2014 UAE dirham'],
+    ['JPY', 'JPY \u2014 Japanese yen'], ['INR', 'INR \u2014 Indian rupee'], ['AUD', 'AUD \u2014 Australian dollar'],
+    ['CAD', 'CAD \u2014 Canadian dollar'], ['ZAR', 'ZAR \u2014 South African rand'], ['NGN', 'NGN \u2014 Nigerian naira'],
+    ['BRL', 'BRL \u2014 Brazilian real'], ['CHF', 'CHF \u2014 Swiss franc'],
+  ];
+
+  // Incoterms 2020, in the order the ICC lists them.
+  const INCOTERMS = [
+    ['EXW', 'EXW \u2014 Ex works'], ['FCA', 'FCA \u2014 Free carrier'], ['CPT', 'CPT \u2014 Carriage paid to'],
+    ['CIP', 'CIP \u2014 Carriage and insurance paid to'], ['DAP', 'DAP \u2014 Delivered at place'],
+    ['DPU', 'DPU \u2014 Delivered at place unloaded'], ['DDP', 'DDP \u2014 Delivered duty paid'],
+    ['FAS', 'FAS \u2014 Free alongside ship'], ['FOB', 'FOB \u2014 Free on board'],
+    ['CFR', 'CFR \u2014 Cost and freight'], ['CIF', 'CIF \u2014 Cost, insurance and freight'],
+  ];
+
+  const PAYMENT_MODES = [
+    ['prepaid', 'Prepaid'], ['collect', 'Collect'], ['third_party', 'Third party'],
+    ['account', 'On account'], ['cash_on_delivery', 'Cash on delivery'],
+  ];
+
+  const PAYMENT_STATUSES = [
+    ['unpaid', 'Unpaid'], ['invoiced', 'Invoiced'], ['part_paid', 'Part paid'],
+    ['paid', 'Paid'], ['written_off', 'Written off'],
+  ];
+
+  const SPECIAL_HANDLING = [
+    'None', 'Temperature controlled', 'Dangerous goods \u2014 IMDG', 'Dangerous goods \u2014 IATA',
+    'Out of gauge', 'High value', 'Fragile', 'Live animals', 'Perishable', 'Personal effects',
+  ];
+
+  const CARRIERS = {
+    ocean_freight: ['Maersk', 'MSC', 'CMA CGM', 'Hapag-Lloyd', 'ONE', 'Evergreen', 'HMM', 'Yang Ming', 'ZIM', 'Paramount consolidation'],
+    air_freight: ['Lufthansa Cargo', 'Emirates SkyCargo', 'Qatar Airways Cargo', 'Cathay Cargo', 'Cargolux', 'Turkish Cargo', 'Korean Air Cargo', 'Paramount consolidation'],
+    rail_freight: ['DB Cargo', 'RZD Logistics', 'China Railway Express', 'Union Pacific', 'BNSF', 'Canadian National'],
+    road_haulage: ['Paramount fleet', 'Girteka', 'Waberer\u2019s', 'DSV Road', 'Contracted haulier'],
+    express_courier: ['Paramount Express', 'DHL', 'FedEx', 'UPS', 'TNT'],
+    warehousing: ['Paramount contract logistics'],
+  };
+  const ALL_CARRIERS = [...new Set(Object.values(CARRIERS).flat())];
+
   const TONE = {
     delivered: 'done',
     cancelled: 'bad',
@@ -144,8 +222,8 @@
   const SHIPMENT_FIELDS = [
     { group: 'Service' },
     ['mode', 'Mode', 'select', MODES],
-    ['service_level', 'Service level', 'text'],
-    ['carrier', 'Carrier / partner', 'text'],
+    ['service_level', 'Service level', 'suggest', ALL_SERVICE_LEVELS],
+    ['carrier', 'Carrier / partner', 'suggest', ALL_CARRIERS],
     ['vessel_or_flight', 'Vessel or flight', 'text'],
     ['container_no', 'Container / ULD', 'text'],
     ['reference', "Customer's reference", 'text'],
@@ -164,32 +242,32 @@
     ['receiver_phone', 'Consignee phone', 'tel'],
     ['receiver_address', 'Consignee address', 'text'],
 
-    { group: 'Route' },
-    ['origin_city', 'Origin city *', 'text'],
+    { group: 'Route', note: 'Type a city or a UN/LOCODE and pick it from the list — the country and the coordinates fill themselves in.' },
+    ['origin_city', 'Origin city *', 'place'],
     ['origin_country', 'Origin country', 'text'],
     ['origin_lat', 'Origin latitude', 'number'],
     ['origin_lng', 'Origin longitude', 'number'],
-    ['destination_city', 'Destination city *', 'text'],
+    ['destination_city', 'Destination city *', 'place'],
     ['destination_country', 'Destination country', 'text'],
     ['destination_lat', 'Destination latitude', 'number'],
     ['destination_lng', 'Destination longitude', 'number'],
 
     { group: 'Cargo' },
-    ['package_type', 'Package type', 'text'],
+    ['package_type', 'Package type', 'suggest', PACKAGE_TYPES],
     ['pieces', 'Pieces', 'number'],
     ['weight_kg', 'Weight (kg)', 'number'],
     ['volume_cbm', 'Volume (cbm)', 'number'],
     ['dimensions', 'Dimensions', 'text'],
     ['contents', 'Contents', 'text'],
     ['declared_value', 'Declared value', 'number'],
-    ['currency', 'Currency', 'text'],
-    ['special_handling', 'Special handling', 'text'],
+    ['currency', 'Currency', 'select', CURRENCIES],
+    ['special_handling', 'Special handling', 'suggest', SPECIAL_HANDLING],
 
     { group: 'Commercial' },
-    ['payment_mode', 'Payment mode', 'text'],
-    ['payment_status', 'Payment status', 'text'],
+    ['payment_mode', 'Payment mode', 'select', PAYMENT_MODES],
+    ['payment_status', 'Payment status', 'select', PAYMENT_STATUSES],
     ['freight_cost', 'Freight cost', 'number'],
-    ['incoterms', 'Incoterms', 'text'],
+    ['incoterms', 'Incoterms', 'select', INCOTERMS],
 
     { group: 'Dates' },
     ['estimated_delivery', 'Estimated delivery', 'datetime-local'],
@@ -743,7 +821,21 @@
 
   /* ------------------------------------------------------ consignments --- */
 
-  /** One labelled control from a SHIPMENT_FIELDS entry. */
+  /**
+   * One labelled control from a SHIPMENT_FIELDS entry.
+   *
+   * Five kinds, and the difference between two of them is the whole point:
+   *
+   *   select    a closed set. Mode, Incoterms, payment status — a value outside
+   *             the list is a mistake, so the control will not accept one.
+   *   suggest   an open list on a datalist. The common answers are one
+   *             keystroke away and anything else can still be typed, because no
+   *             list of package types survives contact with real cargo.
+   *   place     a city, looked up in the gazetteer as it is typed. Picking a row
+   *             fills the country and both coordinates beside it.
+   *
+   * plus the plain text/number/datetime boxes and the textarea.
+   */
   function buildField(spec, values) {
     const [name, label, type, options] = spec;
     const wrap = el('div', 'field');
@@ -754,6 +846,11 @@
     let input;
     if (type === 'select') {
       input = el('select');
+      // A blank first row, so a field the desk has not decided yet stays empty
+      // rather than silently taking whatever happened to be at the top.
+      const blank = el('option', null, '—');
+      blank.value = '';
+      input.appendChild(blank);
       options.forEach(([value, text]) => {
         const option = el('option', null, text);
         option.value = value;
@@ -764,8 +861,26 @@
       input.rows = 3;
     } else {
       input = document.createElement('input');
-      input.type = type;
+      input.type = type === 'suggest' || type === 'place' ? 'text' : type;
       if (type === 'number') input.step = 'any';
+      if (type === 'suggest') {
+        const list = el('datalist');
+        list.id = `${id}-list`;
+        (options || []).forEach((value) => {
+          const option = el('option');
+          option.value = value;
+          list.appendChild(option);
+        });
+        input.setAttribute('list', list.id);
+        input.autocomplete = 'off';
+        wrap.appendChild(list);
+      }
+      if (type === 'place') {
+        input.autocomplete = 'off';
+        input.spellcheck = false;
+        input.placeholder = 'City or LOCODE, e.g. Rotterdam or NLRTM';
+        wrap.classList.add('field-place');
+      }
     }
 
     input.id = id;
@@ -775,7 +890,255 @@
 
     wrap.appendChild(lab);
     wrap.appendChild(input);
+    if (type === 'place') wrap.appendChild(placeSuggest(input, name));
     return wrap;
+  }
+
+  /* ------------------------------------------------- the place lookup --- */
+
+  /** One shared cache: the desk books the same twenty ports all day. */
+  const placeCache = new Map();
+
+  async function lookUpPlaces(query) {
+    const key = query.toLowerCase();
+    if (placeCache.has(key)) return placeCache.get(key);
+    try {
+      const res = await fetch(`/api/places?q=${encodeURIComponent(query)}`, {
+        headers: { Accept: 'application/json' },
+      });
+      const body = await res.json();
+      const rows = Array.isArray(body.places) ? body.places : [];
+      placeCache.set(key, rows);
+      return rows;
+    } catch (err) {
+      return [];   // offline: the box is still a plain text field
+    }
+  }
+
+  /**
+   * The suggestion list under a city box.
+   *
+   * Hand-rolled rather than a <datalist> because picking a row has to do more
+   * than set the text: it fills the country and the two coordinate boxes beside
+   * it, and a datalist gives no event that says which row was chosen. Keyboard
+   * first — arrows move, Enter takes, Escape closes — since this is a form the
+   * desk fills in all day without reaching for the mouse.
+   */
+  function placeSuggest(input, name) {
+    const side = name.startsWith('origin') ? 'origin' : 'destination';
+    const list = el('div', 'admin-suggest');
+    list.hidden = true;
+    let rows = [];
+    let active = -1;
+    let seq = 0;
+
+    const close = () => {
+      list.hidden = true;
+      active = -1;
+    };
+
+    const paint = () => {
+      list.innerHTML = '';
+      rows.forEach((place, i) => {
+        const row = el('button', `admin-suggest-row${i === active ? ' is-on' : ''}`);
+        row.type = 'button';
+        row.innerHTML =
+          `<span class="admin-suggest-name">${esc(place.name)}</span>` +
+          `<span class="admin-suggest-meta">${esc(place.country)}</span>` +
+          `<code>${esc(place.locode)}</code>`;
+        row.addEventListener('mousedown', (event) => {
+          event.preventDefault();   // fires before the input's blur
+          take(place);
+        });
+        list.appendChild(row);
+      });
+      list.hidden = rows.length === 0;
+    };
+
+    /** Fill the city, and everything the city implies. */
+    function take(place) {
+      input.value = place.name;
+      const form = input.form;
+      const set = (field, value) => {
+        const node = form && form.elements.namedItem(field);
+        if (node) node.value = value;
+      };
+      set(`${side}_country`, place.country);
+      set(`${side}_lat`, place.lat);
+      set(`${side}_lng`, place.lng);
+      input.dataset.locode = place.locode;
+      close();
+      // Both ends known means the lane is known, so the form can offer the rest.
+      input.dispatchEvent(new CustomEvent('place:picked', { bubbles: true, detail: place }));
+    }
+
+    let timer = null;
+    input.addEventListener('input', () => {
+      delete input.dataset.locode;
+      clearTimeout(timer);
+      const query = input.value.trim();
+      if (query.length < 2) return close();
+      // A short pause, so typing "rotterdam" is one request rather than eight.
+      timer = setTimeout(async () => {
+        const mine = ++seq;
+        const found = await lookUpPlaces(query);
+        if (mine !== seq || document.activeElement !== input) return;
+        rows = found;
+        active = -1;
+        paint();
+      }, 140);
+    });
+
+    input.addEventListener('keydown', (event) => {
+      if (list.hidden || !rows.length) return;
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        active = (active + (event.key === 'ArrowDown' ? 1 : rows.length - 1) + rows.length) % rows.length;
+        paint();
+      } else if (event.key === 'Enter' && active >= 0) {
+        event.preventDefault();
+        take(rows[active]);
+      } else if (event.key === 'Escape') {
+        close();
+      }
+    });
+
+    input.addEventListener('blur', () => setTimeout(close, 120));
+    return list;
+  }
+
+  /* --------------------------------------------------- the quick fill --- */
+
+  /**
+   * What the form can work out for itself once it knows the lane.
+   *
+   * A booking is mostly implied by three things: where it starts, where it ends
+   * and what mode it goes by. The server derives the rest from the gazetteer —
+   * the mode this lane usually books, the distance, a transit time — and this
+   * offers the result as a strip above the form: what it worked out, and one
+   * button to accept it.
+   *
+   * Two rules make this safe to use in a hurry.
+   *
+   *   It never overwrites. A box the desk has already filled in is left alone,
+   *   every time. Only empty boxes take a suggestion.
+   *
+   *   It never saves. Everything it fills in is a default sitting in a form the
+   *   desk still has to read and submit, and every one of them can be corrected
+   *   now or after the booking is out.
+   */
+  function wireQuickFill(form) {
+    const strip = el('div', 'admin-quickfill');
+    strip.hidden = true;
+    const summary = el('div', 'admin-quickfill-read');
+    const apply = el('button', 'btn sm', 'Fill the blanks');
+    apply.type = 'button';
+    strip.appendChild(summary);
+    strip.appendChild(apply);
+
+    const routeHeading = Array.from(form.querySelectorAll('.admin-form-group'))
+      .find((node) => node.textContent === 'Route');
+    if (routeHeading && routeHeading.nextSibling) {
+      form.insertBefore(strip, routeHeading.nextSibling.nextSibling || routeHeading.nextSibling);
+    } else {
+      form.insertBefore(strip, form.firstChild);
+    }
+
+    const value = (name) => {
+      const node = form.elements.namedItem(name);
+      return node ? String(node.value || '').trim() : '';
+    };
+    /** Fill a box only if the desk has left it empty. */
+    const fillIfBlank = (name, next) => {
+      const node = form.elements.namedItem(name);
+      if (!node || next == null || next === '') return false;
+      if (String(node.value || '').trim()) return false;
+      node.value = next;
+      node.classList.add('is-filled');
+      setTimeout(() => node.classList.remove('is-filled'), 1400);
+      return true;
+    };
+
+    let lane = null;
+    let seq = 0;
+
+    async function refresh() {
+      const from = value('origin_city');
+      const to = value('destination_city');
+      if (!from || !to) {
+        strip.hidden = true;
+        return;
+      }
+      const mine = ++seq;
+      try {
+        const res = await fetch(
+          `/api/places/lane?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+          { headers: { Accept: 'application/json' } }
+        );
+        const body = await res.json();
+        if (mine !== seq) return;
+        // `lane: null` means the gazetteer does not carry one of the two
+        // places — a normal answer, not a failure. Say so and offer nothing.
+        if (!res.ok || body.lane === null) {
+          lane = null;
+          strip.hidden = false;
+          summary.innerHTML = `<span class="muted">${esc(body.message || 'That lane is not in the gazetteer.')}</span>`;
+          apply.hidden = true;
+          return;
+        }
+        lane = body;
+        apply.hidden = false;
+        strip.hidden = false;
+        const eta = new Date(Date.now() + lane.transit_days * 86400000);
+        summary.innerHTML =
+          `<strong>${esc(lane.mode_label)}</strong>` +
+          `<span><b class="mono">${lane.routed_nm.toLocaleString('en-US')}</b> nm routed</span>` +
+          `<span><b class="mono">${lane.transit_days}</b> days transit</span>` +
+          `<span>due <b class="mono">${eta.toISOString().slice(0, 10)}</b></span>` +
+          `<span class="muted">${esc(lane.basis)}</span>`;
+      } catch (err) {
+        strip.hidden = true;
+      }
+    }
+
+    apply.addEventListener('click', () => {
+      if (!lane) return;
+      let filled = 0;
+      const mode = value('mode') || lane.mode;
+
+      filled += fillIfBlank('mode', lane.mode) ? 1 : 0;
+      filled += fillIfBlank('origin_country', lane.origin.country) ? 1 : 0;
+      filled += fillIfBlank('origin_lat', lane.origin.lat) ? 1 : 0;
+      filled += fillIfBlank('origin_lng', lane.origin.lng) ? 1 : 0;
+      filled += fillIfBlank('destination_country', lane.destination.country) ? 1 : 0;
+      filled += fillIfBlank('destination_lat', lane.destination.lat) ? 1 : 0;
+      filled += fillIfBlank('destination_lng', lane.destination.lng) ? 1 : 0;
+
+      const levels = SERVICE_LEVELS[mode] || [];
+      filled += fillIfBlank('service_level', levels[0]) ? 1 : 0;
+      filled += fillIfBlank('carrier', (CARRIERS[mode] || [])[0]) ? 1 : 0;
+      filled += fillIfBlank('package_type', lane.containerised ? 'Container FCL' : 'Pallets') ? 1 : 0;
+      // Incoterms that match who controls the cargo on each mode: sea and rail
+      // quote CIF as a matter of course, everything else moves on DAP.
+      filled += fillIfBlank('incoterms', lane.containerised ? 'CIF' : 'DAP') ? 1 : 0;
+
+      const eta = new Date(Date.now() + lane.transit_days * 86400000);
+      eta.setHours(17, 0, 0, 0);
+      filled += fillIfBlank('estimated_delivery', toLocalInput(eta.toISOString())) ? 1 : 0;
+
+      apply.textContent = filled ? `Filled ${filled} field${filled === 1 ? '' : 's'}` : 'Nothing left blank';
+      setTimeout(() => (apply.textContent = 'Fill the blanks'), 2200);
+    });
+
+    // A picked city, a typed city, or a changed mode all move the lane.
+    form.addEventListener('place:picked', refresh);
+    ['origin_city', 'destination_city'].forEach((name) => {
+      const node = form.elements.namedItem(name);
+      if (node) node.addEventListener('change', refresh);
+    });
+    const modeNode = form.elements.namedItem('mode');
+    if (modeNode) modeNode.addEventListener('change', refresh);
+    refresh();
   }
 
   /**
@@ -786,17 +1149,23 @@
    */
   function shipmentForm(existing) {
     const form = el('form', 'admin-ship-form');
-    const values = existing || { mode: 'road_haulage', pieces: 1, currency: 'USD' };
+    const values = existing || {
+      mode: 'ocean_freight', pieces: 1, currency: 'USD',
+      payment_mode: 'prepaid', payment_status: 'unpaid',
+    };
 
     SHIPMENT_FIELDS.forEach((spec) => {
       if (spec.group) {
         form.appendChild(el('h4', 'admin-form-group', spec.group));
+        if (spec.note) form.appendChild(el('p', 'admin-form-note', spec.note));
         return;
       }
       // Status belongs to the movement form, so it is not offered here.
       if (existing && spec[0] === 'status') return;
       form.appendChild(buildField(spec, values));
     });
+
+    wireQuickFill(form);
 
     const status = el('div', 'form-status');
     const actions = el('div', 'admin-form-actions');
@@ -885,11 +1254,20 @@
     const location = document.createElement('input');
     location.type = 'text';
     location.name = 'location';
-    location.placeholder = 'Location, e.g. Algeciras, Spain';
+    location.placeholder = 'Where — Algeciras, or ESALG';
+    location.autocomplete = 'off';
+    location.spellcheck = false;
     location.value = '';
 
+    // The same gazetteer the booking form uses. A movement with coordinates is
+    // a movement the customer can see on the chart, so making them free is the
+    // difference between a map that fills in and one that stays empty.
+    const pick = el('div', 'field-place move-place');
+    pick.appendChild(location);
+    pick.appendChild(placeSuggest(location, 'move'));
+
     row.appendChild(select);
-    row.appendChild(location);
+    row.appendChild(pick);
     form.appendChild(row);
 
     const coords = el('div', 'admin-move-row');
@@ -906,6 +1284,15 @@
     coords.appendChild(lat);
     coords.appendChild(lng);
     form.appendChild(coords);
+
+    // placeSuggest fills `<side>_lat` / `<side>_lng`; here the side is "move",
+    // and the movement form's boxes are plain lat/lng, so the pick is relayed.
+    location.addEventListener('place:picked', (event) => {
+      const place = event.detail;
+      location.value = `${place.name}, ${place.country}`;
+      lat.value = place.lat;
+      lng.value = place.lng;
+    });
 
     const note = el('textarea');
     note.name = 'note';

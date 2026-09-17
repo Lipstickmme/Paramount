@@ -289,14 +289,27 @@
         .join('') + labels;
   }
 
+  /**
+   * A cargo ship, drawn in plan view and bow-up.
+   *
+   * Plan view because the marker is rotated to its course, and a side-on ship
+   * heading west is an upside-down ship. Bow-up because 0° is north, so the
+   * rotation is the heading with nothing to correct for. Small enough to read
+   * at 20 pixels: a pointed bow, parallel sides, three rows of boxes and the
+   * accommodation block aft, which is the silhouette anyone recognises from a
+   * chart plotter.
+   */
+  const SHIP =
+    '<path class="fleet-hull" d="M0 -11 L3.1 -5.4 L3.1 7.9 L2.2 10.1 L-2.2 10.1 L-3.1 7.9 L-3.1 -5.4 Z"/>' +
+    '<path class="fleet-boxes" d="M-2 -3.9 h4 v1.9 h-4 Z M-2 -1.4 h4 v1.9 h-4 Z M-2 1.1 h4 v1.9 h-4 Z"/>' +
+    '<path class="fleet-house" d="M-2.1 4.4 h4.2 v2.9 h-4.2 Z"/>';
+
   function drawVessels(seconds) {
     $('[data-fleet-vessels]').innerHTML = state.vessels
       .map((vessel) => {
         const here = positionAt(vessel, seconds);
         const { x, y } = world.project(here.lng, here.lat);
         const on = vessel.id === state.selected;
-        // A hull-shaped marker turned to the vessel's course, so a glance at
-        // the chart says which way everything is heading.
         return `
           <g class="fleet-vessel tone-${esc(vessel.tone)}${on ? ' is-on' : ''}${vessel.inPort ? ' is-berthed' : ''}"
              transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"
@@ -304,7 +317,7 @@
              aria-label="${esc(vessel.name)}, ${esc(vessel.typeLabel)}, ${esc(vessel.status)}">
             ${on ? '<circle class="fleet-halo" r="15" />' : ''}
             <circle class="fleet-hit" r="12" />
-            <path class="fleet-hull" transform="rotate(${here.course})" d="M0 -8 L3.9 2.5 L0 6.5 L-3.9 2.5 Z" />
+            <g transform="rotate(${here.course})">${SHIP}</g>
           </g>`;
       })
       .join('');

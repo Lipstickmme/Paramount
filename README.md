@@ -99,6 +99,43 @@ The product, end to end:
 4. **The desk can keep a note to itself.** An event marked internal is recorded
    for staff, is not published, does not move the consignment, and sends no email.
 
+### Where it is between scans
+
+A tracking event is a fact: somebody or a carrier feed wrote it, with a time and
+a place. Between two of them there is nothing, and on an ocean leg "nothing" can
+last a fortnight — which is exactly the stretch a customer spends wondering
+whether their cargo is moving.
+
+So the tracking result carries a chart: the same coastlines the fleet tracker
+draws, framed on the one route, with the recorded scans on the line and a marker
+that advances while the page is open.
+
+**The route is water.** `src/utils/searoute.js` turns the fleet's own lane
+network — 20 ports and 60 named waypoints from `src/data/fleet.json` — into a
+graph and finds the shortest way through it, so a consignment follows Malacca,
+Suez, Panama and the Cape like the ships do. The great circle from Shanghai to
+Rotterdam crosses Siberia; the routed line comes out at 10,498 nm against a
+published 10,500.
+
+**The position is dead reckoning, and says so.** `src/utils/voyage.js` runs from
+the last recorded fix along that route at the mode's planned speed. It will not
+sail past the destination, and it will not contradict the delivery date the
+customer was given: where an estimated delivery exists the marker is paced to
+arrive on it, because that date is what they were told and the picture has to
+agree with the words. Every real scan replaces the estimate. A consignment with
+no coordinates gets no chart rather than an invented one.
+
+The marker is the mode's own silhouette — a cargo ship in plan view, bow-up, so
+rotating it to the course turns it rather than flipping it over when it heads
+west.
+
+**A Pacific crossing frames on the Pacific.** Cutting the route at the dateline
+draws it correctly and frames it uselessly: Busan to Long Beach came out as the
+whole world with the line pinned to both edges. So the chart unrolls the world
+instead — longitudes run past 180 rather than wrapping, the route stays one
+continuous line, and as many copies of the coastlines are drawn as the frame
+needs.
+
 ### Statuses
 
 `pending` → `picked_up` → `in_transit` → `at_facility` → `out_for_delivery` →
@@ -190,7 +227,8 @@ public/                 static frontend (built pages + assets)
   js/track-view.js      how a consignment is drawn, shared by the console and /portal
   js/track.js           the tracking console and its lookups
   js/portal.js          the customer portal
-  js/fleet-map.js       the chart on the home page
+  js/fleet-map.js       the fleet chart on the home page
+  js/consignment-map.js one consignment on the same chart, moving
   assets/map/world.js   coastlines, generated from Natural Earth data
   assets/img/           the uploaded originals, plus the SVG placeholders
   assets/photo/         web-sized crops, derived from the uploads
@@ -207,6 +245,9 @@ src/
   utils/
     tracking.js         tracking numbers, statuses, modes
     fleet.js            where the fleet is, computed from the clock
+    places.js           the gazetteer, and what a lane implies
+    searoute.js         a way through the sea lanes, rather than over land
+    voyage.js           where one consignment is between scans
     shipmentStore.js    consignments, movements and portal claims
     sessionAuth.js      server-side "who is this?" for staff and customers
     storage.js          enquiries, applications, rate requests
@@ -239,6 +280,8 @@ Public:
 | `GET`  | `/api/services`        | The six services                            |
 | `GET`  | `/api/network`         | Hubs, lanes, headline figures, industries   |
 | `GET`  | `/api/fleet`           | Every vessel, with its position right now   |
+| `GET`  | `/api/places?q=`       | Ports, airports and hubs, for the typeahead |
+| `GET`  | `/api/places/lane`     | What a lane implies: mode, distance, transit   |
 | `GET`  | `/api/fleet/:id`       | One vessel                                  |
 | `GET`  | `/api/careers`         | Open roles                                  |
 | `GET`  | `/api/site`            | Public contact details (`?fresh=1` skips the cache) |
@@ -315,6 +358,34 @@ lookups go through `GET /api/track/:number`, which matches the whole number
 exactly and returns only customer-facing columns. `0003_shipments.sql` also
 installs `track_shipment(text)`, a `security definer` function with the same
 contract, for a client that would rather call Postgres directly.
+
+## Booking a consignment
+
+The desk types two city names and the form derives the rest.
+
+`src/data/places.json` is a gazetteer of 208 ports, airports and inland hubs
+with coordinates, country and LOCODE, served by `GET /api/places`. The origin
+and destination boxes query it as they are typed; picking a row fills the
+country and both coordinates. The movement form uses the same control, which
+matters more than it looks — a movement with coordinates is one the customer can
+see on the chart.
+
+`GET /api/places/lane?from=…&to=…` then answers what the lane implies: the mode
+this traffic usually books, the routed distance, the course, a transit time. A
+strip above the Route section shows it with one button that fills every box
+still blank. It never overwrites a box the desk has already filled, and it never
+saves — everything it writes is a default in a form somebody still has to read.
+
+Two fields make the mode suggestion trustworthy. `landmass` says what a lorry
+can actually reach, so the form stops proposing a drive from Auckland to Sydney.
+`coast` splits North America in two, because Shanghai to Los Angeles and
+Shanghai to New York are the same crossing on a map and three weeks apart in
+practice. Sea distances are factored per basin pair rather than by one number.
+The transits that come out sit within a few days of published figures, and
+`npm test` checks them against those figures rather than against the formula.
+
+An unknown city answers 200 with `lane: null`. The desk typing a place the
+gazetteer does not carry is the form working, not failing.
 
 ## Images
 
