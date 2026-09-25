@@ -1413,6 +1413,43 @@ form { display: grid; gap: 18px; }
 .cm-state.is-fixed { color: var(--go); border-color: color-mix(in srgb, var(--go) 40%, transparent); }
 .cm-state.is-estimated { color: var(--accent-2); border-color: color-mix(in srgb, var(--accent-2) 40%, transparent); }
 .cm-state.is-estimated .dot { animation: pulse 2.4s var(--ease-in-out) infinite; }
+.cm-state.is-held { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+
+/* Why it stopped, above the chart rather than buried in the timeline. This is
+   the line that turns "it has not moved in a week" into an errand. */
+.cm-hold {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px clamp(18px, 2.2vw, 26px);
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--warn) 9%, transparent);
+}
+.cm-hold-mark {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+  color: var(--warn);
+}
+.cm-hold div { display: grid; gap: 3px; }
+.cm-hold strong { font-family: var(--display); }
+.cm-hold span { font-size: 0.9rem; color: var(--ink-2); }
+
+/* The held marker: amber, still, with a bar across the bow. */
+.cm-mark.is-held .cm-hull { fill: var(--warn); }
+.cm-mark.is-held .cm-halo { fill: color-mix(in srgb, var(--warn) 22%, transparent); }
+.cm-paused circle { fill: var(--warn); stroke: var(--panel-solid); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.cm-paused path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
 
 .cm-stage { position: relative; background: var(--bg-2); }
 .cm-chart { display: block; width: 100%; height: clamp(230px, 27vw, 340px); }

@@ -229,6 +229,41 @@ async function until(check, what, timeout = 10000) {
     assert.match(await visitor.textContent('.status-badge'), /In transit/, 'and it does not move the consignment');
     console.log('  ok  an internal note is kept off the public timeline');
 
+    /* ---------------- the desk stops it, and says why ---------------- */
+    await staff.waitForSelector('.admin-hold');
+    // A hold with no reason is refused: a consignment stopped with nothing
+    // against it is the thing this control exists to prevent.
+    await staff.click('.admin-hold-head .btn');
+    await staff.click('.admin-hold-form button[type="submit"]');
+    await staff.waitForFunction(
+      () => /needs a reason/.test(document.querySelector('.admin-hold-form .form-status').textContent)
+    );
+
+    await staff.fill('#hold-location', 'Algeciras');
+    await staff.waitForSelector('.admin-hold .admin-suggest-row', { state: 'visible', timeout: 10000 });
+    await staff.click('.admin-hold .admin-suggest-row');
+    await staff.fill('#hold-reason', 'Held pending a corrected certificate of origin.');
+    await staff.click('.admin-hold-form button[type="submit"]');
+    await staff.waitForSelector('.admin-hold.is-held', { timeout: 15000 });
+
+    await visitor.reload({ waitUntil: 'networkidle' });
+    await visitor.waitForSelector('.cm-hold', { timeout: 15000 });
+    assert.match(await visitor.textContent('.cm-state'), /Held/);
+    assert.match(await visitor.textContent('.cm-hold'), /Algeciras/);
+    assert.match(await visitor.textContent('.cm-hold'), /certificate of origin/);
+    assert.ok(await visitor.$('.cm-mark.is-held'), 'and the marker stops, in its own colour');
+    console.log('  ok  a held consignment shows why, where the customer is looking');
+
+    // Released, it moves again and the notice goes.
+    await staff.click('.admin-hold-head .btn');
+    await staff.fill('#hold-reason', 'Certificate accepted, cargo released.');
+    await staff.click('.admin-hold-form button[type="submit"]');
+    await staff.waitForSelector('.admin-hold:not(.is-held)', { timeout: 15000 });
+    await visitor.reload({ waitUntil: 'networkidle' });
+    await visitor.waitForSelector('.cm-chart', { timeout: 15000 });
+    assert.strictEqual(await visitor.$$eval('.cm-hold', (n) => n.length), 0, 'releasing clears the notice');
+    console.log('  ok  releasing it starts it moving again');
+
     /* ---------------- an unknown number is refused kindly ---------------- */
     await visitor.goto(`${base}/`, { waitUntil: 'networkidle' });
     await visitor.fill('#tracker-number', 'PMT-2026-4F7K2QX9');
@@ -350,14 +385,15 @@ async function until(check, what, timeout = 10000) {
     assert.match(await customer.textContent('.pm-card'), new RegExp(number));
     console.log('  ok  a consignment is added to the account with its tracking number');
 
-    // Opening it shows the same timeline the tracking page renders.
+    // Opening it shows the same timeline the tracking page renders: every
+    // movement recorded above — the booking, the Algeciras scan, the hold and
+    // the release — and not the internal note between them.
     await customer.click('.pm-card');
     await customer.waitForSelector('#portal-detail .timeline li', { timeout: 10000 });
-    assert.strictEqual(
-      await customer.$$eval('#portal-detail .timeline li', (n) => n.length),
-      2,
-      'the public timeline, internal note excluded'
-    );
+    const timeline = await customer.$$eval('#portal-detail .timeline li', (n) => n.map((li) => li.textContent));
+    assert.strictEqual(timeline.length, 4, `the public timeline, internal note excluded: ${JSON.stringify(timeline)}`);
+    assert.ok(!timeline.some((t) => /Margin is thin/.test(t)), 'the internal note is not among them');
+    assert.ok(timeline.some((t) => /certificate of origin/.test(t)), 'but the hold and its reason are');
     assert.ok(
       await customer.isHidden('#portal-list'),
       'the list steps aside while one consignment is open'

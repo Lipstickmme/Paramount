@@ -27,6 +27,10 @@
  *   It never sails over land. Sea legs follow the lane network in searoute.js —
  *   Malacca, Suez, Panama — rather than the great circle, which for Shanghai to
  *   Rotterdam runs across Siberia.
+ *
+ *   It stops when the desk says stop. A consignment on hold does not drift on
+ *   quietly at its planned speed: it sits where it was held, and the reason the
+ *   desk gave travels with the position so the page can say why.
  */
 
 const { distanceNm, interpolate, bearing } = require('./fleet');
@@ -48,6 +52,33 @@ const point = (lat, lng) => {
   const b = num(lng);
   return a == null || b == null || Number.isNaN(a) || Number.isNaN(b) ? null : { lat: a, lng: b };
 };
+
+/**
+ * The hold a consignment is currently under, if it is under one.
+ *
+ * The status says it is stopped; this says where, since when and why. The
+ * reason is the note the desk wrote when it recorded the hold, which is the
+ * whole point — a consignment that has not moved for a week is not frightening
+ * if the page can say it is waiting on a customs document.
+ *
+ * Internal events are already filtered out before this sees them, so a hold the
+ * desk kept to itself has no reason attached rather than leaking one.
+ */
+function holdOf(shipment, events) {
+  if (!shipment || shipment.status !== 'on_hold') return null;
+  const held = (events || [])
+    .filter((e) => e.status === 'on_hold' && e.occurred_at)
+    .sort((a, b) => String(a.occurred_at).localeCompare(String(b.occurred_at)))
+    .pop();
+  if (!held) return null;
+  return {
+    location: held.location || null,
+    reason: held.note || null,
+    since: new Date(held.occurred_at).toISOString(),
+    lat: num(held.lat),
+    lng: num(held.lng),
+  };
+}
 
 /** The most recent event that actually carries a position. */
 function lastFix(events) {
@@ -93,10 +124,13 @@ function position(shipment, events, now = Date.now()) {
     location: [shipment.origin_city, shipment.origin_country].filter(Boolean).join(', ') || null,
   };
 
+  const hold = holdOf(shipment, events);
+
   const base = {
     origin,
     destination,
     mode,
+    hold,
     total_nm: Math.round(totalNm),
     speed_kn: speedKn,
     course: Math.round(bearing(origin, destination)),
@@ -119,7 +153,11 @@ function position(shipment, events, now = Date.now()) {
     };
   }
   if (stopped || notStarted) {
-    const here = notStarted ? origin : { lat: anchor.lat, lng: anchor.lng };
+    // A hold recorded with coordinates outranks the last scan: the desk can
+    // stop a consignment somewhere it was never scanned — off a berth, at a
+    // border post — and that is where it should show.
+    const heldAt = hold && hold.lat != null && hold.lng != null ? { lat: hold.lat, lng: hold.lng } : null;
+    const here = notStarted ? origin : heldAt || { lat: anchor.lat, lng: anchor.lng };
     const held = mode === 'ocean_freight' ? searoute.route(origin, destination) : [origin, destination];
     const heldMarks = measure(held);
     const total = heldMarks[heldMarks.length - 1];
@@ -130,7 +168,7 @@ function position(shipment, events, now = Date.now()) {
       route: held.map(({ lat, lng, name }) => (name ? { lat, lng, name } : { lat, lng })),
       route_nm: Math.round(total),
       moving: false,
-      source: notStarted ? 'origin' : 'held',
+      source: notStarted ? 'origin' : hold ? 'held' : 'stopped',
       progress: total < 0.5 ? 1 : done / total,
       remaining_nm: Math.round(total - done),
     };

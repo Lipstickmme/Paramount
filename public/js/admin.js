@@ -1233,6 +1233,153 @@
     return form;
   }
 
+  /* ------------------------------------------------------ stop and start --- */
+
+  /**
+   * Hold a consignment where it is, or anywhere else, and say why.
+   *
+   * A hold is an ordinary movement — status on_hold, a place, a note — and the
+   * form below can already record one. This exists because a hold is the one
+   * movement that is always urgent and always needs explaining, and asking
+   * somebody to find the right row in a ten-item dropdown while a customer is
+   * on the phone is how consignments end up stopped with no reason attached.
+   *
+   * So: one button, a place, and a reason that is not optional. The reason is
+   * published — it is the sentence the customer reads on the tracking page
+   * instead of watching a marker sit still for a week — and the control says
+   * so, because a note written in the belief it is internal is worse than no
+   * note at all.
+   */
+  function holdControl(shipment) {
+    const onHold = shipment.status === 'on_hold';
+    const wrap = el('section', `admin-hold${onHold ? ' is-held' : ''}`);
+
+    const head = el('div', 'admin-hold-head');
+    const title = el('div', 'admin-hold-title');
+    title.appendChild(el('h4', null, onHold ? 'This consignment is held' : 'Hold this consignment'));
+    title.appendChild(el('p', 'admin-hold-sub', onHold
+      ? 'It has stopped on the customer\u2019s map. Releasing it starts it moving again from wherever you say it is.'
+      : 'It stops on the customer\u2019s map at the place you give, with your reason under it.'));
+    head.appendChild(title);
+
+    const toggle = el('button', `btn sm${onHold ? '' : ' navy'}`, onHold ? 'Release' : 'Hold');
+    toggle.type = 'button';
+    head.appendChild(toggle);
+    wrap.appendChild(head);
+
+    const form = el('form', 'admin-hold-form');
+    // Our own validation, not the browser's: the message for a missing reason
+    // is the point of this control, and a native bubble cannot say it.
+    form.noValidate = true;
+    form.hidden = true;
+
+    const where = el('div', 'field field-place');
+    const whereLabel = el('label', null, 'Where');
+    whereLabel.htmlFor = 'hold-location';
+    const location = document.createElement('input');
+    location.type = 'text';
+    location.id = 'hold-location';
+    location.name = 'location';
+    location.autocomplete = 'off';
+    location.spellcheck = false;
+    location.placeholder = 'City or LOCODE';
+    location.value = shipment.current_location || '';
+    where.appendChild(whereLabel);
+    where.appendChild(location);
+    where.appendChild(placeSuggest(location, 'hold'));
+    form.appendChild(where);
+
+    const lat = document.createElement('input');
+    lat.type = 'hidden';
+    lat.name = 'lat';
+    const lng = document.createElement('input');
+    lng.type = 'hidden';
+    lng.name = 'lng';
+    form.appendChild(lat);
+    form.appendChild(lng);
+    location.addEventListener('place:picked', (event) => {
+      const place = event.detail;
+      location.value = `${place.name}, ${place.country}`;
+      lat.value = place.lat;
+      lng.value = place.lng;
+    });
+
+    const reasonField = el('div', 'field');
+    const reasonLabel = el('label', null, onHold ? 'What changed *' : 'Why *');
+    reasonLabel.htmlFor = 'hold-reason';
+    const reason = el('textarea');
+    reason.id = 'hold-reason';
+    reason.name = 'note';
+    reason.rows = 2;
+    reason.placeholder = onHold
+      ? 'Certificate accepted, cargo released to the terminal.'
+      : 'Waiting on a corrected certificate of origin.';
+    reasonField.appendChild(reasonLabel);
+    reasonField.appendChild(reason);
+    form.appendChild(reasonField);
+
+    form.appendChild(el('p', 'admin-hold-warn', 'The customer sees this sentence on the tracking page. Write it for them.'));
+
+    const status = el('div', 'form-status');
+    const send = el('button', 'btn sm', onHold ? 'Release the consignment' : 'Hold it here');
+    send.type = 'submit';
+    const row = el('div', 'admin-form-actions');
+    row.appendChild(send);
+    form.appendChild(status);
+    form.appendChild(row);
+    wrap.appendChild(form);
+
+    toggle.addEventListener('click', () => {
+      form.hidden = !form.hidden;
+      toggle.textContent = form.hidden ? (onHold ? 'Release' : 'Hold') : 'Cancel';
+      if (!form.hidden) reason.focus();
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const note = reason.value.trim();
+      if (!note) {
+        status.className = 'form-status bad';
+        status.textContent = onHold
+          ? 'Say what changed. The customer is watching this consignment.'
+          : 'A hold needs a reason. The customer is watching this consignment.';
+        reason.focus();
+        return;
+      }
+
+      send.disabled = true;
+      status.className = 'form-status';
+      status.textContent = onHold ? 'Releasing\u2026' : 'Holding\u2026';
+      try {
+        // Releasing puts it back in transit; the desk corrects the stage from
+        // the movement form below if it is somewhere more specific.
+        const data = await api('POST', `/api/shipments/${shipment.id}/events`, {
+          status: onHold ? 'in_transit' : 'on_hold',
+          location: location.value.trim() || null,
+          lat: lat.value === '' ? null : Number(lat.value),
+          lng: lng.value === '' ? null : Number(lng.value),
+          note,
+        });
+        state.shipments = state.shipments.map((r) => (r.id === shipment.id ? data.shipment : r));
+        state.flash = {
+          tone: 'ok',
+          text: onHold
+            ? `${shipment.tracking_number} released. It is moving again on the customer\u2019s map.`
+            : `${shipment.tracking_number} held. The reason is on the tracking page now.`,
+        };
+        await refreshShipmentDetail();
+        render();
+      } catch (err) {
+        status.className = 'form-status bad';
+        status.textContent = err.message;
+      } finally {
+        send.disabled = false;
+      }
+    });
+
+    return wrap;
+  }
+
   /** The movement form: the only way a consignment's status changes. */
   function movementForm(shipment) {
     const form = el('form', 'admin-move-form');
@@ -1245,10 +1392,25 @@
       option.value = value;
       select.appendChild(option);
     });
-    // Default to the next stage rather than the one it is already in, since
-    // recording a movement usually means it has moved on.
-    const index = SHIPMENT_STATUSES.findIndex(([id]) => id === shipment.status);
-    select.value = SHIPMENT_STATUSES[Math.min(index + 1, 6)] ? SHIPMENT_STATUSES[Math.min(index + 1, 6)][0] : shipment.status;
+    /*
+     * Default to the next stage, since recording a movement usually means it
+     * has moved on — but only along the linear path.
+     *
+     * The first seven statuses are that path; on_hold, exception and cancelled
+     * sit off it. Indexing into the whole list put a held consignment's index
+     * at 7, clamped it to 6, and pre-selected **Delivered** — one careless
+     * click away from marking stuck cargo delivered. A consignment that is
+     * held or in exception is proposed back into transit; a cancelled one is
+     * not proposed anywhere.
+     */
+    const PATH = SHIPMENT_STATUSES.slice(0, 7).map(([id]) => id);
+    const step = PATH.indexOf(shipment.status);
+    select.value =
+      step >= 0
+        ? PATH[Math.min(step + 1, PATH.length - 1)]
+        : shipment.status === 'cancelled'
+          ? 'cancelled'
+          : 'in_transit';
     select.name = 'status';
 
     const location = document.createElement('input');
@@ -1511,6 +1673,7 @@
     actions.appendChild(remove);
     detail.appendChild(actions);
 
+    detail.appendChild(holdControl(shipment));
     detail.appendChild(movementForm(shipment));
 
     /* -- the file, and the history ---------------------------------------- */

@@ -148,6 +148,35 @@
   }
 
   /**
+   * Why a consignment has stopped, said where somebody looking for it will
+   * read it: above the chart, not buried in the timeline.
+   *
+   * A consignment that has not moved for a week is frightening. The same
+   * consignment with "waiting on a corrected certificate of origin, since
+   * Tuesday" against it is an errand. This is the difference between the two,
+   * and it is the reason the desk is made to give a reason.
+   */
+  function holdNotice(hold) {
+    if (!hold) return '';
+    const where = hold.location ? ` at <strong>${esc(hold.location)}</strong>` : '';
+    const since = hold.since ? ` since ${when(hold.since)}` : '';
+    return `
+        <div class="cm-hold">
+          <span class="cm-hold-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+              <circle cx="12" cy="12" r="9"/><path d="M9.5 9v6M14.5 9v6"/>
+            </svg>
+          </span>
+          <div>
+            <strong>Held${where}${since}.</strong>
+            ${hold.reason
+              ? `<span>${esc(hold.reason)}</span>`
+              : '<span class="muted">The desk has not published a reason yet. Quote the tracking number and someone will tell you.</span>'}
+          </div>
+        </div>`;
+  }
+
+  /**
    * The chart, and the readout beside it.
    *
    * The drawing is done by consignment-map.js against the real coastlines; this
@@ -161,11 +190,18 @@
     if (!p || !Array.isArray(p.route) || p.route.length < 2) return '';
 
     const estimated = p.source === 'estimated';
+    const held = p.source === 'held';
     const basis = !estimated
       ? ''
       : p.basis === 'eta'
         ? 'Estimated between scans, paced to the delivery date.'
         : `Estimated between scans at the planned ${p.speed_kn} kn.`;
+
+    const state = held
+      ? { className: 'is-held', label: 'Held' }
+      : estimated
+        ? { className: 'is-estimated', label: 'Estimated position' }
+        : { className: 'is-fixed', label: 'Last recorded position' };
 
     return `
       <section class="cm card" data-reveal>
@@ -174,10 +210,12 @@
             <span class="eyebrow">Where it is</span>
             <h3>${esc(s.origin_city || 'Origin')} &rarr; ${esc(s.destination_city || 'Destination')}</h3>
           </div>
-          <span class="cm-state ${estimated ? 'is-estimated' : 'is-fixed'}">
-            <span class="dot"></span>${estimated ? 'Estimated position' : 'Last recorded position'}
+          <span class="cm-state ${state.className}">
+            <span class="dot"></span>${state.label}
           </span>
         </header>
+
+        ${held ? holdNotice(p.hold) : ''}
 
         <div class="cm-stage" data-consignment-map></div>
 
@@ -190,6 +228,7 @@
         </div>
 
         ${basis ? `<p class="cm-note">${esc(basis)} Every dot on the line is a movement somebody recorded; the marker between them is our reckoning, and the next scan replaces it.</p>` : ''}
+        ${held ? '<p class="cm-note">The marker is where it stopped, not where it would have been. It will not move again until the desk releases it, and you will see the release here.</p>' : ''}
       </section>`;
   }
 

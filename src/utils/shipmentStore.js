@@ -575,11 +575,19 @@ function toPublic(shipment, events = []) {
     })
     .sort((a, b) => String(b.occurred_at).localeCompare(String(a.occurred_at)));
 
-  // Where it is now, and the water it is following to get there. Computed, not
-  // recorded — see src/utils/voyage.js for what that means and what it refuses
-  // to do. Null when there is not enough to say, which the page treats as "no
-  // chart" rather than as a chart with a guess on it.
-  out.position = voyage.position(shipment, events || []);
+  /*
+   * Where it is now, and the water it is following to get there. Computed, not
+   * recorded — see src/utils/voyage.js for what that means and what it refuses
+   * to do. Null when there is not enough to say, which the page treats as "no
+   * chart" rather than as a chart with a guess on it.
+   *
+   * Fed the *published* events, not the raw ones. Passing the raw list leaked
+   * an internal hold's note into position.hold.reason, and would also have let
+   * an internal scan move the public marker to a place the customer was never
+   * told about. Deriving the position only from what they can already see makes
+   * both impossible rather than merely unlikely.
+   */
+  out.position = voyage.position(shipment, out.events);
 
   return out;
 }

@@ -254,9 +254,15 @@
               <text x="${x.toFixed(1)}" y="${(y - 9).toFixed(1)}" text-anchor="middle">${esc(label || '')}</text>
             </g>`;
         }).join('')}
-        <g class="cm-mark${position.moving ? ' is-moving' : ''}" data-cm-mark>
+        <g class="cm-mark${position.moving ? ' is-moving' : ''}${position.source === 'held' ? ' is-held' : ''}" data-cm-mark>
           <circle class="cm-halo" r="13" />
           <g data-cm-glyph>${glyph(position.mode)}</g>
+          ${position.source === 'held'
+            ? // Outside the rotating group on purpose: a pause mark that tilts
+              // with the course reads as part of the ship rather than as a
+              // state. Colour alone would not carry this either.
+              '<g class="cm-paused" transform="translate(11 -11)"><circle r="6.5" /><path d="M-2 -2.2 v4.4 M2 -2.2 v4.4" /></g>'
+            : ''}
         </g>
       </svg>`;
 
