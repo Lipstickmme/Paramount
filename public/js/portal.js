@@ -39,6 +39,24 @@
     document.body.classList.toggle('pm-open', name === 'shell');
   }
 
+  /**
+   * POST to our own API, with no session attached.
+   *
+   * Registration and reset are how somebody gets a session, so there is none to
+   * send. Errors come back in the shape the site's other forms use — a message
+   * for the person, and `fields` when a particular box is wrong.
+   */
+  async function post(path, payload) {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.message || `That did not go through (${res.status}).`);
+    return body;
+  }
+
   const state = {
     account: null,
     shipments: [],
@@ -131,24 +149,25 @@
 
     try {
       if (state.mode === 'signin') {
+        // Straight to GoTrue: signing in sends no mail, and a password that
+        // does not have to pass through our server should not.
         await client.auth.signInWithPassword(email, password);
         await enter();
       } else if (state.mode === 'signup') {
-        const result = await client.auth.signUp(email, password);
-        // Supabase returns a session straight away only when the project is
-        // not confirming addresses. With confirmation on — which is what makes
-        // matching by address safe — there is nothing to sign in to yet.
-        if (result && result.access_token) {
-          await enter();
-        } else {
-          state.mode = 'signin';
-          renderAuth();
-          $('portal-email').value = email;
-          authMessage(`Account created. Check ${email} for the confirmation link, then sign in.`, 'ok');
-        }
+        // Through our server, so the confirmation email is ours rather than
+        // Supabase's — same token and expiry, our envelope. See
+        // src/utils/authMail.js.
+        const body = await post('/api/portal/register', { email, password });
+        state.mode = 'signin';
+        renderAuth();
+        $('portal-email').value = email;
+        authMessage(body.message, 'ok');
       } else {
-        await client.auth.resetPassword(email, `${window.location.origin}/portal`);
-        authMessage(`If ${email} has an account, a reset link is on its way.`, 'ok');
+        const body = await post('/api/portal/reset', { email });
+        state.mode = 'signin';
+        renderAuth();
+        $('portal-email').value = email;
+        authMessage(body.message, 'ok');
       }
     } catch (err) {
       error.textContent = err.message;

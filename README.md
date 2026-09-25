@@ -136,6 +136,28 @@ instead — longitudes run past 180 rather than wrapping, the route stays one
 continuous line, and as many copies of the coastlines are drawn as the frame
 needs.
 
+### Stopping one, and saying why
+
+The desk can hold a consignment anywhere — a berth, a canal, a border post —
+and the reason it gives is published. A held consignment stops on the chart in
+its own colour with a pause mark beside it, and the sentence the desk wrote sits
+above the map:
+
+> **Held at Suez, Egypt since 25 September.** Waiting on a corrected certificate
+> of origin from the shipper.
+
+That sentence is the whole point of the feature. A consignment that has not
+moved for a week is frightening; the same consignment with a reason against it
+is an errand. So the control will not accept a hold without one, and it says on
+the form that the customer will read what you type.
+
+A hold is an ordinary movement — `on_hold`, a place, a note — so it appends to
+the timeline like everything else and nothing is overwritten. Releasing it is
+another movement, and the marker starts moving again from wherever the desk
+says it is. A hold marked internal stops the consignment without publishing a
+reason: the position is derived only from published events, so an internal note
+can never reach the page, and neither can an internal scan's coordinates.
+
 ### Statuses
 
 `pending` → `picked_up` → `in_transit` → `at_facility` → `out_for_delivery` →
@@ -178,6 +200,40 @@ as `/track`, so it cannot show a field the tracking page would not.
 
 Accounts are ordinary Supabase users. Being on the `admins` table is unrelated:
 staff use `/admin`, customers use `/portal`, and neither grants the other.
+
+### Who sends the account emails
+
+Sign-up confirmation and password reset go out through **Resend**, not through
+Supabase's built-in mailer. Supabase's is shared, rate-limited to a handful of
+messages an hour, and sends from an address with nothing to do with this
+company — a customer's first email from a shipping line should not be the one
+piece of it that looks like somebody else's.
+
+So `POST /api/portal/register` and `POST /api/portal/reset` ask Supabase's admin
+API to *mint* the link without sending anything
+(`/auth/v1/admin/generate_link`), and then send it themselves in a branded
+message. Supabase still owns the token, the expiry and the verification; only
+the envelope changes. Signing in is untouched and still goes straight from the
+page to GoTrue — it sends no mail, so there is nothing to intercept, and a
+password that does not have to cross this server should not.
+
+Both endpoints answer the same thing whatever happened. "If that address can
+receive mail, a link is on its way" is true whether or not an account exists,
+which is what stops the endpoint being a way of asking who banks with us. An
+address that is already registered is not told so in the response — it gets a
+private email saying somebody tried, with a reset link. Both carry a tight rate
+limit, because each accepted request puts a message in somebody's inbox.
+
+**What to set on the Supabase side.** In Authentication → URL Configuration, add
+your `PUBLIC_SITE_URL` + `/portal` to the redirect allow-list, or the link opens
+on an error page. Nothing else is required: with these routes in place Supabase
+never sends, so its templates and its SMTP settings stop mattering.
+
+If you would rather keep Supabase sending and simply improve the delivery, the
+alternative is to point its SMTP at Resend (Authentication → Emails → SMTP:
+`smtp.resend.com`, port 587, user `resend`, password your API key). That fixes
+deliverability and the sender, but leaves Supabase's templates; these routes
+exist because the mail should look like the rest of the site.
 
 ## The operations desk (`/admin`)
 
@@ -245,6 +301,7 @@ src/
   utils/
     tracking.js         tracking numbers, statuses, modes
     fleet.js            where the fleet is, computed from the clock
+    authMail.js         portal sign-up and reset mail, ours not Supabase's
     places.js           the gazetteer, and what a lane implies
     searoute.js         a way through the sea lanes, rather than over land
     voyage.js           where one consignment is between scans
@@ -281,7 +338,9 @@ Public:
 | `GET`  | `/api/network`         | Hubs, lanes, headline figures, industries   |
 | `GET`  | `/api/fleet`           | Every vessel, with its position right now   |
 | `GET`  | `/api/places?q=`       | Ports, airports and hubs, for the typeahead |
-| `GET`  | `/api/places/lane`     | What a lane implies: mode, distance, transit   |
+| `GET`  | `/api/places/lane`     | What a lane implies: mode, distance, transit |
+| `POST` | `/api/portal/register` | Create an account, and mail the confirmation |
+| `POST` | `/api/portal/reset`    | Mail a password-reset link   |
 | `GET`  | `/api/fleet/:id`       | One vessel                                  |
 | `GET`  | `/api/careers`         | Open roles                                  |
 | `GET`  | `/api/site`            | Public contact details (`?fresh=1` skips the cache) |

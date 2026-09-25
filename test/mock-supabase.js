@@ -258,6 +258,48 @@ function start({ tables, port = 0, drop = [] }) {
       return json(res, 200, { user });
     }
 
+    /*
+     * The admin API mints an action link and sends nothing, which is how the
+     * site takes the confirmation and reset emails away from Supabase and puts
+     * them through Resend. The link here is a stand-in with the right shape:
+     * the real one carries a GoTrue token this mock has no way to honour.
+     */
+    if (url.pathname === '/auth/v1/admin/generate_link') {
+      if (identify(req).role !== 'service_role') {
+        return fail(res, 401, 'unauthorized', 'generate_link needs the service role key');
+      }
+      const email = String(body.email || '').toLowerCase();
+      const type = body.type;
+      const existing = users.get(email);
+
+      if (type === 'signup') {
+        if (existing) return fail(res, 422, 'email_exists', 'User already registered');
+        const user = { id: uuid(), email, is_anonymous: false, email_confirmed_at: null };
+        users.set(email, { ...user, password: body.password });
+        server.generatedLinks.push({ type, email });
+        return json(res, 200, {
+          user,
+          properties: {
+            action_link: `${server.origin}/auth/v1/verify?token=${uuid()}&type=signup&redirect_to=${encodeURIComponent(body.redirect_to || '')}`,
+            hashed_token: uuid(),
+          },
+        });
+      }
+
+      if (type === 'recovery' || type === 'magiclink') {
+        if (!existing) return fail(res, 422, 'user_not_found', 'User not found');
+        server.generatedLinks.push({ type, email });
+        return json(res, 200, {
+          user: { id: existing.id, email: existing.email },
+          properties: {
+            action_link: `${server.origin}/auth/v1/verify?token=${uuid()}&type=${type}&redirect_to=${encodeURIComponent(body.redirect_to || '')}`,
+          },
+        });
+      }
+
+      return fail(res, 422, 'unsupported_type', `generate_link type ${type} is not mocked`);
+    }
+
     if (url.pathname === '/auth/v1/token') {
       if (url.searchParams.get('grant_type') === 'password') {
         const found = users.get(body.email);
@@ -483,6 +525,8 @@ function start({ tables, port = 0, drop = [] }) {
   server.anonymousEnabled = true;
   server.db = db;
   server.users = users;
+  /** What generate_link was asked for, so a test can prove Supabase sent none. */
+  server.generatedLinks = [];
   /**
    * The dashboard's "Add user" with Auto Confirm User ticked, which is how
    * staff accounts are made. Pass `confirmed: false` for an account whose
@@ -501,7 +545,10 @@ function start({ tables, port = 0, drop = [] }) {
   };
 
   return new Promise((resolve) => {
-    server.listen(port, '127.0.0.1', () => resolve(server));
+    server.listen(port, '127.0.0.1', () => {
+      server.origin = `http://127.0.0.1:${server.address().port}`;
+      resolve(server);
+    });
   });
 }
 

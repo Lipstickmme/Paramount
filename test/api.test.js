@@ -1247,6 +1247,147 @@ async function withApp(env, fn) {
     console.log('  ok  a consignment is placed on real water and moves with the clock');
   }
 
+  /* ---- a consignment held, and why ---- */
+  {
+    const voyage = require(ROOT + '/src/utils/voyage');
+    const now = Date.parse('2026-06-01T00:00:00Z');
+    const box = {
+      mode: 'ocean_freight', status: 'in_transit',
+      origin_lat: 31.2304, origin_lng: 121.4737,
+      destination_lat: 51.9244, destination_lng: 4.4777,
+      departed_at: new Date(now - 12 * 86400000).toISOString(),
+      estimated_delivery: new Date(now + 18 * 86400000).toISOString(),
+    };
+    const sailed = {
+      status: 'picked_up', occurred_at: new Date(now - 12 * 86400000).toISOString(),
+      lat: 31.23, lng: 121.47, location: 'Shanghai, China',
+    };
+    const stoppedAtSuez = {
+      status: 'on_hold', occurred_at: new Date(now - 2 * 86400000).toISOString(),
+      lat: 29.97, lng: 32.55, location: 'Suez, Egypt',
+      note: 'Waiting on a corrected certificate of origin.',
+    };
+
+    const moving = voyage.position(box, [sailed], now);
+    assert.strictEqual(moving.hold, null, 'a consignment under way is not held');
+    assert.strictEqual(moving.moving, true);
+
+    const held = voyage.position({ ...box, status: 'on_hold' }, [sailed, stoppedAtSuez], now);
+    assert.strictEqual(held.moving, false, 'a held consignment stops');
+    assert.strictEqual(held.source, 'held');
+    // It sits where the desk stopped it, not where the clock would have put it.
+    assert.ok(Math.abs(held.lat - 29.97) < 0.2 && Math.abs(held.lng - 32.55) < 0.2,
+      `held at the hold's own coordinates, got ${held.lat},${held.lng}`);
+    assert.strictEqual(held.hold.location, 'Suez, Egypt');
+    assert.match(held.hold.reason, /certificate of origin/);
+    assert.ok(held.hold.since, 'and says since when');
+
+    // The reason is the desk's published note. An internal one never gets here,
+    // because toPublic filters internal events before voyage sees them.
+    const secret = { ...stoppedAtSuez, note: 'Customer has not paid.', internal: true };
+    const publicView = require(ROOT + '/src/utils/shipmentStore').toPublic(
+      { ...box, status: 'on_hold', tracking_number: 'PMT-2026-TESTTEST' },
+      [sailed, secret]
+    );
+    assert.ok(!JSON.stringify(publicView).includes('has not paid'), 'an internal hold note is never published');
+
+    // Released, it moves again and the hold is gone.
+    const released = voyage.position(
+      { ...box, status: 'in_transit' },
+      [sailed, stoppedAtSuez, { status: 'in_transit', occurred_at: new Date(now - 86400000).toISOString(), lat: 29.97, lng: 32.55, location: 'Suez, Egypt', note: 'Released.' }],
+      now
+    );
+    assert.strictEqual(released.hold, null, 'releasing clears the hold');
+    assert.strictEqual(released.moving, true, 'and it sails on');
+    console.log('  ok  a held consignment stops where it was stopped, and says why');
+  }
+
+  /* ---- portal auth mail goes out through Resend, not Supabase ---- */
+  {
+    const sb = await mock.start({});
+    const sbUrl = `http://127.0.0.1:${sb.address().port}`;
+    sb.createUser('already@example.com', 'has-an-account');
+
+    const realFetch = global.fetch;
+    const posted = [];
+    global.fetch = async (url, init) => {
+      if (String(url).startsWith('https://api.resend.com/')) {
+        posted.push(JSON.parse(init.body));
+        return new Response(JSON.stringify({ id: 'resend-auth' }), {
+          status: 200, headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return realFetch(url, init);
+    };
+
+    try {
+      await withApp(
+        {
+          SUPABASE_URL: sbUrl, SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY, SUPABASE_ANON_KEY: mock.ANON_KEY,
+          RESEND_API_KEY: 'test-key', FORM_FROM: 'Paramount Shipping <hello@paramountshipping.com>',
+          PUBLIC_SITE_URL: 'https://paramountshipping.com',
+        },
+        async (base) => {
+          const made = await req(base, 'POST', '/api/portal/register', {
+            email: 'New.Customer@Example.com', password: 'a-long-enough-one',
+          });
+          assert.strictEqual(made.status, 202, JSON.stringify(made.body));
+          assert.strictEqual(posted.length, 1, 'one email, sent by us');
+
+          const mail = posted[0];
+          assert.deepStrictEqual(mail.to, ['new.customer@example.com'], 'the address is normalised');
+          assert.strictEqual(mail.from, 'Paramount Shipping <hello@paramountshipping.com>', 'from our domain');
+          assert.match(mail.subject, /Confirm/);
+          assert.match(mail.html, /Paramount Shipping/);
+          assert.match(mail.html, /auth\/v1\/verify\?token=/, 'carrying the link Supabase minted');
+          assert.match(mail.html, /redirect_to=https%3A%2F%2Fparamountshipping\.com%2Fportal/, 'that comes back to the portal');
+          assert.match(mail.text, /auth\/v1\/verify/, 'and a text part for clients that want one');
+
+          // Supabase was asked to mint, never to send.
+          assert.deepStrictEqual(sb.generatedLinks, [{ type: 'signup', email: 'new.customer@example.com' }]);
+
+          // An address that already has an account is not reported as such.
+          posted.length = 0;
+          const again = await req(base, 'POST', '/api/portal/register', {
+            email: 'already@example.com', password: 'a-long-enough-one',
+          });
+          assert.strictEqual(again.status, 202);
+          assert.strictEqual(again.body.message, made.body.message.replace('New.Customer@Example.com'.toLowerCase(), 'already@example.com'),
+            'the same answer, whether or not the address is taken');
+          assert.strictEqual(posted.length, 1, 'and it gets told, privately');
+          assert.match(posted[0].subject, /Your Paramount Shipping account/);
+          assert.ok(!/already registered/i.test(JSON.stringify(again.body)), 'nothing leaks into the response');
+
+          // Reset: the same answer for an address with no account, and no mail.
+          posted.length = 0;
+          const unknown = await req(base, 'POST', '/api/portal/reset', { email: 'nobody@example.com' });
+          assert.strictEqual(unknown.status, 202);
+          assert.strictEqual(posted.length, 0, 'an unknown address is sent nothing');
+          const known = await req(base, 'POST', '/api/portal/reset', { email: 'already@example.com' });
+          assert.strictEqual(known.status, 202);
+          assert.strictEqual(posted.length, 1);
+          assert.match(posted[0].subject, /Set a new password/);
+          assert.strictEqual(
+            unknown.body.message.replace('nobody@example.com', 'x'),
+            known.body.message.replace('already@example.com', 'x'),
+            'and reads exactly like one that was'
+          );
+
+          // The obvious rubbish is refused before any of that.
+          const bad = await req(base, 'POST', '/api/portal/register', { email: 'not-an-address', password: 'a-long-enough-one' });
+          assert.strictEqual(bad.status, 422);
+          const weak = await req(base, 'POST', '/api/portal/register', { email: 'x@example.com', password: 'short' });
+          assert.strictEqual(weak.status, 422);
+          assert.match(weak.body.fields.password, /8/);
+          console.log('  ok  the portal\u2019s own mail goes out through Resend, and tells nobody who has an account');
+        }
+      );
+    } finally {
+      global.fetch = realFetch;
+      sb.close();
+    }
+  }
+
   /* ---- tracking numbers ---- */
   {
     const tracking = require(ROOT + '/src/utils/tracking');

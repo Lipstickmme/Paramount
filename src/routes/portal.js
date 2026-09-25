@@ -7,6 +7,13 @@
 
 const router = require('express').Router();
 const portal = require('../controllers/portalController');
+const auth = require('../controllers/portalAuthController');
+const { authLimiter } = require('../middleware/rateLimiter');
+
+// Registering and resetting send an email each, so they carry their own tight
+// limit. They take no session — they are how somebody gets one.
+router.post('/register', authLimiter, auth.register);
+router.post('/reset', authLimiter, auth.reset);
 
 router.get('/shipments', portal.list);
 router.get('/shipments/:number', portal.get);

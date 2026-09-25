@@ -161,28 +161,17 @@
           return adopt(await auth('token?grant_type=password', { email, password }));
         },
 
-        /**
-         * Customers, registering themselves.
+        /*
+         * Registering and resetting used to live here, calling GoTrue's
+         * /signup and /recover straight from the page — which meant Supabase
+         * sent those two emails. They now go through POST /api/portal/register
+         * and /api/portal/reset so the mail is ours: same token, same expiry,
+         * our envelope and our sending domain. See src/utils/authMail.js.
          *
-         * Returns a session only when the project is not confirming addresses.
-         * With confirmation on — which is what makes the portal's matching by
-         * address safe — there is nothing to sign in to until the link in the
-         * email is followed, and the caller has to say so rather than assuming
-         * it worked silently.
+         * Signing in stays here. It sends no mail, so there is nothing to
+         * intercept, and a password that does not have to cross our server
+         * should not.
          */
-        async signUp(email, password) {
-          const data = await auth('signup', { email, password });
-          return adopt(data) || data;
-        },
-
-        /** Sends the "set a new password" email. */
-        async resetPassword(email, redirectTo) {
-          const path = redirectTo
-            ? `recover?redirect_to=${encodeURIComponent(redirectTo)}`
-            : 'recover';
-          await auth(path, { email });
-          return true;
-        },
 
         async signOut() {
           const token = session && session.access_token;

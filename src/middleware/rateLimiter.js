@@ -11,6 +11,9 @@
  *     it — a limit that stops staff working is not a security control.
  *   - Public tracking, against someone walking the tracking-number space. A
  *     person types one number at a time; nothing legitimate needs a burst.
+ *   - Portal sign-up and password reset, against somebody using our Resend
+ *     account to post mail to addresses that never asked for it. Each one of
+ *     these sends an email, so the ceiling is low on purpose.
  *
  * Suitable for a single instance; swap for a Redis-backed limiter when this is
  * horizontally scaled, since each instance counts only what it sees.
@@ -19,6 +22,7 @@
 const WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS) || 60_000;
 const MAX = Number(process.env.RATE_LIMIT_MAX) || 240;
 const TRACK_MAX = Number(process.env.RATE_LIMIT_TRACK_MAX) || 30;
+const AUTH_MAX = Number(process.env.RATE_LIMIT_AUTH_MAX) || 6;
 
 /**
  * @param {{max?: number, windowMs?: number, message?: string}} options
@@ -72,7 +76,19 @@ const trackLimiter = createRateLimiter({
   message: 'Too many tracking lookups from this address. Wait a minute and try again.',
 });
 
+/*
+ * Sign-up and reset. Every accepted request puts a message in somebody's
+ * inbox, so this is the one bucket where a legitimate person hitting the limit
+ * is acceptable: six in a minute is five more than anyone needs, and it is the
+ * difference between our sending domain being trusted and being a relay.
+ */
+const authLimiter = createRateLimiter({
+  max: AUTH_MAX,
+  message: 'Too many attempts. Wait a minute and try again.',
+});
+
 module.exports = apiLimiter;
 module.exports.createRateLimiter = createRateLimiter;
 module.exports.apiLimiter = apiLimiter;
 module.exports.trackLimiter = trackLimiter;
+module.exports.authLimiter = authLimiter;
