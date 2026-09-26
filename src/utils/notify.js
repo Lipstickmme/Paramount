@@ -105,11 +105,16 @@ async function send(opts) {
     const text = await res.text().catch(() => '');
     if (!res.ok) {
       console.warn('[paramount] notify email failed:', res.status, text);
-      return { ok: false, error: `resend_${res.status}` };
+      // Resend says why in the body — an unverified domain, a bad key, the
+      // shared test sender — and that sentence is what fixes it, so it is
+      // handed back rather than only logged.
+      let detail = '';
+      try { detail = JSON.parse(text).message || ''; } catch (e) { detail = text.slice(0, 300); }
+      return { ok: false, error: `resend_${res.status}`, status: res.status, detail, from: payload.from, to: payload.to };
     }
     let id;
     try { id = JSON.parse(text).id; } catch (e) { /* id is a bonus, not a requirement */ }
-    return { ok: true, id };
+    return { ok: true, id, from: payload.from, to: payload.to };
   } catch (err) {
     console.warn('[paramount] notify email error:', err.message);
     return { ok: false, error: err.message };

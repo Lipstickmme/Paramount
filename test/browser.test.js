@@ -61,6 +61,8 @@ async function until(check, what, timeout = 10000) {
   process.env.SUPABASE_ANON_KEY = mock.ANON_KEY;
   process.env.SUPABASE_SERVICE_ROLE_KEY = mock.SERVICE_KEY;
   process.env.CHAT_NOTIFY = 'off';
+  // No real mail from a test run, whatever the shell has set.
+  process.env.RESEND_API_KEY = '';
 
   const app = require(ROOT + '/src/app');
   const site = await new Promise((r) => {
@@ -634,6 +636,14 @@ async function until(check, what, timeout = 10000) {
       'the desk to save the new contact details'
     );
     console.log('  ok  the desk saves new contact details');
+
+    // The test-email button says what happened. With no Resend key here, it
+    // must say that, in words the desk can act on.
+    await staff.click('.admin-mailtest-form button[type="submit"]');
+    await staff.waitForSelector('.admin-mailtest-hint:not([hidden])', { timeout: 15000 });
+    assert.match(await staff.textContent('.admin-mailtest-hint'), /RESEND_API_KEY is not set/);
+    assert.match(await staff.getAttribute('.admin-mailtest-form .form-status', 'class'), /bad/);
+    console.log('  ok  the desk test email reports why mail did not go');
 
     const reader2 = await newPage(visitorCtx);
     await reader2.goto(`${base}/contact`, { waitUntil: 'networkidle' });

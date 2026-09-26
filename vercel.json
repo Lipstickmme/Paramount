@@ -7,6 +7,10 @@
   "trailingSlash": false,
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "/api"
+    },
+    {
       "source": "/services/:id",
       "destination": "/service.html"
     }

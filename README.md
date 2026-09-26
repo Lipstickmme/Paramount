@@ -194,6 +194,11 @@ number and a link to it. Every public movement emails the same people. Both are
 settings the desk can switch off, and both are silent no-ops until `RESEND_API_KEY`
 is set.
 
+**Checking mail works:** on the desk, Settings, **Send test email** sends one
+message through the same key, sender and settings as customer mail and shows
+Resend's answer — accepted with its id, or refused with Resend's own reason and
+what to change.
+
 **Turning mail on** takes three variables and one thing in the Resend dashboard:
 
 | | |
@@ -427,19 +432,28 @@ Desk only (Bearer token from the signed-in staff session):
 | `POST`   | `/api/shipments/:id/photos`    | Upload one (`{ image: dataUrl, caption }`) |
 | `DELETE` | `/api/shipments/:id/photos/:photoId` | Remove one                 |
 | `POST`   | `/api/emails/reply`            | Reply to a mail thread           |
+| `POST`   | `/api/emails/test`             | Send a test email, report Resend's answer |
 
 Rate limiting: 240 requests a minute per address across the API, and a separate
 30 a minute on `/api/track`, which is what stops the number space being walked.
 
-**Every route needs a file under `api/` on Vercel.** Vercel's filesystem
-routing compiles each bracketed segment of a file name — `[...rest]` included —
-to exactly one path segment, so `api/shipments/[id].js` answers
-`/api/shipments/abc` but not `/api/shipments/abc/events`; that needs
-`api/shipments/[id]/events.js`. A route deeper than any file is a bare 404 from
-Vercel's edge that Express never sees (the pages show it as "Request failed
-(404)"), and every local test still passes. `npm test` runs
-`scripts/check-vercel-routes.js`, which lists the routes Express has, builds the
-patterns Vercel would from `api/`, and fails on any route nothing reaches.
+**One function serves the whole API on Vercel.** `api/index.js` exports the
+Express app, and a rewrite in `vercel.json` sends every `/api/*` path to it;
+a rewrite keeps the original URL, so Express routes exactly as it does locally.
+Two earlier layouts failed in production while every local test passed:
+
+- Vercel's filesystem routing compiles each bracketed file-name segment —
+  `[...rest]` included — to exactly one path segment, so a catch-all file never
+  reached `/api/shipments/:id/events` and the pages showed a bare "Request
+  failed (404)".
+- A file per depth fixed that with seventeen functions, over the Hobby plan's
+  limit of twelve per deployment, so those deployments never went live.
+
+`npm test` runs `scripts/check-vercel-routes.js`, which lists the routes Express
+has, resolves each the way Vercel would (function files, then rewrites), and
+fails on any route that reaches no function or on more than twelve functions.
+`vercel build` produces the single `api/index` function (checked with Vercel
+CLI 60).
 
 ## Getting started
 

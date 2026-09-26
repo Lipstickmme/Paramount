@@ -223,6 +223,11 @@
             <stop offset="0" class="sea-lit" />
             <stop offset="1" class="sea-deep" />
           </radialGradient>
+          <radialGradient id="fleet-heat">
+            <stop offset="0" class="heat-core" />
+            <stop offset="0.45" class="heat-mid" />
+            <stop offset="1" class="heat-edge" />
+          </radialGradient>
         </defs>
         <!-- Drawn well past the plate on purpose. The chart is letterboxed into
              whatever shape the panel is, and an oversized sea fills those bands
@@ -230,6 +235,7 @@
         <rect x="-600" y="-600" width="${world.width + 1200}" height="${world.height + 1200}" fill="url(#fleet-sea)" />
         <path class="fleet-graticule" d="${graticule()}" />
         <path class="fleet-land" d="${world.land}" />
+        <g class="fleet-heat" data-fleet-heat></g>
         <g data-fleet-lanes></g>
         <g data-fleet-ports></g>
         <g data-fleet-track></g>
@@ -252,6 +258,41 @@
       });
     });
     $('[data-fleet-ports]').innerHTML = marks.join('');
+  }
+
+  /**
+   * Port activity, as heat.
+   *
+   * Each port glows by how many of the fleet's voyages call there: Singapore,
+   * on four routes, burns hottest; a port one ship visits is a faint warm
+   * spot. Counted from the routes rather than from where ships happen to be
+   * this minute, so the picture is the network's shape and does not flicker
+   * as vessels move.
+   */
+  function drawHeat() {
+    const calls = new Map();
+    state.vessels.forEach((vessel) => {
+      const seen = new Set();
+      (vessel.track || []).forEach((point) => {
+        if (point.kind !== 'port' || seen.has(point.code)) return;
+        seen.add(point.code);
+        const hit = calls.get(point.code) || { point, count: 0 };
+        hit.count += 1;
+        calls.set(point.code, hit);
+      });
+    });
+    const most = Math.max(1, ...[...calls.values()].map((c) => c.count));
+    $('[data-fleet-heat]').innerHTML = [...calls.values()]
+      // Coolest first, so the busiest glow sits on top where they overlap.
+      .sort((a, b) => a.count - b.count)
+      .map(({ point, count }) => {
+        const share = count / most;
+        const { x, y } = world.project(point.lng, point.lat);
+        const r = 12 + 22 * Math.sqrt(share);
+        return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}"
+                  fill="url(#fleet-heat)" opacity="${(0.4 + 0.55 * share).toFixed(2)}" />`;
+      })
+      .join('');
   }
 
   /** Every vessel's route, faint, so the chart reads as a network. */
@@ -410,6 +451,7 @@
     const present = state.types.filter((type) => state.vessels.some((v) => v.type === type.id));
     $('[data-fleet-legend]').innerHTML = present
       .map((type) => `<span class="fleet-key tone-${esc(type.tone)}"><i></i>${esc(type.label)}</span>`)
+      .concat('<span class="fleet-key fleet-heat-key"><i></i>Port activity</span>')
       .join('');
   }
 
@@ -492,6 +534,7 @@
       state.selected = (state.vessels.find((v) => !v.inPort) || state.vessels[0] || {}).id || null;
     }
 
+    drawHeat();
     drawLanes();
     drawPorts();
     drawTrack();

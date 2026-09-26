@@ -287,7 +287,7 @@ function nav(active = '') {
       <input type="text" id="nav-track-number" name="number" autocomplete="off" spellcheck="false"
              maxlength="32" placeholder="Track a consignment — PMT-${YEAR}-4F7K2QX9" />
       <button type="submit" class="nav-track-go" data-track-submit aria-label="Track">
-        ${icons.arrow}
+        <span>Track</span>${icons.arrow}
       </button>
       <span class="err sr-only" data-track-error role="alert"></span>
       <span class="sr-only" data-track-recent hidden></span>

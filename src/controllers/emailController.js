@@ -129,3 +129,89 @@ exports.reply = async (req, res, next) => {
     return next(err);
   }
 };
+
+/**
+ * What to do about a send that failed, in the desk's words.
+ *
+ * Resend's own message is passed through as well; this is the step that
+ * follows from it, since "domain is not verified" does not say where to go.
+ */
+function hintFor(result) {
+  const detail = String(result.detail || '');
+  if (result.error === 'no_api_key') {
+    return 'RESEND_API_KEY is not set on this deployment. Add it in Vercel, Settings, Environment Variables, then redeploy.';
+  }
+  if (result.error === 'no_recipient') {
+    return 'There is nobody to send to. Type an address here, or set the notification address above (or FORM_TO in Vercel).';
+  }
+  if (/only send testing emails|your own email/i.test(detail) || /resend\.dev/i.test(String(result.from || ''))) {
+    return 'Mail is going out as Resend\u2019s shared test sender, which only delivers to the Resend account owner. Set FORM_FROM (or the From setting above) to an address on your verified domain.';
+  }
+  if (/domain/i.test(detail) && /verif/i.test(detail)) {
+    return `Resend will not send as ${result.from}. Verify that domain (the part after the @) in Resend, Domains, or change the From address to one on a domain that is verified.`;
+  }
+  if (result.status === 401 || result.status === 403 || /api key/i.test(detail)) {
+    return 'Resend did not accept the API key. Check RESEND_API_KEY in Vercel, then redeploy.';
+  }
+  if (result.status === 429) return 'Resend is rate limiting this account. Wait a minute and try again.';
+  return 'Resend refused the message. Its reason is above.';
+}
+
+/**
+ * POST /api/emails/test
+ *
+ * Send one message through exactly the path customer notifications take —
+ * the same key, sender and settings — and report what Resend said. The desk
+ * can then see "mail works" or the reason it does not, without booking a
+ * consignment to find out.
+ */
+exports.test = async (req, res, next) => {
+  try {
+    const auth = await requireAdmin(req);
+    if (!auth.ok) {
+      return res.status(auth.status).json({ error: auth.reason, message: 'Sign in as an admin to send a test email.' });
+    }
+
+    const to = String((req.body && req.body.to) || '').trim();
+    if (to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      return res.status(422).json({ error: 'invalid_email', message: 'That address does not look right.' });
+    }
+
+    const result = await notify.send({
+      to: to || undefined,
+      subject: 'Paramount Shipping: test email',
+      html: false,
+      text: [
+        'This is a test from the Paramount Shipping operations desk.',
+        '',
+        'If you are reading it, customer notifications — booking confirmations,',
+        'movement updates, holds and photo alerts — can reach an inbox too.',
+        '',
+        `Sent ${new Date().toUTCString()}.`,
+      ].join('\n'),
+    });
+
+    if (result.ok) {
+      return res.json({
+        ok: true,
+        id: result.id || null,
+        from: result.from,
+        to: result.to,
+        message: `Resend accepted it${result.id ? ` (id ${result.id})` : ''}. It was sent as ${result.from} to ${[].concat(result.to).join(', ')}. If it has not arrived in a minute or two, look in spam, then at Resend, Emails, for its delivery status.`,
+      });
+    }
+    // 200: the request did its job, which was to find out. The outcome is in
+    // `ok`, and a failed send is not an error in the page that asked.
+    return res.status(200).json({
+      ok: false,
+      error: result.error,
+      detail: result.detail || null,
+      from: result.from || null,
+      to: result.to || null,
+      message: result.detail ? `Resend said: ${result.detail}` : `Not sent (${result.error}).`,
+      hint: hintFor(result),
+    });
+  } catch (err) {
+    return next(err);
+  }
+};

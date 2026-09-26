@@ -11,11 +11,16 @@
  * Express directly. Holding a consignment, recording a movement and opening
  * one in the portal all shipped broken that way.
  *
- * This lists the routes Express actually has, turns api/ into the patterns
- * Vercel builds from it, and fails when a route matches none of them. It also
- * refuses the file layouts Vercel's own detector rejects at deploy time: two
- * files that differ only in a bracketed name, such as [id].js beside
- * [...rest].js.
+ * This lists the routes Express actually has, turns api/ and the rewrites in
+ * vercel.json into the patterns Vercel routes by, and fails when a route
+ * reaches no function. It also refuses what Vercel rejects at deploy time
+ * rather than at build time, where it is easy to miss:
+ *
+ *   - more than twelve functions, the Hobby plan's limit per deployment. The
+ *     first fix for the deep routes added a file per depth, seventeen in all;
+ *     the build log looked healthy and the deploy never went live;
+ *   - two files that differ only in a bracketed name, such as [id].js beside
+ *     [...rest].js.
  *
  * Run: node scripts/check-vercel-routes.js
  */
@@ -25,6 +30,8 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const apiDir = path.join(root, 'api');
+/** Serverless functions per deployment on Vercel's Hobby plan. */
+const FUNCTION_LIMIT = 12;
 
 /* ------------------------------------------------ what Express answers --- */
 
@@ -60,12 +67,41 @@ function routes(stack, prefix, out) {
 
 /* --------------------------------------------- what Vercel routes to --- */
 
+/** Function files: Vercel skips anything whose name starts with _ or a dot. */
 function files(dir, rel = '') {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    if (/^[_.]/.test(entry.name)) return [];
     const next = rel ? `${rel}/${entry.name}` : entry.name;
     if (entry.isDirectory()) return files(path.join(dir, entry.name), next);
     return /\.(js|cjs|mjs|ts)$/.test(entry.name) ? [next] : [];
   });
+}
+
+/**
+ * A vercel.json source pattern as a RegExp. Covers the forms this project
+ * uses: `:name`, `:name*`, `:name+` and a literal `(.*)`.
+ */
+function sourcePattern(source) {
+  const out = String(source)
+    .split('/')
+    .map((part) => {
+      if (/^:\w+\*$/.test(part)) return '(?:.*)';
+      if (/^:\w+\+$/.test(part)) return '(?:.+)';
+      if (/^:\w+$/.test(part)) return '[^/]+';
+      if (part === '(.*)') return '.*';
+      return part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    })
+    .join('/')
+    // "/api/:path*" also matches "/api" itself, as path-to-regexp does.
+    .replace(/\/\(\?:\.\*\)$/, '(?:/.*)?');
+  return new RegExp(`^${out}$`);
+}
+
+function rewrites() {
+  const file = path.join(root, 'vercel.json');
+  if (!fs.existsSync(file)) return [];
+  const config = JSON.parse(fs.readFileSync(file, 'utf8'));
+  return (config.rewrites || []).map((r) => ({ source: r.source, re: sourcePattern(r.source), destination: r.destination }));
 }
 
 /** The pattern Vercel's filesystem API builds from one file under api/. */
@@ -92,13 +128,34 @@ function conflicts(list) {
 
 /* ---------------------------------------------------------------- run --- */
 
+/**
+ * Which function answers a path, as Vercel decides it: a function file whose
+ * pattern matches wins outright; otherwise the first rewrite whose source
+ * matches sends it to its destination, and that has to be a function.
+ */
+function resolve(sample, patterns, rules) {
+  const direct = patterns.find(({ re }) => re.test(sample));
+  if (direct) return direct.file;
+  const rule = rules.find(({ re }) => re.test(sample));
+  if (!rule) return null;
+  const target = patterns.find(({ re }) => re.test(rule.destination.split('?')[0]));
+  return target ? target.file : null;
+}
+
 function check() {
   const app = require(path.join(root, 'src/api-app'));
   const table = routes(app._router.stack, '', []);
   const list = files(apiDir);
   const patterns = list.map((file) => ({ file, re: pattern(file) }));
+  const rules = rewrites();
 
   const problems = conflicts(list);
+  if (list.length > FUNCTION_LIMIT) {
+    problems.push(
+      `api/ holds ${list.length} functions; Vercel's Hobby plan deploys at most ${FUNCTION_LIMIT}. ` +
+        'Route more paths through a rewrite in vercel.json instead of adding files.'
+    );
+  }
   const seen = new Set();
   table.forEach(({ method, path: route }) => {
     if (!route.startsWith('/api')) return;
@@ -106,8 +163,8 @@ function check() {
     const key = `${method} ${route}`;
     if (seen.has(key)) return;
     seen.add(key);
-    if (!patterns.some(({ re }) => re.test(sample))) {
-      problems.push(`${key} has no file under api/ that Vercel would route it to`);
+    if (!resolve(sample, patterns, rules)) {
+      problems.push(`${key} reaches no function: no file under api/ matches it, and no rewrite sends it to one`);
     }
   });
   return { routes: seen.size, files: list.length, problems };
@@ -118,12 +175,12 @@ if (require.main === module) {
   if (problems.length) {
     console.error('Vercel route check failed:');
     problems.forEach((line) => console.error(`  - ${line}`));
-    console.error('\nAdd a file under api/ at that depth that re-exports src/api-app (see api/inbound/resend.js).');
+    console.error('\nEvery /api path should reach api/index.js through the rewrite in vercel.json (see api/index.js).');
     process.exit(1);
   }
-  console.log(`Vercel route check: all ${count} API routes reach one of ${fileCount} function files.`);
+  console.log(`Vercel route check: all ${count} API routes reach a function; ${fileCount} of ${FUNCTION_LIMIT} functions used.`);
   // The app holds timers (rate limiter sweeps); nothing else is waiting.
   process.exit(0);
 }
 
-module.exports = { check, pattern, conflicts };
+module.exports = { check, pattern, conflicts, sourcePattern, resolve };

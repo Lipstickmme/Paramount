@@ -1635,6 +1635,170 @@ async function withApp(env, fn) {
     require('fs').rmSync(dir, { recursive: true, force: true });
   }
 
+  /* ---- email: what actually leaves for Resend ---- */
+  {
+    const sb = await mock.start({});
+    const url = `http://127.0.0.1:${sb.address().port}`;
+    sb.createUser('desk@paramount.test', 'pw-desk', { admin: true });
+    const staff = (await fetch(`${url}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { apikey: mock.ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'desk@paramount.test', password: 'pw-desk' }),
+    }).then((r) => r.json())).access_token;
+
+    // Resend, stood in for at the network edge: every message the server
+    // hands it is kept, exactly as sent, and it answers as Resend does.
+    const sent = [];
+    let answer = () => new Response(JSON.stringify({ id: `em_${sent.length}` }), { status: 200 });
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (input, init = {}) => {
+      const target = typeof input === 'string' ? input : input.url;
+      if (target === 'https://api.resend.com/emails') {
+        sent.push({ auth: init.headers.Authorization, ...JSON.parse(init.body) });
+        return answer();
+      }
+      return realFetch(input, init);
+    };
+    const mailTo = (address) => sent.filter((m) => [].concat(m.to).includes(address));
+
+    try {
+      await withApp(
+        {
+          SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY, SUPABASE_ANON_KEY: mock.ANON_KEY,
+          RESEND_API_KEY: 're_test_key',
+          FORM_FROM: 'Paramount Shipping <desk@paramountshipping.test>',
+          FORM_TO: 'ops@paramountshipping.test',
+          SITE_URL: 'https://www.paramountshipping.test',
+        },
+        async (base) => {
+          const asStaff = (method, path, body) =>
+            fetch(base + path, {
+              method,
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${staff}` },
+              body: body ? JSON.stringify(body) : undefined,
+            }).then(async (r) => ({ status: r.status, body: await r.json().catch(() => ({})) }));
+
+          /* -- booking: the customer gets their number --------------------- */
+          const made = await asStaff('POST', '/api/shipments', {
+            shipper_name: 'Vestberg Components AB', shipper_email: 'ship@example.com',
+            receiver_name: 'Okonkwo Trading Ltd', receiver_email: 'rcv@example.com',
+            origin_city: 'Gothenburg', destination_city: 'Lagos', mode: 'ocean_freight',
+          });
+          const { id, tracking_number: number } = made.body.shipment;
+          const booked = mailTo('rcv@example.com')[0];
+          assert.ok(booked, 'the consignee is emailed on booking: ' + JSON.stringify(sent.map((m) => m.to)));
+          assert.deepStrictEqual([...booked.to].sort(), ['rcv@example.com', 'ship@example.com']);
+          assert.strictEqual(booked.from, 'Paramount Shipping <desk@paramountshipping.test>');
+          assert.strictEqual(booked.auth, 'Bearer re_test_key');
+          assert.match(booked.subject, new RegExp(number));
+          assert.match(booked.text, new RegExp(`https://www\\.paramountshipping\\.test/\\?number=${number}#track`));
+          assert.strictEqual(mailTo('ops@paramountshipping.test').length, 1, 'and the desk hears about it');
+          console.log('  ok  booking emails the tracking number to the shipper and consignee');
+
+          /* -- a hold: the customer is told where and why ------------------- */
+          sent.length = 0;
+          const held = await asStaff('POST', `/api/shipments/${id}/events`, {
+            status: 'on_hold', location: 'Suez, Egypt', lat: 29.97, lng: 32.55,
+            note: 'Waiting on a corrected certificate of origin.',
+          });
+          assert.strictEqual(held.status, 201);
+          assert.strictEqual(held.body.notified.ok, true, JSON.stringify(held.body.notified));
+          const holdMail = mailTo('rcv@example.com')[0];
+          assert.match(holdMail.subject, new RegExp(`${number}: On hold — Suez, Egypt`));
+          assert.match(holdMail.text, /Note: Waiting on a corrected certificate of origin\./);
+          const released = await asStaff('POST', `/api/shipments/${id}/events`, {
+            status: 'in_transit', location: 'Suez, Egypt', note: 'Certificate accepted.',
+          });
+          assert.strictEqual(released.body.notified.ok, true);
+          assert.match(sent[sent.length - 1].subject, /In transit/);
+          console.log('  ok  holding and releasing email the customer, with the reason');
+
+          // An internal note stays internal: nothing leaves.
+          sent.length = 0;
+          await asStaff('POST', `/api/shipments/${id}/events`, { status: 'in_transit', note: 'desk only', internal: true });
+          assert.strictEqual(sent.length, 0, 'an internal movement sends nothing');
+
+          /* -- a photo: the desk is told, then the customer ------------------ */
+          sent.length = 0;
+          await req(base, 'POST', `/api/track/${number}/photo-request`, { email: 'ada@example.com', note: 'The seal.' });
+          const deskAsk = mailTo('ops@paramountshipping.test')[0];
+          assert.ok(deskAsk, 'the desk is emailed a photo request');
+          assert.match(deskAsk.subject, new RegExp(`Photo requested: ${number}`));
+          assert.strictEqual(deskAsk.reply_to, 'ada@example.com', 'replying goes to whoever asked');
+          assert.match(deskAsk.text, /The seal\./);
+
+          sent.length = 0;
+          const jpeg = Buffer.alloc(2048, 3);
+          jpeg[0] = 0xff; jpeg[1] = 0xd8; jpeg[2] = 0xff;
+          const up = await asStaff('POST', `/api/shipments/${id}/photos`, {
+            image: `data:image/jpeg;base64,${jpeg.toString('base64')}`, caption: 'Sealed',
+          });
+          assert.strictEqual(up.status, 201);
+          assert.strictEqual(up.body.notified.recipients, 1);
+          const ready = mailTo('ada@example.com')[0];
+          assert.match(ready.subject, new RegExp(`Photo of your consignment ${number}`));
+          assert.match(ready.text, new RegExp(`\\?number=${number}#track`));
+          assert.strictEqual(ready.html, undefined, 'a plain message, not the monospace block');
+          console.log('  ok  a photo request emails the desk, and the upload emails whoever asked');
+
+          /* -- the desk's own test button ------------------------------------ */
+          sent.length = 0;
+          assert.strictEqual((await req(base, 'POST', '/api/emails/test', {})).status, 401, 'desk only');
+          const test = await asStaff('POST', '/api/emails/test', {});
+          assert.strictEqual(test.status, 200, JSON.stringify(test.body));
+          assert.deepStrictEqual(sent[0].to, ['ops@paramountshipping.test'], 'blank goes to the notification address');
+          assert.match(test.body.message, /sent as Paramount Shipping <desk@paramountshipping\.test> to ops@paramountshipping\.test/);
+          const toOther = await asStaff('POST', '/api/emails/test', { to: 'me@example.com' });
+          assert.strictEqual(toOther.status, 200);
+          assert.deepStrictEqual(sent[1].to, ['me@example.com']);
+
+          // Resend refusing is reported with its own reason and what to do.
+          answer = () => new Response(JSON.stringify({
+            statusCode: 403, name: 'validation_error',
+            message: 'The paramountshipping.test domain is not verified. Please, add and verify your domain on https://resend.com/domains',
+          }), { status: 403 });
+          const refused = await asStaff('POST', '/api/emails/test', {});
+          assert.strictEqual(refused.status, 200);
+          assert.strictEqual(refused.body.ok, false);
+          assert.match(refused.body.message, /domain is not verified/);
+          assert.match(refused.body.hint, /Verify that domain/);
+          console.log('  ok  the desk test email reports what Resend said, and what to do about it');
+        }
+      );
+    } finally {
+      globalThis.fetch = realFetch;
+      ['FORM_FROM', 'FORM_TO', 'SITE_URL', 'RESEND_API_KEY'].forEach((k) => delete process.env[k]);
+      sb.close();
+    }
+
+    // With no key at all the button says so rather than failing silently.
+    const bare = await mock.start({});
+    const bareUrl = `http://127.0.0.1:${bare.address().port}`;
+    bare.createUser('desk@paramount.test', 'pw-desk', { admin: true });
+    const bareStaff = (await fetch(`${bareUrl}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { apikey: mock.ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'desk@paramount.test', password: 'pw-desk' }),
+    }).then((r) => r.json())).access_token;
+    await withApp(
+      { SUPABASE_URL: bareUrl, SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY, SUPABASE_ANON_KEY: mock.ANON_KEY, RESEND_API_KEY: '', FORM_TO: 'ops@paramountshipping.test' },
+      async (base) => {
+        const res = await fetch(base + '/api/emails/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bareStaff}` },
+          body: '{}',
+        }).then(async (r) => ({ status: r.status, body: await r.json() }));
+        assert.strictEqual(res.status, 200);
+        assert.strictEqual(res.body.ok, false);
+        assert.strictEqual(res.body.error, 'no_api_key');
+        assert.match(res.body.hint, /RESEND_API_KEY is not set/);
+        console.log('  ok  without a Resend key the test email says exactly that');
+      }
+    );
+    delete process.env.FORM_TO;
+    bare.close();
+  }
+
   /* ---- tracking numbers ---- */
   {
     const tracking = require(ROOT + '/src/utils/tracking');

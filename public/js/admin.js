@@ -2286,6 +2286,7 @@
     if (!state.settingsEditable) {
       panel.appendChild(el('p', 'admin-empty',
         'This database has no site_settings table, so the details stay as the site was built with. Run supabase/migrations/0001_init.sql and 0004_settings.sql in the Supabase SQL Editor, then reload this page.'));
+      panel.appendChild(mailTest());
       return;
     }
 
@@ -2380,6 +2381,70 @@
     });
 
     panel.appendChild(form);
+    panel.appendChild(mailTest());
+  }
+
+  /**
+   * Send one test message the way customer mail goes out, and show exactly
+   * what Resend answered. "Does email work?" otherwise means booking a
+   * consignment and waiting for a message that may never come, with the
+   * reason sitting in a server log nobody at the desk can read.
+   */
+  function mailTest() {
+    const box = el('section', 'admin-mailtest');
+    box.appendChild(el('h4', 'admin-form-group', 'Test email'));
+    box.appendChild(el('p', 'admin-sub',
+      'Sends one message through the same key, sender and settings as booking, movement, hold and photo emails, and shows what Resend said. Save any changes above first.'));
+
+    const form = el('form', 'admin-mailtest-form');
+    form.noValidate = true;
+    const to = document.createElement('input');
+    to.type = 'email';
+    to.name = 'to';
+    to.autocomplete = 'email';
+    to.placeholder = 'Send to… (blank: the notification address)';
+    const send = el('button', 'btn sm', 'Send test email');
+    send.type = 'submit';
+    const row = el('div', 'admin-mailtest-row');
+    row.appendChild(to);
+    row.appendChild(send);
+    form.appendChild(row);
+    const status = el('div', 'form-status');
+    const hint = el('p', 'admin-mailtest-hint');
+    hint.hidden = true;
+    form.appendChild(status);
+    form.appendChild(hint);
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      send.disabled = true;
+      hint.hidden = true;
+      status.className = 'form-status';
+      status.textContent = 'Sending\u2026';
+      try {
+        const token = await client.auth.accessToken();
+        const res = await fetch('/api/emails/test', {
+          method: 'POST',
+          headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ to: to.value.trim() }),
+        });
+        const data = await res.json().catch(() => ({}));
+        status.className = `form-status ${data.ok ? 'ok' : 'bad'}`;
+        status.textContent = data.message || `Request failed (${res.status})`;
+        if (data.hint) {
+          hint.textContent = data.hint;
+          hint.hidden = false;
+        }
+      } catch (err) {
+        status.className = 'form-status bad';
+        status.textContent = err.message;
+      } finally {
+        send.disabled = false;
+      }
+    });
+
+    box.appendChild(form);
+    return box;
   }
 
   function render() {
@@ -2434,7 +2499,21 @@
     state.shipmentPhotos = gallery;
   }
 
-  async function refreshLists() {
+  /**
+   * Redraw after a background refresh, unless someone has started typing.
+   *
+   * The poll checks isTyping() before it starts, but each tick redraws twice,
+   * once when the lists land and again when the open item's detail does, and
+   * those arrive a moment apart. Typing that starts in between used to be
+   * wiped by the second. What was loaded stays in state and shows on the
+   * next redraw.
+   */
+  function quietRender(quiet) {
+    if (quiet && isTyping()) return;
+    render();
+  }
+
+  async function refreshLists({ quiet = false } = {}) {
     try {
       const [enquiries, sessions] = await Promise.all([loadEnquiries(), loadSessions()]);
       state.enquiries = (enquiries || []).filter(
@@ -2480,10 +2559,10 @@
     } catch (err) {
       alertBar(err.message);
     }
-    render();
+    quietRender(quiet);
   }
 
-  async function refreshThread() {
+  async function refreshThread({ quiet = false } = {}) {
     try {
       if (state.tab === 'shipments' && state.active.shipments) {
         await refreshShipmentDetail();
@@ -2494,7 +2573,7 @@
       } else {
         return;
       }
-      render();
+      quietRender(quiet);
     } catch (err) {
       alertBar(err.message);
     }
@@ -2545,8 +2624,8 @@
       // field has focus replaces the element being typed into, which reads as
       // the text vanishing, or as a value you just deleted coming back.
       if (isTyping()) return;
-      refreshLists();
-      refreshThread();
+      refreshLists({ quiet: true });
+      refreshThread({ quiet: true });
     }, POLL_MS);
   }
 
