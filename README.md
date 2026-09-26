@@ -573,3 +573,8 @@ tab, and a value set at the desk wins once it is there.
 Vercel: the pages build to `public/` and are served from the CDN; `/api/*` runs
 `src/api-app.js` as a function. `vercel.json` carries the rewrite for
 `/services/:id`. See `docs/DEPLOYMENT.md`.
+
+`engines.node` is pinned to `22.x`, the version the suites run on. An open
+range such as `>=18` makes Vercel print a warning for every function and move
+the site to each new major Node release unannounced; change the pin on purpose
+when upgrading.
