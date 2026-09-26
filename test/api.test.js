@@ -402,6 +402,9 @@ async function withApp(env, fn) {
         SUPABASE_ANON_KEY: mock.ANON_KEY,
         RESEND_WEBHOOK_SECRET: SECRET,
         MAILBOX_ADDRESS: 'Paramount Shipping <ops@paramount.test>',
+        // Customer mail goes out from another domain, as it does in
+        // production, so replies to it arrive there.
+        FORM_FROM: 'Paramount Shipping <website@paramountshippings.test>',
         // No forwarding here: this asserts the archive that /admin reads.
         FORWARD_TO: '',
         RESEND_API_KEY: '',
@@ -462,23 +465,59 @@ async function withApp(env, fn) {
         assert.strictEqual(sb.db.email_threads.rows.length, 1, 'and onto the same thread');
         console.log('  ok  /api/inbound-email is the same signed endpoint');
 
-        // Mail for another address is acknowledged, and the log says why.
+        // Mail for another domain is acknowledged, and the log says why.
         const strayBody = body.replace('ops@paramount.test', 'info@elsewhere.test');
         const stray = await post(strayBody, 'msg_1c', ts, sign(SECRET, 'msg_1c', ts, strayBody));
         const strayOut = await stray.json();
         assert.strictEqual(strayOut.ignored, 'not_for_mailbox');
         assert.strictEqual(strayOut.mailbox, 'ops@paramount.test');
-        console.log('  ok  mail for another address says which mailbox it expected');
+        assert.deepStrictEqual(strayOut.domains.sort(), ['paramount.test', 'paramountshippings.test']);
+        console.log('  ok  mail for another domain says which domains it expected');
+
+        // A customer replying to a booking or hold email writes back to the
+        // address it came from. In production that reply was ignored for not
+        // being MAILBOX_ADDRESS; it is the mail the desk most needs to see.
+        const replyBody = JSON.stringify({
+          type: 'email.received',
+          data: {
+            from: 'Kofi Mensah <kofi@example.com>',
+            to: ['website@paramountshippings.test'],
+            subject: 'Re: Your Paramount consignment PMT-2026-4F7K2QX9',
+            text: 'Thanks. Can you confirm the delivery window?',
+            message_id: '<m2@example.com>',
+          },
+        });
+        const reply = await post(replyBody, 'msg_1d', ts, sign(SECRET, 'msg_1d', ts, replyBody));
+        assert.strictEqual((await reply.json()).filed, 'ok');
+        const kofi = sb.db.email_messages.rows.find((m) => m.from_email === 'kofi@example.com');
+        assert.ok(kofi, 'the reply to the From address is on the desk');
+        assert.strictEqual(kofi.to_email, 'website@paramountshippings.test', 'with the address it came in on');
+
+        // Any address on our domains, not only the named ones.
+        const infoBody = replyBody.replace('website@paramountshippings.test', 'Info <info@paramount.test>')
+          .replace('<m2@example.com>', '<m3@example.com>').replace('kofi@example.com', 'ama@example.com');
+        const info = await post(infoBody, 'msg_1e', ts, sign(SECRET, 'msg_1e', ts, infoBody));
+        assert.strictEqual((await info.json()).filed, 'ok');
+
+        // Our own notification landing on one of our own addresses is not
+        // somebody writing in.
+        const selfBody = replyBody.replace('Kofi Mensah <kofi@example.com>', 'Paramount Shipping <website@paramountshippings.test>')
+          .replace('website@paramountshippings.test"]', 'ops@paramount.test"]').replace('<m2@example.com>', '<m4@example.com>');
+        const self = await post(selfBody, 'msg_1f', ts, sign(SECRET, 'msg_1f', ts, selfBody));
+        assert.strictEqual((await self.json()).ignored, 'from_ourselves');
+        assert.strictEqual(sb.db.email_messages.rows.length, 4, 'two filed replies on top of the first two');
+        console.log('  ok  replies to the From address, and mail to any address on our domains, reach the desk');
 
         const tampered = body.replace('Ada Kolen', 'Mallory Vane');
         const bad = await post(tampered, 'msg_2', ts, sign(SECRET, 'msg_2', ts, body));
         assert.strictEqual(bad.status, 401);
         // Named so a provider's delivery log says which of the failures it was.
         assert.strictEqual((await bad.json()).reason, 'signature_mismatch');
-        assert.strictEqual(sb.db.email_messages.rows.length, 2, 'nothing filed from an unverified post');
+        assert.strictEqual(sb.db.email_messages.rows.length, 4, 'nothing filed from an unverified post');
         console.log('  ok  a tampered body is refused and files nothing');
       }
     );
+    delete process.env.FORM_FROM;
     sb.close();
   }
 
@@ -1169,7 +1208,9 @@ async function withApp(env, fn) {
     snap.vessels.forEach((v, i) => {
       const then = later.vessels[i];
       const moved = fleet.distanceNm({ lat: v.lat, lng: v.lng }, { lat: then.lat, lng: then.lng });
-      if (v.inPort) return;
+      // Skip a ship in port at either end: one that berths during the hour
+      // sails part of it and sits out the rest, so it rightly covers less.
+      if (v.inPort || then.inPort) return;
       assert.ok(
         Math.abs(moved - v.speed) < 1.5,
         `${v.name} moved ${moved.toFixed(1)} nm in an hour but reports ${v.speed} kn`

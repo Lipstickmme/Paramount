@@ -292,12 +292,14 @@ and Resend's webhook log shows why:
 | `404` with no `ok` field | The URL is not this endpoint. Use one of the two above. |
 | `401` `"reason":"no_secret_configured"` | `RESEND_WEBHOOK_SECRET` is not set in Vercel, or the deploy predates it. |
 | `401` `"reason":"signature_mismatch"` | The secret is from a different webhook. Each webhook has its own. |
-| `200` `"ignored":"not_for_mailbox"` | The mail was sent to an address other than `MAILBOX_ADDRESS`; the response shows both. |
+| `200` `"ignored":"not_for_mailbox"` | The mail was sent to a domain the site does not use; the response lists the domains it accepts. |
+| `200` `"ignored":"from_ourselves"` | One of the site's own notifications arriving at one of its own addresses. |
 | `200` `"filed":"failed: …"` | Supabase refused it, usually because `0002_email.sql` has not been run. |
 | `200` `"forwarded":false` | Filed on the desk, but `FORWARD_TO` is unset or would loop. |
 
-`MAILBOX_ADDRESS`, `FORM_FROM` and the domain the MX records point at must all
-be the same verified domain in Resend.
+Receiving has to be enabled in Resend for every domain mail arrives on: if
+customer mail goes out as `website@paramountshippings.com`, replies come back
+to that domain, and its MX records must point at Resend.
 
 What happens on each delivery:
 
@@ -310,8 +312,12 @@ What happens on each delivery:
   original sender, so replying goes straight back to them. Forwarding is **skipped**
   when `FORWARD_TO`, or the sender, is one of this site's own addresses, because that
   would loop mail back into this webhook until the sending quota is gone.
+- Mail to **any address** on the site's domains is filed: the domain of
+  `MAILBOX_ADDRESS`, of `FORM_FROM`, and of the desk's From and Reply-to
+  settings. A customer replying to a booking or hold email writes back to the
+  From address, so that has to land on the desk as well as the mailbox does.
 - Non-inbound events (delivery receipts and similar) are acknowledged and ignored,
-  as is mail addressed to anything other than `MAILBOX_ADDRESS`.
+  as is mail for other domains and the site's own notifications.
 
 This endpoint is exempt from rate limiting, since it is authenticated by signature.
 

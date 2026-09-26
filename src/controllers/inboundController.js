@@ -3,15 +3,17 @@
 /**
  * Inbound email webhook.
  *
- * Resend (or any Svix-signed provider) POSTs here when mail arrives at
- * MAILBOX_ADDRESS. Verified messages are filed onto a thread so the dashboard
- * reads them as one conversation, and optionally copied to FORWARD_TO.
+ * Resend (or any Svix-signed provider) POSTs here when mail arrives at any
+ * address on the domains this site uses. Verified messages are filed onto a
+ * thread so the dashboard reads them as one conversation, and optionally
+ * copied to FORWARD_TO.
  */
 
 const { verify } = require('../utils/webhookSignature');
 const notify = require('../utils/notify');
 const config = require('../utils/config');
 const { getSupabase } = require('../utils/supabase');
+const siteSettings = require('../utils/siteSettings');
 
 function firstString(...vals) {
   for (const v of vals) {
@@ -35,10 +37,50 @@ function parseEmail(payload) {
     inReplyTo: firstString(d.in_reply_to, d.inReplyTo, d.references),
     from: firstString(d.from, d.sender, d.From),
     to: firstString(d.to, d.recipient, d.To),
+    cc: firstString(d.cc, d.Cc),
     subject: firstString(d.subject, d.Subject) || '(no subject)',
     text: firstString(d.text, d.body_plain, d.plain, d.body),
     html: firstString(d.html, d.body_html),
   };
+}
+
+/** Every bare address in a header value such as "Ada <a@x.com>, b@y.com". */
+function addressesIn(value) {
+  return (String(value || '').toLowerCase().match(/[^\s<>,;"']+@[^\s<>,;"']+/g) || []);
+}
+
+const domainOf = (address) => String(address || '').split('@')[1] || '';
+
+/**
+ * Who this site is, as far as mail goes.
+ *
+ * `domains` is every domain the site sends or receives as: MAILBOX_ADDRESS,
+ * the From address customer mail goes out under, and the desk's From and
+ * Reply-to settings. Mail to any address on them belongs on the desk. It was
+ * only MAILBOX_ADDRESS once, and that lost exactly the mail that matters: a
+ * customer replying to a booking or hold email writes back to the address it
+ * came from, which is the From address, not the mailbox.
+ *
+ * `senders` is the address automatic mail goes out as. A message from it is
+ * one of our own notifications arriving at one of our own addresses, not
+ * somebody writing in.
+ *
+ * Resend's shared onboarding domain is never ours, whatever is configured.
+ */
+async function ourselves() {
+  let configured = { from: '', replyTo: '' };
+  try {
+    configured = await siteSettings.mail();
+  } catch (err) {
+    // Settings are optional; the environment below still applies.
+  }
+  const own = [config.mailboxAddress(), config.pick('FORM_FROM', 'NOTIFY_FROM'), configured.from, configured.replyTo]
+    .map((value) => config.parseAddress(value).email)
+    .filter((address) => address && !/@resend\.dev$/.test(address));
+  const senders = [config.pick('FORM_FROM', 'NOTIFY_FROM'), configured.from]
+    .map((value) => config.parseAddress(value).email)
+    .filter(Boolean);
+  return { domains: new Set(own.map(domainOf).filter(Boolean)), senders: new Set(senders) };
 }
 
 /**
@@ -124,7 +166,7 @@ async function fileOnThread(supabase, email) {
     direction: 'inbound',
     from_email: from.email,
     from_name: from.name || null,
-    to_email: config.parseAddress(email.to).email || config.mailboxAddress(),
+    to_email: email.deliveredTo || config.parseAddress(email.to).email || config.mailboxAddress(),
     subject: email.subject,
     body_text: email.text || null,
     body_html: email.html || null,
@@ -164,15 +206,24 @@ exports.resend = async (req, res, next) => {
 
     const email = parseEmail(payload);
     const mailbox = config.mailboxAddress();
-    if (mailbox && email.to && !email.to.toLowerCase().includes(config.parseAddress(mailbox).email)) {
-      // Say which addresses, so a mailbox set on the wrong domain is visible
-      // from the delivery log rather than looking like a silent success.
+    const { domains, senders } = await ourselves();
+    const recipients = addressesIn(`${email.to},${email.cc}`);
+    if (domains.size && recipients.length && !recipients.some((a) => domains.has(domainOf(a)))) {
+      // Say which addresses, so a domain set wrongly is visible from the
+      // delivery log rather than looking like a silent success.
       return res.status(200).json({
         ok: true,
         ignored: 'not_for_mailbox',
         to: email.to,
-        mailbox: config.parseAddress(mailbox).email,
+        mailbox: config.parseAddress(mailbox).email || null,
+        domains: [...domains],
       });
+    }
+    // Which of our addresses it came in on, for the desk: website@ and info@
+    // both land in the one inbox now, and it matters which one was used.
+    email.deliveredTo = recipients.find((a) => domains.has(domainOf(a))) || recipients[0] || '';
+    if (senders.has(config.parseAddress(email.from).email)) {
+      return res.status(200).json({ ok: true, ignored: 'from_ourselves', from: email.from });
     }
 
     if (!email.text && !email.html) {
