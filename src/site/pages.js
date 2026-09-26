@@ -868,12 +868,15 @@ const portalContent = `
           <div class="crumbs"><a href="/">Home</a> <span>/</span> <span>My consignments</span></div>
           <span class="eyebrow">Customer portal</span>
           <h1>Your shipments, all of them.</h1>
-          <p class="lede">One account, every consignment booked to or from your address — plus anything you add by tracking number. The same timeline the control tower reads.</p>
+          <p class="lede">An account collects every consignment booked to or from your address onto one list. It is not how you track one — for that, the number is enough.</p>
           <ul class="pm-hero-points">
-            <li>${icons.radar}<span>Every movement, as the desk recorded it</span></li>
             <li>${icons.container}<span>Air, ocean, road, rail and express on one list</span></li>
             <li>${icons.clipboard}<span>Documents and delivery evidence on the file</span></li>
+            <li>${icons.crew}<span>Opened by the desk, for accounts that book regularly</span></li>
           </ul>
+          <div class="hero-actions">
+            <a class="btn ghost" href="/#track">Track a consignment ${icons.arrow}</a>
+          </div>
         </div>
 
         <div class="pm-hero-panel">
@@ -910,7 +913,7 @@ const portalContent = `
                 <button type="button" class="link" id="portal-auth-alt">Create an account</button>
                 <button type="button" class="link" id="portal-auth-forgot">Forgot password?</button>
               </div>
-              <p class="muted" style="font-size:.84rem">Tracking a single consignment needs no account at all — <a class="link" href="/#track">use the console on the home page</a>.</p>
+              <p class="muted" style="font-size:.84rem">No account? You do not need one to track a consignment &mdash; <a class="link" href="/#track">paste the number on the home page</a> and the timeline and the chart are there. Accounts are opened by the desk; ask the person who books your freight.</p>
             </form>
           </div>
         </div>

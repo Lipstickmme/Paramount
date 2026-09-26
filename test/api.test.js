@@ -1302,7 +1302,7 @@ async function withApp(env, fn) {
     console.log('  ok  a held consignment stops where it was stopped, and says why');
   }
 
-  /* ---- portal auth mail goes out through Resend, not Supabase ---- */
+  /* ---- no sign-up, and the reset that is left tells nobody anything ---- */
   {
     const sb = await mock.start({});
     const sbUrl = `http://127.0.0.1:${sb.address().port}`;
@@ -1328,58 +1328,47 @@ async function withApp(env, fn) {
           PUBLIC_SITE_URL: 'https://paramountshipping.com',
         },
         async (base) => {
-          const made = await req(base, 'POST', '/api/portal/register', {
-            email: 'New.Customer@Example.com', password: 'a-long-enough-one',
+          // There is no way to register. Tracking needs no account, so a
+          // sign-up would put a confirmation email in front of something the
+          // visitor could already see.
+          const register = await req(base, 'POST', '/api/portal/register', {
+            email: 'new@example.com', password: 'a-long-enough-one',
           });
-          assert.strictEqual(made.status, 202, JSON.stringify(made.body));
+          assert.strictEqual(register.status, 404, 'there is no sign-up route');
+          assert.strictEqual(posted.length, 0, 'and nothing was sent');
+          assert.ok(!sb.users.has('new@example.com'), 'and no account was made');
+
+          // Reset, for the accounts the desk opened, is ours to send.
+          const known = await req(base, 'POST', '/api/portal/reset', { email: 'Already@Example.com' });
+          assert.strictEqual(known.status, 202, JSON.stringify(known.body));
           assert.strictEqual(posted.length, 1, 'one email, sent by us');
 
           const mail = posted[0];
-          assert.deepStrictEqual(mail.to, ['new.customer@example.com'], 'the address is normalised');
+          assert.deepStrictEqual(mail.to, ['already@example.com'], 'the address is normalised');
           assert.strictEqual(mail.from, 'Paramount Shipping <hello@paramountshipping.com>', 'from our domain');
-          assert.match(mail.subject, /Confirm/);
-          assert.match(mail.html, /Paramount Shipping/);
+          assert.match(mail.subject, /Set a new password/);
           assert.match(mail.html, /auth\/v1\/verify\?token=/, 'carrying the link Supabase minted');
           assert.match(mail.html, /redirect_to=https%3A%2F%2Fparamountshipping\.com%2Fportal/, 'that comes back to the portal');
           assert.match(mail.text, /auth\/v1\/verify/, 'and a text part for clients that want one');
 
           // Supabase was asked to mint, never to send.
-          assert.deepStrictEqual(sb.generatedLinks, [{ type: 'signup', email: 'new.customer@example.com' }]);
+          assert.deepStrictEqual(sb.generatedLinks, [{ type: 'recovery', email: 'already@example.com' }]);
 
-          // An address that already has an account is not reported as such.
-          posted.length = 0;
-          const again = await req(base, 'POST', '/api/portal/register', {
-            email: 'already@example.com', password: 'a-long-enough-one',
-          });
-          assert.strictEqual(again.status, 202);
-          assert.strictEqual(again.body.message, made.body.message.replace('New.Customer@Example.com'.toLowerCase(), 'already@example.com'),
-            'the same answer, whether or not the address is taken');
-          assert.strictEqual(posted.length, 1, 'and it gets told, privately');
-          assert.match(posted[0].subject, /Your Paramount Shipping account/);
-          assert.ok(!/already registered/i.test(JSON.stringify(again.body)), 'nothing leaks into the response');
-
-          // Reset: the same answer for an address with no account, and no mail.
+          // An address with no account is answered exactly the same way, and
+          // sent nothing. The response must not say which it was.
           posted.length = 0;
           const unknown = await req(base, 'POST', '/api/portal/reset', { email: 'nobody@example.com' });
           assert.strictEqual(unknown.status, 202);
           assert.strictEqual(posted.length, 0, 'an unknown address is sent nothing');
-          const known = await req(base, 'POST', '/api/portal/reset', { email: 'already@example.com' });
-          assert.strictEqual(known.status, 202);
-          assert.strictEqual(posted.length, 1);
-          assert.match(posted[0].subject, /Set a new password/);
           assert.strictEqual(
             unknown.body.message.replace('nobody@example.com', 'x'),
             known.body.message.replace('already@example.com', 'x'),
             'and reads exactly like one that was'
           );
 
-          // The obvious rubbish is refused before any of that.
-          const bad = await req(base, 'POST', '/api/portal/register', { email: 'not-an-address', password: 'a-long-enough-one' });
+          const bad = await req(base, 'POST', '/api/portal/reset', { email: 'not-an-address' });
           assert.strictEqual(bad.status, 422);
-          const weak = await req(base, 'POST', '/api/portal/register', { email: 'x@example.com', password: 'short' });
-          assert.strictEqual(weak.status, 422);
-          assert.match(weak.body.fields.password, /8/);
-          console.log('  ok  the portal\u2019s own mail goes out through Resend, and tells nobody who has an account');
+          console.log('  ok  no sign-up, and the reset tells nobody who has an account');
         }
       );
     } finally {

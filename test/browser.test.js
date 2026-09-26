@@ -264,6 +264,37 @@ async function until(check, what, timeout = 10000) {
     assert.strictEqual(await visitor.$$eval('.cm-hold', (n) => n.length), 0, 'releasing clears the notice');
     console.log('  ok  releasing it starts it moving again');
 
+    /* ---------------- a stranger, with no account at all ---------------- */
+    // A fresh profile: no session, no storage, nothing carried over. This is
+    // the path almost everybody takes, so it is the one worth proving.
+    const strangerCtx = await browser.newContext();
+    const stranger = await newPage(strangerCtx);
+    await stranger.goto(`${base}/`, { waitUntil: 'networkidle' });
+    await stranger.fill('#tracker-number', number);
+    await stranger.click('#tracker [data-track-submit]');
+    await stranger.waitForSelector('.cm-chart', { timeout: 15000 });
+    assert.match(await stranger.textContent('.result-number'), new RegExp(number));
+    assert.ok(await stranger.$('.cm-mark .cm-hull'), 'the ship is on the chart');
+    assert.match(await stranger.textContent('[data-cm-read="lat"]'), /\d+°\d+\.\d'[NS]/, 'at a position on the water');
+    assert.ok((await stranger.$$eval('.timeline li', (n) => n.length)) > 0, 'with the movements');
+    assert.strictEqual(
+      await stranger.evaluate(() => Object.keys(localStorage).filter((k) => /auth|sb-/.test(k)).length),
+      0,
+      'and no session was needed for any of it'
+    );
+    console.log('  ok  a stranger pastes a number and gets the details and the chart');
+
+    // And the portal does not try to sell them an account they cannot open.
+    await stranger.goto(`${base}/portal`, { waitUntil: 'networkidle' });
+    await stranger.waitForSelector('#portal-auth:not([hidden])', { timeout: 15000 });
+    const gate = await stranger.textContent('#portal-auth');
+    assert.ok(!/create an account/i.test(gate), 'the gate offers no sign-up');
+    assert.match(gate, /do not need one to track/i, 'it points at the tracker instead');
+    await stranger.click('#portal-auth-alt');
+    await stranger.waitForURL(/#track/, { timeout: 10000 });
+    console.log('  ok  and the portal sends them to the tracker rather than a sign-up');
+    await strangerCtx.close();
+
     /* ---------------- an unknown number is refused kindly ---------------- */
     await visitor.goto(`${base}/`, { waitUntil: 'networkidle' });
     await visitor.fill('#tracker-number', 'PMT-2026-4F7K2QX9');

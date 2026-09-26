@@ -21,9 +21,22 @@ exports.get = async (req, res, next) => {
     if (fresh) {
       res.setHeader('Cache-Control', 'no-store');
     } else {
-      // Short cache: an edit at the desk should reach the site quickly, but
-      // this is read on every page load.
-      res.setHeader('Cache-Control', 'public, max-age=30');
+      /*
+       * Revalidate every time, and let the ETag answer 304 when nothing has
+       * changed.
+       *
+       * This used to be `max-age=30`, which meant a browser that had loaded
+       * any page in the last half minute served the old contact details out of
+       * its own cache without asking — so an edit at the desk could sit
+       * invisible for thirty seconds on exactly the pages someone was looking
+       * at. That is the opposite of what this endpoint is for.
+       *
+       * `no-cache` does not mean "do not cache": it means "ask first". The
+       * response is a few hundred bytes, the answer is usually a 304 with no
+       * body, and siteSettings keeps its own short cache so the round trip
+       * rarely reaches the database.
+       */
+      res.setHeader('Cache-Control', 'no-cache');
     }
     return res.json(siteSettings.publicView(settings));
   } catch (err) {

@@ -173,10 +173,29 @@ number and a link to it. Every public movement emails the same people. Both are
 settings the desk can switch off, and both are silent no-ops until `RESEND_API_KEY`
 is set.
 
+## Nobody has to sign up
+
+Tracking a consignment needs no account at all. Paste the number on the home
+page and the timeline, the consignment's details and the live chart are there,
+with no session in the browser and nothing stored. The number is the credential.
+
+The same goes for everything else a visitor does. Live chat signs in
+anonymously — the visitor gets a Supabase anonymous identity and writes their
+own rows under it, falling back to the server when anonymous sign-ins are off.
+The enquiry, quote and application forms post to endpoints that take no session
+and reach the desk directly.
+
+There is no self-service registration, and no confirmation email. An account
+only adds one thing — every consignment booked to your address on one list —
+and putting a sign-up form and a confirmation link in front of something a
+visitor could already see is a toll gate before an open door. The accounts that
+exist are opened by the desk, for customers who book often enough to want the
+list. Signing in, and resetting a forgotten password, work as they always did.
+
 ## The customer portal (`/portal`)
 
-A customer signs in and sees every consignment of theirs in one place, each with
-the same timeline `/track` shows. Two things put a consignment on an account,
+An account holder signs in and sees every consignment of theirs in one place,
+each with the same timeline the tracking console shows. Two things put a consignment on an account,
 and the difference is the whole security model:
 
 - **Claimed.** The customer enters a tracking number and it is added to their
@@ -201,28 +220,26 @@ as `/track`, so it cannot show a field the tracking page would not.
 Accounts are ordinary Supabase users. Being on the `admins` table is unrelated:
 staff use `/admin`, customers use `/portal`, and neither grants the other.
 
-### Who sends the account emails
+### Who sends the password-reset email
 
-Sign-up confirmation and password reset go out through **Resend**, not through
-Supabase's built-in mailer. Supabase's is shared, rate-limited to a handful of
-messages an hour, and sends from an address with nothing to do with this
-company — a customer's first email from a shipping line should not be the one
-piece of it that looks like somebody else's.
+It goes out through **Resend**, not through Supabase's built-in mailer.
+Supabase's is shared, rate-limited to a handful of messages an hour, and sends
+from an address with nothing to do with this company — a customer's only email
+from a shipping line should not be the one piece of it that looks like somebody
+else's.
 
-So `POST /api/portal/register` and `POST /api/portal/reset` ask Supabase's admin
-API to *mint* the link without sending anything
-(`/auth/v1/admin/generate_link`), and then send it themselves in a branded
-message. Supabase still owns the token, the expiry and the verification; only
-the envelope changes. Signing in is untouched and still goes straight from the
-page to GoTrue — it sends no mail, so there is nothing to intercept, and a
+So `POST /api/portal/reset` asks Supabase's admin API to *mint* the link without
+sending anything (`/auth/v1/admin/generate_link`), and then sends it itself in a
+branded message. Supabase still owns the token, the expiry and the verification;
+only the envelope changes. Signing in is untouched and still goes straight from
+the page to GoTrue — it sends no mail, so there is nothing to intercept, and a
 password that does not have to cross this server should not.
 
-Both endpoints answer the same thing whatever happened. "If that address can
-receive mail, a link is on its way" is true whether or not an account exists,
-which is what stops the endpoint being a way of asking who banks with us. An
-address that is already registered is not told so in the response — it gets a
-private email saying somebody tried, with a reset link. Both carry a tight rate
-limit, because each accepted request puts a message in somebody's inbox.
+It answers the same thing whatever happened. "If that address has an account, a
+reset link is on its way" is true either way, which is what stops the endpoint
+being a way of asking who banks with us; an address with no account is sent
+nothing and told exactly the same. It carries a tight rate limit, because each
+accepted request puts a message in somebody's inbox.
 
 **What to set on the Supabase side.** In Authentication → URL Configuration, add
 your `PUBLIC_SITE_URL` + `/portal` to the redirect allow-list, or the link opens
@@ -301,7 +318,7 @@ src/
   utils/
     tracking.js         tracking numbers, statuses, modes
     fleet.js            where the fleet is, computed from the clock
-    authMail.js         portal sign-up and reset mail, ours not Supabase's
+    authMail.js         portal password-reset mail, ours not Supabase's
     places.js           the gazetteer, and what a lane implies
     searoute.js         a way through the sea lanes, rather than over land
     voyage.js           where one consignment is between scans
@@ -339,7 +356,6 @@ Public:
 | `GET`  | `/api/fleet`           | Every vessel, with its position right now   |
 | `GET`  | `/api/places?q=`       | Ports, airports and hubs, for the typeahead |
 | `GET`  | `/api/places/lane`     | What a lane implies: mode, distance, transit |
-| `POST` | `/api/portal/register` | Create an account, and mail the confirmation |
 | `POST` | `/api/portal/reset`    | Mail a password-reset link   |
 | `GET`  | `/api/fleet/:id`       | One vessel                                  |
 | `GET`  | `/api/careers`         | Open roles                                  |

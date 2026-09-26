@@ -10,9 +10,9 @@ const portal = require('../controllers/portalController');
 const auth = require('../controllers/portalAuthController');
 const { authLimiter } = require('../middleware/rateLimiter');
 
-// Registering and resetting send an email each, so they carry their own tight
-// limit. They take no session — they are how somebody gets one.
-router.post('/register', authLimiter, auth.register);
+// Resetting sends an email, so it carries its own tight limit and takes no
+// session. There is no register route: tracking needs no account, and the
+// accounts that do exist are opened by the desk.
 router.post('/reset', authLimiter, auth.reset);
 
 router.get('/shipments', portal.list);

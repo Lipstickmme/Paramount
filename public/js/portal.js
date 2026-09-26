@@ -92,20 +92,26 @@
 
   /* ------------------------------------------------------------- auth --- */
 
+  /*
+   * Two modes, not three.
+   *
+   * There is no sign-up. Tracking a consignment needs no account — paste the
+   * number on the home page and the timeline and the chart are there — so an
+   * account is only worth having when somebody wants every consignment on one
+   * list, and those are opened by the desk. Asking a visitor to register, wait
+   * for a confirmation email and come back, in order to see something they
+   * could already see, is a toll gate in front of an open door.
+   *
+   * Signing in and resetting a password stay, because the accounts that exist
+   * still need both.
+   */
   const AUTH_COPY = {
     signin: {
       title: 'Your consignments, in one place.',
       note: 'Sign in to see everything booked to or from your address, and anything you have added by tracking number.',
       action: 'Sign in',
-      alt: 'Create an account',
-      altMode: 'signup',
-    },
-    signup: {
-      title: 'Create an account.',
-      note: 'Use the address your consignments are booked under and they appear here automatically once you confirm it.',
-      action: 'Create account',
-      alt: 'I already have an account',
-      altMode: 'signin',
+      alt: 'Track a consignment instead',
+      altMode: null,
     },
     reset: {
       title: 'Reset your password.',
@@ -153,15 +159,6 @@
         // does not have to pass through our server should not.
         await client.auth.signInWithPassword(email, password);
         await enter();
-      } else if (state.mode === 'signup') {
-        // Through our server, so the confirmation email is ours rather than
-        // Supabase's — same token and expiry, our envelope. See
-        // src/utils/authMail.js.
-        const body = await post('/api/portal/register', { email, password });
-        state.mode = 'signin';
-        renderAuth();
-        $('portal-email').value = email;
-        authMessage(body.message, 'ok');
       } else {
         const body = await post('/api/portal/reset', { email });
         state.mode = 'signin';
@@ -351,8 +348,15 @@
   function wire() {
     $('portal-auth-form').addEventListener('submit', submitAuth);
 
+    // On the sign-in screen the alternative is not another mode — it is the
+    // tracking console, which is what most people arriving here actually want.
     $('portal-auth-alt').addEventListener('click', () => {
-      state.mode = AUTH_COPY[state.mode].altMode;
+      const next = AUTH_COPY[state.mode].altMode;
+      if (!next) {
+        window.location.href = '/#track';
+        return;
+      }
+      state.mode = next;
       renderAuth();
     });
 
