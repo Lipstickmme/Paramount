@@ -12,4 +12,8 @@ router.get('/reference', tracking.reference);
 router.post('/', tracking.lookup);
 router.get('/:number', tracking.lookup);
 
+// Anyone holding the number may ask to see the cargo. The /track limiter this
+// router sits behind is what keeps it from being used to spam the desk.
+router.post('/:number/photo-request', tracking.requestPhoto);
+
 module.exports = router;

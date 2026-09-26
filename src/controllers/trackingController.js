@@ -14,7 +14,9 @@
  */
 
 const shipments = require('../utils/shipmentStore');
+const photos = require('../utils/photoStore');
 const tracking = require('../utils/tracking');
+const notify = require('../utils/notify');
 
 /** The number out of a path segment, a query string or a posted body. */
 function requestedNumber(req) {
@@ -58,14 +60,74 @@ async function lookup(req, res, next) {
       });
     }
 
-    const events = await shipments.listEvents(shipment.id);
-    const view = shipments.toPublic(shipment, events);
+    const [events, gallery] = await Promise.all([
+      shipments.listEvents(shipment.id),
+      photos.publicView(shipment.id),
+    ]);
+    const view = { ...shipments.toPublic(shipment, events), ...gallery };
 
     // A consignment that is still moving should not be cached; a delivered one
     // will not change again.
     res.setHeader('Cache-Control', view.is_delivered ? 'public, max-age=300' : 'no-store');
     return res.json({ ok: true, shipment: view });
   } catch (err) {
+    return next(err);
+  }
+}
+
+/**
+ * POST /api/track/:number/photo-request
+ *
+ * Holding the number is what lets anyone see the consignment, so it is also
+ * what lets them ask to see the cargo. An address is optional and only used to
+ * say the photo is up; asking twice is the same request, and the desk is
+ * emailed once, when the first one opens.
+ */
+async function requestPhoto(req, res, next) {
+  try {
+    const number = tracking.normalise(requestedNumber(req));
+    if (!tracking.isTrackingNumber(number)) {
+      return res.status(422).json({ error: 'malformed_tracking_number', message: 'That is not a Paramount tracking number.' });
+    }
+
+    const body = req.body || {};
+    // The same trap the contact form sets. A bot that fills it is told it
+    // worked, and nothing is filed.
+    if (String(body.website || '').trim()) return res.status(201).json({ ok: true, request: { open: true } });
+
+    const email = String(body.email || '').trim().slice(0, 200);
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(422).json({ error: 'invalid_email', message: 'That email address does not look right. Leave it blank if you would rather not be told.' });
+    }
+    const note = String(body.note || '').trim().slice(0, 500) || null;
+
+    const shipment = await shipments.getByTrackingNumber(number);
+    if (!shipment) {
+      return res.status(404).json({ error: 'not_found', message: 'No consignment found for that number.' });
+    }
+    if (shipment.status === 'cancelled') {
+      return res.status(409).json({ error: 'cancelled', message: 'That consignment was cancelled, so there is nothing to photograph.' });
+    }
+
+    const result = await photos.requestPhoto(shipment.id, { email: email || null, note });
+    if (result.first) {
+      // Its failure is swallowed: a desk email that did not go should not tell
+      // the customer their request did not either. It is filed regardless.
+      await notify.photoRequested(shipment, result.request).catch(() => false);
+    }
+
+    return res.status(result.duplicate ? 200 : 201).json({
+      ok: true,
+      duplicate: result.duplicate,
+      request: { open: true, requested_at: result.request.created_at },
+      message: email
+        ? 'Requested. The desk will add a photo here, and we will email you when it is up.'
+        : 'Requested. The desk will add a photo here; check back on this page.',
+    });
+  } catch (err) {
+    if (err instanceof photos.PhotoError) {
+      return res.status(err.status).json({ error: err.code, message: err.message });
+    }
     return next(err);
   }
 }
@@ -82,4 +144,4 @@ function reference(req, res) {
   });
 }
 
-module.exports = { lookup, reference };
+module.exports = { lookup, reference, requestPhoto };

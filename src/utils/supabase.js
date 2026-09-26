@@ -28,7 +28,8 @@ function getSupabase() {
     return client;
   }
 
-  const base = `${rawUrl.replace(/\/+$/, '')}/rest/v1`;
+  const root = rawUrl.replace(/\/+$/, '');
+  const base = `${root}/rest/v1`;
   const headers = {
     apikey: key,
     Authorization: `Bearer ${key}`,
@@ -121,6 +122,48 @@ function getSupabase() {
       // A 204 carries no body even when representation was asked for.
       const text = await res.text().catch(() => '');
       return text ? JSON.parse(text) : [];
+    },
+
+    /**
+     * Put a file in a Storage bucket.
+     *
+     * Storage is a separate service from PostgREST on the same project, with
+     * the same service-role key. The object is written once under a random
+     * name, so there is nothing to overwrite and `x-upsert` stays off.
+     */
+    async storageUpload(bucket, objectPath, body, contentType) {
+      const res = await fetch(`${root}/storage/v1/object/${bucket}/${objectPath}`, {
+        method: 'POST',
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          'Content-Type': contentType,
+          'Cache-Control': 'max-age=31536000',
+          'x-upsert': 'false',
+        },
+        body,
+      });
+      if (!res.ok) {
+        throw new Error(`supabase storage upload ${bucket} failed: ${res.status} ${await res.text().catch(() => '')}`);
+      }
+      return true;
+    },
+
+    async storageRemove(bucket, paths) {
+      const res = await fetch(`${root}/storage/v1/object/${bucket}`, {
+        method: 'DELETE',
+        headers: { ...headers },
+        body: JSON.stringify({ prefixes: paths }),
+      });
+      if (!res.ok) {
+        throw new Error(`supabase storage delete ${bucket} failed: ${res.status} ${await res.text().catch(() => '')}`);
+      }
+      return true;
+    },
+
+    /** Where a public bucket serves an object from. */
+    publicUrl(bucket, objectPath) {
+      return `${root}/storage/v1/object/public/${bucket}/${objectPath}`;
     },
 
     async remove(table, query) {

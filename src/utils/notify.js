@@ -329,8 +329,66 @@ async function shipmentUpdated(shipment, event) {
   return { ok: result.ok, recipients: to.length, error: result.error };
 }
 
+/* --------------------------------------------------------------- photos --- */
+
+/** Someone holding the number has asked to see the cargo: tell the desk. */
+async function photoRequested(shipment, request) {
+  return notify(
+    `Photo requested: ${shipment.tracking_number}`,
+    [
+      `Someone tracking ${shipment.tracking_number} has asked for a photo of the consignment.`,
+      '',
+      `Route:     ${route(shipment)}`,
+      `Now at:    ${shipment.current_location || 'not recorded'}`,
+      `Asked by:  ${request.email || 'no address left'}`,
+      request.note ? `Their note: ${request.note}` : null,
+      '',
+      'Open the consignment on the desk and add one under Photos. It appears on the',
+      'tracking page straight away, and whoever left an address is emailed.',
+    ].filter((line) => line !== null).join('\n'),
+    { tracking_number: shipment.tracking_number, request_id: request.id },
+    request.email ? { replyTo: request.email } : {}
+  );
+}
+
+/** A photo has been added: tell everyone who asked and left an address. */
+async function photoReady(shipment, requests) {
+  const to = requests
+    .map((r) => String(r.email || '').trim())
+    .filter(Boolean)
+    .filter((a, i, all) => all.indexOf(a) === i);
+  if (!to.length) return { ok: false, recipients: 0, error: 'no_recipient' };
+
+  const configured = await mailSettings();
+  // One message per address: the people who asked do not know each other, and
+  // a shared To line would tell each of them who else is watching the cargo.
+  const results = await Promise.all(
+    to.map((address) =>
+      send({
+        to: address,
+        subject: `Photo of your consignment ${shipment.tracking_number}`,
+        html: false,
+        text: [
+          'Hello,',
+          '',
+          `You asked to see consignment ${shipment.tracking_number}. The desk has added a photo,`,
+          'and it is on the tracking page now:',
+          '',
+          `  ${trackingUrl(shipment.tracking_number)}`,
+          '',
+          configured.signature || 'Paramount Shipping',
+        ].join('\n'),
+      })
+    )
+  );
+  const sent = results.filter((r) => r.ok).length;
+  return { ok: sent > 0, recipients: sent };
+}
+
 module.exports = {
   notify,
+  photoRequested,
+  photoReady,
   send,
   sendEmail,
   enquiry,

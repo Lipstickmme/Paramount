@@ -15,5 +15,8 @@ router.patch('/:id', shipments.update);
 router.delete('/:id', shipments.remove);
 router.get('/:id/events', shipments.events);
 router.post('/:id/events', shipments.addEvent);
+router.get('/:id/photos', shipments.photos);
+router.post('/:id/photos', shipments.addPhoto);
+router.delete('/:id/photos/:photoId', shipments.removePhoto);
 
 module.exports = router;

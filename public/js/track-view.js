@@ -8,8 +8,9 @@
    there is only one customer-facing view of a consignment and it should not
    drift into two.
 
-   Pure rendering: it takes the object /api/track returns and gives back HTML.
-   It fetches nothing and wires nothing.
+   Rendering, almost entirely: it takes the object /api/track returns and
+   gives back HTML. The one thing it sends is a request for a photo, wired in
+   activate() because both pages would otherwise wire it the same way twice.
    ========================================================================= */
 
 (function (global) {
@@ -232,6 +233,74 @@
       </section>`;
   }
 
+  /**
+   * Photos of the cargo, and the way to ask for one.
+   *
+   * A consignment is a line on a chart and a list of scans; a photo is the
+   * first thing that shows the box is real and in one piece. Anyone holding
+   * the number can ask, because anyone holding it can already see the rest.
+   * Once asked, the panel says so rather than offering the button again —
+   * asking twice does not make the desk faster, and it should not look as if
+   * it might.
+   */
+  function photos(s) {
+    const list = Array.isArray(s.photos) ? s.photos : [];
+    const asked = s.photo_request && s.photo_request.open;
+    const canAsk = s.status !== 'cancelled';
+    if (!list.length && !canAsk) return '';
+
+    const grid = list.length
+      ? `<div class="photo-grid">${list
+          .map((p, i) => `
+          <a class="photo" href="${esc(p.url)}" target="_blank" rel="noopener" data-photo="${i}">
+            <img src="${esc(p.url)}" alt="${esc(p.caption || `Photo of ${s.tracking_number}`)}" loading="lazy" decoding="async" />
+            <span class="photo-cap">${p.caption ? esc(p.caption) : when(p.taken_at, { withTime: false })}</span>
+          </a>`)
+          .join('')}</div>`
+      : '';
+
+    let ask = '';
+    if (asked) {
+      ask = `
+        <p class="photo-wait" data-photo-wait>
+          <span class="dot"></span>
+          A photo was requested ${when(s.photo_request.requested_at, { withTime: false })}. The desk will add it here.
+        </p>`;
+    } else if (canAsk) {
+      ask = `
+        <div class="photo-ask" data-photo-ask-wrap>
+          <p class="muted">${list.length ? 'Want a newer one?' : 'Want to see it?'} Ask the desk for a photo of the cargo. It appears on this page for anyone with the number.</p>
+          <button type="button" class="btn sm ghost" data-photo-ask>Request a photo</button>
+          <form class="photo-form" data-photo-form hidden novalidate>
+            <div class="field">
+              <label for="photo-email">Email <span class="opt">(optional, to hear when it is up)</span></label>
+              <input id="photo-email" type="email" name="email" autocomplete="email" placeholder="you@company.com" />
+            </div>
+            <div class="field">
+              <label for="photo-note">Anything in particular? <span class="opt">(optional)</span></label>
+              <input id="photo-note" type="text" name="note" maxlength="500" placeholder="The markings on the crates, the seal…" />
+            </div>
+            <div class="honeypot" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
+            <div class="photo-form-actions">
+              <button type="submit" class="btn sm">Send request</button>
+              <button type="button" class="btn sm ghost" data-photo-cancel>Cancel</button>
+            </div>
+            <div class="form-status" role="status" aria-live="polite"></div>
+          </form>
+        </div>`;
+    }
+
+    return `
+      <section class="card result-panel photos" data-reveal data-photos>
+        <div class="panel-title">
+          <h3>Photos</h3>
+          <span class="mono muted" style="font-size:.76rem">${list.length ? `${list.length} photo${list.length === 1 ? '' : 's'}` : 'None yet'}</span>
+        </div>
+        ${grid}
+        ${ask}
+      </section>`;
+  }
+
   function render(s) {
     const moving = isMoving(s);
     return `
@@ -285,6 +354,8 @@
         </div>
       </div>
 
+      ${photos(s)}
+
       <div class="result-note" data-reveal>
         <strong>Something not right?</strong>
         <span class="muted">Quote ${esc(s.tracking_number)} to the control tower and a named person will pick it up — <a class="link" href="/contact">contact the desk</a> or open the chat.</span>
@@ -305,10 +376,107 @@
       stopChart();
       stopChart = null;
     }
+    wirePhotos(root || document, shipment);
     const stage = (root || document).querySelector('[data-consignment-map]');
     const chart = global.PARAMOUNT_CONSIGNMENT_MAP;
     if (!stage || !chart) return;
     stopChart = chart.mount(stage, shipment);
+  }
+
+  /** Open a photo full size in the page, falling back to the link. */
+  function viewer() {
+    let dialog = document.querySelector('dialog.photo-view');
+    if (dialog) return dialog;
+    if (typeof HTMLDialogElement !== 'function') return null;
+    dialog = document.createElement('dialog');
+    dialog.className = 'photo-view';
+    dialog.innerHTML = `
+      <figure>
+        <img alt="" />
+        <figcaption></figcaption>
+      </figure>
+      <button type="button" class="photo-view-close" aria-label="Close">&times;</button>`;
+    dialog.querySelector('.photo-view-close').addEventListener('click', () => dialog.close());
+    // A click on the backdrop, outside the picture, closes it too.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    document.body.appendChild(dialog);
+    return dialog;
+  }
+
+  function wirePhotos(root, s) {
+    const panel = root.querySelector('[data-photos]');
+    if (!panel || !s) return;
+
+    panel.querySelectorAll('[data-photo]').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        const dialog = viewer();
+        if (!dialog || event.metaKey || event.ctrlKey) return;
+        event.preventDefault();
+        const photo = s.photos[Number(link.getAttribute('data-photo'))] || {};
+        const img = dialog.querySelector('img');
+        img.src = photo.url;
+        img.alt = photo.caption || `Photo of ${s.tracking_number}`;
+        dialog.querySelector('figcaption').textContent =
+          [photo.caption, when(photo.taken_at)].filter(Boolean).join(' · ');
+        dialog.showModal();
+      });
+    });
+
+    const ask = panel.querySelector('[data-photo-ask]');
+    const form = panel.querySelector('[data-photo-form]');
+    if (!ask || !form) return;
+    const status = form.querySelector('.form-status');
+    const send = form.querySelector('button[type="submit"]');
+
+    const open = (on) => {
+      form.hidden = !on;
+      ask.hidden = on;
+      if (on) form.querySelector('input[name="email"]').focus();
+    };
+    ask.addEventListener('click', () => open(true));
+    form.querySelector('[data-photo-cancel]').addEventListener('click', () => open(false));
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const email = form.elements.email.value.trim();
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        status.className = 'form-status bad';
+        status.textContent = 'That email address does not look right. Leave it blank if you would rather not be told.';
+        return;
+      }
+      send.disabled = true;
+      status.className = 'form-status';
+      status.textContent = 'Sending\u2026';
+      try {
+        const res = await fetch(`/api/track/${encodeURIComponent(s.tracking_number)}/photo-request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            email,
+            note: form.elements.note.value.trim(),
+            website: form.elements.website.value,
+          }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.message || `Request failed (${res.status})`);
+
+        // The request is the consignment's now, not this form's: say so in
+        // the same words a reload would, and take the button away.
+        s.photo_request = body.request || { open: true, requested_at: new Date().toISOString() };
+        const wrap = panel.querySelector('[data-photo-ask-wrap]');
+        const done = document.createElement('p');
+        done.className = 'photo-wait';
+        done.setAttribute('data-photo-wait', '');
+        done.innerHTML = `<span class="dot"></span>${esc(body.message || 'Requested. The desk will add a photo here.')}`;
+        wrap.replaceWith(done);
+      } catch (err) {
+        status.className = 'form-status bad';
+        status.textContent = err.message;
+        send.disabled = false;
+      }
+    });
   }
 
   global.PARAMOUNT_TRACK_VIEW = {
@@ -322,6 +490,7 @@
     facts,
     timeline,
     routeMap,
+    photos,
     render,
     MILESTONES,
     MILESTONE_LABELS,

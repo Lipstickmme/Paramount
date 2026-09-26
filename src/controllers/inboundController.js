@@ -165,7 +165,14 @@ exports.resend = async (req, res, next) => {
     const email = parseEmail(payload);
     const mailbox = config.mailboxAddress();
     if (mailbox && email.to && !email.to.toLowerCase().includes(config.parseAddress(mailbox).email)) {
-      return res.status(200).json({ ok: true, ignored: 'not_for_mailbox' });
+      // Say which addresses, so a mailbox set on the wrong domain is visible
+      // from the delivery log rather than looking like a silent success.
+      return res.status(200).json({
+        ok: true,
+        ignored: 'not_for_mailbox',
+        to: email.to,
+        mailbox: config.parseAddress(mailbox).email,
+      });
     }
 
     if (!email.text && !email.html) {
@@ -176,14 +183,20 @@ exports.resend = async (req, res, next) => {
       }
     }
 
-    // Archive onto a thread (best effort; never fails the webhook).
+    // Archive onto a thread (best effort; never fails the webhook). What
+    // happened goes back in the response as well as the log, because the
+    // provider's delivery log is where somebody looks when the mail reached
+    // the provider and never showed up on the desk.
     let threadId = null;
+    let filed = 'no_database';
     const supabase = getSupabase();
     if (supabase) {
       try {
         threadId = await fileOnThread(supabase, email);
+        filed = threadId ? 'ok' : 'no_thread';
       } catch (err) {
         console.error('[paramount] failed to file inbound email:', err.message);
+        filed = `failed: ${String(err.message || err).slice(0, 200)}`;
       }
     }
 
@@ -216,7 +229,7 @@ exports.resend = async (req, res, next) => {
       });
     }
 
-    return res.status(200).json({ ok: true, threadId, forwarded });
+    return res.status(200).json({ ok: true, threadId, filed, forwarded });
   } catch (err) {
     return next(err);
   }

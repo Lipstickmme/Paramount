@@ -13,6 +13,7 @@
  */
 
 const shipments = require('../utils/shipmentStore');
+const photos = require('../utils/photoStore');
 const tracking = require('../utils/tracking');
 const notify = require('../utils/notify');
 const { requireAdmin } = require('../utils/adminAuth');
@@ -158,10 +159,18 @@ exports.list = async (req, res, next) => {
     const auth = await gate(req, res);
     if (!auth.ok) return undefined;
 
-    const rows = await shipments.list({
-      status: req.query.status,
-      query: req.query.q || req.query.query,
-      limit: req.query.limit,
+    const [rows, asked] = await Promise.all([
+      shipments.list({
+        status: req.query.status,
+        query: req.query.q || req.query.query,
+        limit: req.query.limit,
+      }),
+      // Which consignments a customer is waiting on a photo of, so the list
+      // can say so without the desk opening each one.
+      photos.openRequestShipments().catch(() => new Set()),
+    ]);
+    rows.forEach((row) => {
+      row.photo_requested = asked.has(row.id);
     });
     return res.json({ ok: true, count: rows.length, shipments: rows });
   } catch (err) {
@@ -343,6 +352,82 @@ exports.addEvent = async (req, res, next) => {
     return res.status(201).json({ ok: true, event: result.event, shipment: result.shipment, notified: mail });
   } catch (err) {
     return next(err);
+  }
+};
+
+/* ---------------------------------------------------------------- photos --- */
+
+function photoFailure(res, err, next) {
+  if (err instanceof photos.PhotoError) {
+    return res.status(err.status).json({ error: err.code, message: err.message });
+  }
+  return next(err);
+}
+
+/** GET /api/shipments/:id/photos — the photos, and who has asked for one. */
+exports.photos = async (req, res, next) => {
+  try {
+    const auth = await gate(req, res);
+    if (!auth.ok) return undefined;
+
+    const shipment = await shipments.getById(req.params.id);
+    if (!shipment) return res.status(404).json({ error: 'not_found', message: 'No such consignment.' });
+
+    const [list, requests] = await Promise.all([
+      photos.listPhotos(shipment.id),
+      photos.listRequests(shipment.id),
+    ]);
+    return res.json({ ok: true, photos: list, requests, limit: photos.MAX_PER_SHIPMENT });
+  } catch (err) {
+    return photoFailure(res, err, next);
+  }
+};
+
+/**
+ * POST /api/shipments/:id/photos
+ *
+ * The image arrives as a data URL, already resized by the desk, so this stays
+ * an ordinary JSON call under the platform's request-size limit. Adding one
+ * answers every open request on the consignment, and emails whoever asked.
+ */
+exports.addPhoto = async (req, res, next) => {
+  try {
+    const auth = await gate(req, res);
+    if (!auth.ok) return undefined;
+
+    const shipment = await shipments.getById(req.params.id);
+    if (!shipment) return res.status(404).json({ error: 'not_found', message: 'No such consignment.' });
+
+    const photo = await photos.addPhoto(shipment.id, {
+      dataUrl: req.body && req.body.image,
+      caption: text(req.body && req.body.caption, 200),
+    });
+
+    const answered = await photos.fulfilRequests(shipment.id);
+    const mail = answered.length
+      ? await notify.photoReady(shipment, answered)
+      : { ok: false, recipients: 0 };
+
+    return res.status(201).json({ ok: true, photo, answered: answered.length, notified: mail });
+  } catch (err) {
+    return photoFailure(res, err, next);
+  }
+};
+
+/** DELETE /api/shipments/:id/photos/:photoId */
+exports.removePhoto = async (req, res, next) => {
+  try {
+    const auth = await gate(req, res);
+    if (!auth.ok) return undefined;
+
+    const shipment = await shipments.getById(req.params.id);
+    if (!shipment) return res.status(404).json({ error: 'not_found', message: 'No such consignment.' });
+
+    const removed = await photos.removePhoto(shipment.id, req.params.photoId);
+    if (!removed) return res.status(404).json({ error: 'not_found', message: 'That photo is not on this consignment.' });
+    return res.json({ ok: true });
+  } catch (err) {
+    return photoFailure(res, err, next);
   }
 };
 

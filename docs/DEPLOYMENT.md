@@ -126,6 +126,7 @@ come next.
    | [`supabase/migrations/0003_shipments.sql`](../supabase/migrations/0003_shipments.sql) | `shipments`, `shipment_events`, `quote_requests`, the roll-up trigger and `track_shipment()` — **the tracking product; without it the desk cannot book anything and every public lookup answers "not found"** |
    | [`supabase/migrations/0004_settings.sql`](../supabase/migrations/0004_settings.sql) | The email and chat settings the desk edits, on the settings row |
    | [`supabase/migrations/0005_portal.sql`](../supabase/migrations/0005_portal.sql) | `shipment_claims` and the portal's two settings — needed for the customer portal at `/portal` |
+   | [`supabase/migrations/0006_photos.sql`](../supabase/migrations/0006_photos.sql) | `shipment_photos`, `photo_requests` and the public `consignment-photos` Storage bucket — needed for customers to request, and the desk to upload, photos of a consignment |
 
    Everything is behind row level security. `enquiries` has no anon policy at all:
    writes arrive through the API using the service role.
@@ -278,6 +279,25 @@ The endpoint is `POST /api/inbound/resend`.
    | `FORWARD_TO` | your real inbox |
 
 5. **Redeploy**, then send a test message to `MAILBOX_ADDRESS`.
+
+`/api/inbound-email` is the same endpoint under another name, so a webhook
+already pointed there works too. Resend itself never delivers to a mailbox: it
+receives the message and calls this webhook, and the webhook is what puts it on
+the desk's **Email** tab and, if `FORWARD_TO` is set, copies it to a real inbox.
+So "it arrives in Resend but not in my mailbox" is always this webhook failing,
+and Resend's webhook log shows why:
+
+| Response in Resend's log | Meaning |
+| ------------------------ | ------- |
+| `404` with no `ok` field | The URL is not this endpoint. Use one of the two above. |
+| `401` `"reason":"no_secret_configured"` | `RESEND_WEBHOOK_SECRET` is not set in Vercel, or the deploy predates it. |
+| `401` `"reason":"signature_mismatch"` | The secret is from a different webhook. Each webhook has its own. |
+| `200` `"ignored":"not_for_mailbox"` | The mail was sent to an address other than `MAILBOX_ADDRESS`; the response shows both. |
+| `200` `"filed":"failed: …"` | Supabase refused it, usually because `0002_email.sql` has not been run. |
+| `200` `"forwarded":false` | Filed on the desk, but `FORWARD_TO` is unset or would loop. |
+
+`MAILBOX_ADDRESS`, `FORM_FROM` and the domain the MX records point at must all
+be the same verified domain in Resend.
 
 What happens on each delivery:
 

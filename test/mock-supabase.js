@@ -130,6 +130,22 @@ function schema() {
           : null,
       rows: [],
     },
+    shipment_photos: {
+      columns: ['id', 'created_at', 'shipment_id', 'url', 'storage_path', 'caption', 'content_type', 'bytes'],
+      defaults: () => ({ id: uuid(), created_at: new Date().toISOString() }),
+      notNull: ['shipment_id', 'url'],
+      rows: [],
+    },
+    photo_requests: {
+      columns: ['id', 'created_at', 'shipment_id', 'email', 'note', 'status', 'fulfilled_at'],
+      defaults: () => ({ id: uuid(), created_at: new Date().toISOString(), status: 'open' }),
+      notNull: ['shipment_id'],
+      check: (row) =>
+        ['open', 'done'].includes(row.status)
+          ? null
+          : 'new row for relation "photo_requests" violates check constraint "photo_requests_status_check"',
+      rows: [],
+    },
     quote_requests: {
       columns: ['id', 'created_at', 'name', 'email', 'phone', 'company', 'mode', 'origin', 'destination',
         'cargo_type', 'weight_kg', 'dimensions', 'pieces', 'ready_date', 'incoterms', 'message', 'ip', 'status', 'notes'],
@@ -152,7 +168,7 @@ function schema() {
   };
 }
 
-function start({ tables, port = 0, drop = [] }) {
+function start({ tables, port = 0, drop = [], buckets }) {
   const db = tables || schema();
   // `drop` simulates a database built from an older migration.
   drop.forEach((spec) => {
@@ -223,11 +239,46 @@ function start({ tables, port = 0, drop = [] }) {
     });
   }
 
+  // Storage: bucket -> Map(path -> { type, body }). A bucket exists once
+  // 0006_photos.sql has "run", which is the default; `buckets: []` is a
+  // project where it has not.
+  const storage = new Map((buckets || ['consignment-photos']).map((b) => [b, new Map()]));
+
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://mock');
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
-    const raw = Buffer.concat(chunks).toString('utf8');
+    const bytes = Buffer.concat(chunks);
+
+    /* ----------------------------------------------------------- Storage -- */
+
+    const object = /^\/storage\/v1\/object\/(public\/)?([^/]+)(?:\/(.+))?$/.exec(url.pathname);
+    if (object) {
+      const [, isPublic, bucketName, objectPath] = object;
+      const bucket = storage.get(bucketName);
+      // Storage answers a missing bucket with 400 and a 404 inside the body.
+      if (!bucket) return json(res, 400, { statusCode: '404', error: 'Bucket not found', message: 'Bucket not found' });
+      if (req.method === 'GET' && isPublic) {
+        const hit = bucket.get(objectPath);
+        if (!hit) return json(res, 400, { statusCode: '404', error: 'not_found', message: 'Object not found' });
+        res.writeHead(200, { 'Content-Type': hit.type });
+        return res.end(hit.body);
+      }
+      if (identify(req).role !== 'service_role') return json(res, 403, { statusCode: '403', message: 'Unauthorized' });
+      if (req.method === 'POST' && objectPath) {
+        if (bucket.has(objectPath)) return json(res, 400, { statusCode: '409', error: 'Duplicate', message: 'The resource already exists' });
+        bucket.set(objectPath, { type: req.headers['content-type'], body: bytes });
+        return json(res, 200, { Key: `${bucketName}/${objectPath}` });
+      }
+      if (req.method === 'DELETE' && !objectPath) {
+        const { prefixes = [] } = JSON.parse(bytes.toString('utf8') || '{}');
+        prefixes.forEach((p) => bucket.delete(p));
+        return json(res, 200, prefixes.map((name) => ({ name })));
+      }
+      return json(res, 400, { statusCode: '400', message: `No storage route for ${req.method} ${url.pathname}` });
+    }
+
+    const raw = bytes.toString('utf8');
     const body = raw ? JSON.parse(raw) : {};
 
     if (req.method === 'OPTIONS') {
@@ -524,6 +575,7 @@ function start({ tables, port = 0, drop = [] }) {
 
   server.anonymousEnabled = true;
   server.db = db;
+  server.storage = storage;
   server.users = users;
   /** What generate_link was asked for, so a test can prove Supabase sent none. */
   server.generatedLinks = [];

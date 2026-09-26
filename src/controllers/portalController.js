@@ -19,6 +19,7 @@
  */
 
 const shipments = require('../utils/shipmentStore');
+const photos = require('../utils/photoStore');
 const tracking = require('../utils/tracking');
 const siteSettings = require('../utils/siteSettings');
 const { requireCustomer } = require('../utils/sessionAuth');
@@ -134,9 +135,12 @@ exports.get = async (req, res, next) => {
       });
     }
 
-    const events = await shipments.listEvents(shipment.id);
+    const [events, gallery] = await Promise.all([
+      shipments.listEvents(shipment.id),
+      photos.publicView(shipment.id),
+    ]);
     res.setHeader('Cache-Control', 'no-store');
-    return res.json({ ok: true, shipment: shipments.toPublic(shipment, events) });
+    return res.json({ ok: true, shipment: { ...shipments.toPublic(shipment, events), ...gallery } });
   } catch (err) {
     return next(err);
   }

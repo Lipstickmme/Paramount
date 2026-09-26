@@ -158,6 +158,27 @@ says it is. A hold marked internal stops the consignment without publishing a
 reason: the position is derived only from published events, so an internal note
 can never reach the page, and neither can an internal scan's coordinates.
 
+### Photos of the cargo
+
+Under the tracking result, anyone holding the number can **request a photo**,
+optionally leaving an email address. The desk is emailed once, when the first
+request opens; asking again is the same request, not another row. The desk
+list marks the consignment *Photo requested* and counts it on the tab.
+
+On the desk, the consignment's **Photos** panel lists who is waiting and takes
+an upload. The browser resizes the picture to 1600 px as a JPEG before sending
+it, so a phone photo fits well under Vercel's 4.5 MB request limit. It goes into
+the public `consignment-photos` Storage bucket under a random name and appears
+on the tracking page at once; every open request is closed and each person who
+left an address is emailed a link. The server checks the file's bytes, not its
+name, so only real JPEG, PNG or WebP images are stored. Up to 12 photos per
+consignment; any can be removed.
+
+A photo is exactly as private as the tracking number: its address is only ever
+shown on the tracking page, and who asked for it never is. Without
+`0006_photos.sql` tracking works as before with no photos, and the desk is told
+which file to run when it tries to add one.
+
 ### Statuses
 
 `pending` → `picked_up` → `in_transit` → `at_facility` → `out_for_delivery` →
@@ -379,7 +400,8 @@ Public:
 | `GET`  | `/api/health`          | What the running server can see (`?probe=1` also checks the schema) |
 | `GET`  | `/api/public-config`   | Supabase URL and browser key                |
 | `POST` | `/api/chat/message`    | Chat, fallback path                         |
-| `POST` | `/api/inbound/resend`  | Signed inbound-mail webhook                 |
+| `POST` | `/api/track/:number/photo-request` | Ask the desk for a photo of the cargo |
+| `POST` | `/api/inbound/resend`  | Signed inbound-mail webhook (also answers at `/api/inbound-email`) |
 
 Customer, signed in (Bearer token from their own session):
 
@@ -401,10 +423,23 @@ Desk only (Bearer token from the signed-in staff session):
 | `DELETE` | `/api/shipments/:id`           | Delete it and its history        |
 | `GET`    | `/api/shipments/:id/events`    | Every movement, internal included |
 | `POST`   | `/api/shipments/:id/events`    | Record a movement                |
+| `GET`    | `/api/shipments/:id/photos`    | Its photos and photo requests    |
+| `POST`   | `/api/shipments/:id/photos`    | Upload one (`{ image: dataUrl, caption }`) |
+| `DELETE` | `/api/shipments/:id/photos/:photoId` | Remove one                 |
 | `POST`   | `/api/emails/reply`            | Reply to a mail thread           |
 
 Rate limiting: 240 requests a minute per address across the API, and a separate
 30 a minute on `/api/track`, which is what stops the number space being walked.
+
+**Every route needs a file under `api/` on Vercel.** Vercel's filesystem
+routing compiles each bracketed segment of a file name — `[...rest]` included —
+to exactly one path segment, so `api/shipments/[id].js` answers
+`/api/shipments/abc` but not `/api/shipments/abc/events`; that needs
+`api/shipments/[id]/events.js`. A route deeper than any file is a bare 404 from
+Vercel's edge that Express never sees (the pages show it as "Request failed
+(404)"), and every local test still passes. `npm test` runs
+`scripts/check-vercel-routes.js`, which lists the routes Express has, builds the
+patterns Vercel would from `api/`, and fails on any route nothing reaches.
 
 ## Getting started
 
@@ -420,7 +455,7 @@ still works: consignments, enquiries, rate requests and chat are written to
 Run the suites:
 
 ```bash
-npm test           # API and storage
+npm test           # API and storage, then the Vercel route check
 npm run test:browser   # the site driven in a real browser (needs playwright-core)
 ```
 
@@ -436,6 +471,7 @@ run more than once.
 | `0003_shipments.sql`  | Consignments, movement history, rate requests, `track_shipment()` |
 | `0004_settings.sql`   | Email and chat settings on the settings row                  |
 | `0005_portal.sql`     | Customer portal: `shipment_claims` and its two settings      |
+| `0006_photos.sql`     | Consignment photos: two tables and the public `consignment-photos` bucket (optional) |
 | `grant-admin.sql`     | Grants one address access to the desk                        |
 
 `GET /api/health?probe=1` reads one row of every column the server uses and names

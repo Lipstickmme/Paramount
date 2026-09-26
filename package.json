@@ -10,8 +10,9 @@
     "build": "node scripts/build-pages.js",
     "prestart": "node scripts/build-pages.js",
     "check:vercel": "node scripts/check-vercel-upload.js",
-    "test": "node test/api.test.js",
-    "test:browser": "node test/browser.test.js && node test/fallback.test.js"
+    "test": "node test/api.test.js && node scripts/check-vercel-routes.js",
+    "test:browser": "node test/browser.test.js && node test/fallback.test.js",
+    "check:routes": "node scripts/check-vercel-routes.js"
   },
   "engines": {
     "node": ">=18"

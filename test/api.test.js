@@ -443,12 +443,39 @@ async function withApp(env, fn) {
         assert.strictEqual(sb.db.email_messages.rows[0].to_email, 'ops@paramount.test');
         console.log('  ok  a signed inbound delivery lands in the admin inbox');
 
+        // The address the production webhook was pointed at answered 404 and
+        // filed nothing. It is the same endpoint now, and says it filed.
+        const aliasBody = body.replace('<m1@example.com>', '<m1b@example.com>');
+        const alias = await fetch(base + '/api/inbound-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'svix-id': 'msg_1b',
+            'svix-timestamp': ts,
+            'svix-signature': sign(SECRET, 'msg_1b', ts, aliasBody),
+          },
+          body: aliasBody,
+        });
+        assert.strictEqual(alias.status, 200, await alias.clone().text());
+        assert.strictEqual((await alias.json()).filed, 'ok');
+        assert.strictEqual(sb.db.email_messages.rows.length, 2, 'the alias files onto the same inbox');
+        assert.strictEqual(sb.db.email_threads.rows.length, 1, 'and onto the same thread');
+        console.log('  ok  /api/inbound-email is the same signed endpoint');
+
+        // Mail for another address is acknowledged, and the log says why.
+        const strayBody = body.replace('ops@paramount.test', 'info@elsewhere.test');
+        const stray = await post(strayBody, 'msg_1c', ts, sign(SECRET, 'msg_1c', ts, strayBody));
+        const strayOut = await stray.json();
+        assert.strictEqual(strayOut.ignored, 'not_for_mailbox');
+        assert.strictEqual(strayOut.mailbox, 'ops@paramount.test');
+        console.log('  ok  mail for another address says which mailbox it expected');
+
         const tampered = body.replace('Ada Kolen', 'Mallory Vane');
         const bad = await post(tampered, 'msg_2', ts, sign(SECRET, 'msg_2', ts, body));
         assert.strictEqual(bad.status, 401);
         // Named so a provider's delivery log says which of the failures it was.
         assert.strictEqual((await bad.json()).reason, 'signature_mismatch');
-        assert.strictEqual(sb.db.email_messages.rows.length, 1, 'nothing filed from an unverified post');
+        assert.strictEqual(sb.db.email_messages.rows.length, 2, 'nothing filed from an unverified post');
         console.log('  ok  a tampered body is refused and files nothing');
       }
     );
@@ -1375,6 +1402,237 @@ async function withApp(env, fn) {
       global.fetch = realFetch;
       sb.close();
     }
+  }
+
+  /* ---- photos: a customer asks, the desk uploads, the tracker shows it ---- */
+  {
+    const sb = await mock.start({});
+    const url = `http://127.0.0.1:${sb.address().port}`;
+    sb.createUser('desk@paramount.test', 'pw-desk', { admin: true });
+    const staff = (await fetch(`${url}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { apikey: mock.ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'desk@paramount.test', password: 'pw-desk' }),
+    }).then((r) => r.json())).access_token;
+
+    // Enough of a JPEG for the type check, which reads the leading bytes.
+    const jpeg = (size) => {
+      const buf = Buffer.alloc(size, 7);
+      buf[0] = 0xff; buf[1] = 0xd8; buf[2] = 0xff; buf[3] = 0xe0;
+      return `data:image/jpeg;base64,${buf.toString('base64')}`;
+    };
+
+    await withApp(
+      { SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY, SUPABASE_ANON_KEY: mock.ANON_KEY, RESEND_API_KEY: '' },
+      async (base) => {
+        const asStaff = (method, path, body) =>
+          fetch(base + path, {
+            method,
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${staff}` },
+            body: body ? JSON.stringify(body) : undefined,
+          }).then(async (r) => ({ status: r.status, body: await r.json().catch(() => ({})) }));
+
+        const made = await asStaff('POST', '/api/shipments', {
+          shipper_name: 'Vestberg Components AB', receiver_name: 'Okonkwo Trading Ltd',
+          origin_city: 'Gothenburg', destination_city: 'Lagos', mode: 'ocean_freight',
+        });
+        const { id, tracking_number: number } = made.body.shipment;
+
+        /* -- anyone with the number may ask ------------------------------ */
+        const ask = (body, n = number) => req(base, 'POST', `/api/track/${n}/photo-request`, body);
+
+        const first = await ask({ email: 'Ada@Example.com', note: 'The seal, please.' });
+        assert.strictEqual(first.status, 201, first.text);
+        assert.strictEqual(first.body.request.open, true);
+        assert.strictEqual(sb.db.photo_requests.rows.length, 1);
+        assert.strictEqual(sb.db.photo_requests.rows[0].email, 'ada@example.com', 'addresses are folded');
+
+        const again = await ask({ email: 'ada@example.com' });
+        assert.strictEqual(again.status, 200);
+        assert.strictEqual(again.body.duplicate, true);
+        assert.strictEqual(sb.db.photo_requests.rows.length, 1, 'asking twice is one request');
+
+        const anonymous = await ask({});
+        assert.strictEqual(anonymous.status, 201);
+        assert.strictEqual(sb.db.photo_requests.rows.length, 2, 'someone else holding the number is another');
+
+        assert.strictEqual((await ask({ email: 'not-an-address' })).status, 422);
+        assert.strictEqual((await ask({ website: 'http://spam.test' })).status, 201);
+        assert.strictEqual(sb.db.photo_requests.rows.length, 2, 'the honeypot files nothing');
+        assert.strictEqual((await ask({}, 'PMT-2026-4F7K2QX9')).status, 404);
+        assert.strictEqual((await ask({}, 'nonsense')).status, 422);
+        console.log('  ok  anyone holding the number can ask for a photo, once');
+
+        const waiting = await req(base, 'GET', `/api/track/${number}`);
+        assert.strictEqual(waiting.body.shipment.photo_request.open, true);
+        assert.deepStrictEqual(waiting.body.shipment.photos, []);
+        assert.ok(!/ada@example\.com/i.test(waiting.text), 'who asked is never on the public page');
+        console.log('  ok  the tracking page says a photo is on its way, and not who asked');
+
+        /* -- the desk sees who is waiting --------------------------------- */
+        const listed = await asStaff('GET', '/api/shipments');
+        assert.strictEqual(listed.body.shipments.find((r) => r.id === id).photo_requested, true);
+        assert.strictEqual((await req(base, 'GET', `/api/shipments/${id}/photos`)).status, 401, 'photos are desk-only here');
+        const gallery = await asStaff('GET', `/api/shipments/${id}/photos`);
+        assert.strictEqual(gallery.body.requests.length, 2);
+        console.log('  ok  the desk list flags a consignment someone is waiting on');
+
+        /* -- only real images go up --------------------------------------- */
+        const svg = `data:image/jpeg;base64,${Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>').toString('base64')}`;
+        const disguised = await asStaff('POST', `/api/shipments/${id}/photos`, { image: svg });
+        assert.strictEqual(disguised.status, 422);
+        assert.strictEqual(disguised.body.error, 'invalid_image');
+        assert.strictEqual((await asStaff('POST', `/api/shipments/${id}/photos`, {})).status, 422);
+        console.log('  ok  a file is judged by its bytes, not by what it says it is');
+
+        /* -- uploading answers everyone who asked ------------------------- */
+        // 1.5 MB: over the ordinary 1 MB body limit, inside the photo one.
+        const up = await asStaff('POST', `/api/shipments/${id}/photos`, {
+          image: jpeg(1.5 * 1024 * 1024),
+          caption: 'Loaded at Gothenburg, seal 448120',
+        });
+        assert.strictEqual(up.status, 201, JSON.stringify(up.body));
+        assert.strictEqual(up.body.answered, 2);
+        assert.ok(sb.db.photo_requests.rows.every((r) => r.status === 'done' && r.fulfilled_at));
+        const stored = [...sb.storage.get('consignment-photos').keys()];
+        assert.strictEqual(stored.length, 1);
+        assert.ok(stored[0].startsWith(`${id}/`) && stored[0].endsWith('.jpg'), stored[0]);
+        const served = await fetch(up.body.photo.url);
+        assert.strictEqual(served.status, 200, 'the public address serves the image');
+        assert.strictEqual(served.headers.get('content-type'), 'image/jpeg');
+        console.log('  ok  an upload lands in the bucket and answers every open request');
+
+        const shown = await req(base, 'GET', `/api/track/${number}`);
+        assert.strictEqual(shown.body.shipment.photos.length, 1);
+        assert.strictEqual(shown.body.shipment.photos[0].caption, 'Loaded at Gothenburg, seal 448120');
+        assert.strictEqual(shown.body.shipment.photos[0].url, up.body.photo.url);
+        assert.strictEqual(shown.body.shipment.photo_request.open, false);
+        const relisted = await asStaff('GET', '/api/shipments');
+        assert.strictEqual(relisted.body.shipments.find((r) => r.id === id).photo_requested, false);
+        console.log('  ok  the photo is on the tracking page and the request is closed');
+
+        const huge = await asStaff('POST', `/api/shipments/${id}/photos`, { image: jpeg(3.2 * 1024 * 1024) });
+        assert.strictEqual(huge.status, 413);
+        console.log('  ok  an image past the limit is refused as too large');
+
+        /* -- and it can be taken down ------------------------------------ */
+        const photoId = up.body.photo.id;
+        assert.strictEqual((await asStaff('DELETE', `/api/shipments/${id}/photos/${photoId}`)).status, 200);
+        assert.strictEqual(sb.storage.get('consignment-photos').size, 0, 'the file goes with the row');
+        assert.strictEqual((await req(base, 'GET', `/api/track/${number}`)).body.shipment.photos.length, 0);
+        assert.strictEqual((await asStaff('DELETE', `/api/shipments/${id}/photos/${photoId}`)).status, 404);
+        console.log('  ok  removing a photo takes it off the page and out of the bucket');
+      }
+    );
+    sb.close();
+  }
+
+  /* ---- photos on a project that has not run 0006 ---- */
+  {
+    const sb = await mock.start({});
+    const url = `http://127.0.0.1:${sb.address().port}`;
+    sb.createUser('desk@paramount.test', 'pw-desk', { admin: true });
+    const staff = (await fetch(`${url}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { apikey: mock.ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'desk@paramount.test', password: 'pw-desk' }),
+    }).then((r) => r.json())).access_token;
+    delete sb.db.shipment_photos;
+    delete sb.db.photo_requests;
+
+    await withApp(
+      { SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY, SUPABASE_ANON_KEY: mock.ANON_KEY, RESEND_API_KEY: '' },
+      async (base) => {
+        const asStaff = (method, path, body) =>
+          fetch(base + path, {
+            method,
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${staff}` },
+            body: body ? JSON.stringify(body) : undefined,
+          }).then(async (r) => ({ status: r.status, body: await r.json().catch(() => ({})) }));
+
+        const made = await asStaff('POST', '/api/shipments', {
+          shipper_name: 'S', receiver_name: 'R', origin_city: 'Gothenburg', destination_city: 'Lagos',
+        });
+        const { id, tracking_number: number } = made.body.shipment;
+
+        const tracked = await req(base, 'GET', `/api/track/${number}`);
+        assert.strictEqual(tracked.status, 200, 'tracking does not depend on the photo tables');
+        assert.deepStrictEqual(tracked.body.shipment.photos, []);
+        assert.strictEqual((await asStaff('GET', '/api/shipments')).status, 200, 'nor does the desk list');
+
+        const ask = await req(base, 'POST', `/api/track/${number}/photo-request`, {});
+        assert.strictEqual(ask.status, 503);
+        assert.match(ask.body.message, /0006_photos\.sql/);
+
+        const buf = Buffer.alloc(64, 1);
+        buf[0] = 0xff; buf[1] = 0xd8; buf[2] = 0xff;
+        const up = await asStaff('POST', `/api/shipments/${id}/photos`, { image: `data:image/jpeg;base64,${buf.toString('base64')}` });
+        assert.strictEqual(up.status, 503);
+        assert.match(up.body.message, /0006_photos\.sql/);
+        assert.strictEqual(sb.storage.get('consignment-photos').size, 0, 'no orphan left in the bucket');
+        console.log('  ok  without 0006 tracking still works and the desk is told which file to run');
+      }
+    );
+    sb.close();
+
+    const bare = await mock.start({ buckets: [] });
+    const bareUrl = `http://127.0.0.1:${bare.address().port}`;
+    bare.createUser('desk@paramount.test', 'pw-desk', { admin: true });
+    const bareStaff = (await fetch(`${bareUrl}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { apikey: mock.ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'desk@paramount.test', password: 'pw-desk' }),
+    }).then((r) => r.json())).access_token;
+    await withApp(
+      { SUPABASE_URL: bareUrl, SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY, SUPABASE_ANON_KEY: mock.ANON_KEY, RESEND_API_KEY: '' },
+      async (base) => {
+        const post = (path, body) => fetch(base + path, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bareStaff}` },
+          body: JSON.stringify(body),
+        }).then(async (r) => ({ status: r.status, body: await r.json() }));
+        const made = await post('/api/shipments', {
+          shipper_name: 'S', receiver_name: 'R', origin_city: 'Gothenburg', destination_city: 'Lagos',
+        });
+        const buf = Buffer.alloc(64, 1);
+        buf[0] = 0xff; buf[1] = 0xd8; buf[2] = 0xff;
+        const up = await post(`/api/shipments/${made.body.shipment.id}/photos`, { image: `data:image/jpeg;base64,${buf.toString('base64')}` });
+        assert.strictEqual(up.status, 503);
+        assert.strictEqual(up.body.error, 'bucket_missing');
+        assert.match(up.body.message, /consignment-photos[\s\S]*0006_photos\.sql/);
+        console.log('  ok  a project without the bucket is told how to make it');
+      }
+    );
+    bare.close();
+  }
+
+  /* ---- photos without Supabase, on the local files ---- */
+  {
+    const dir = require('fs').mkdtempSync(require('path').join(require('os').tmpdir(), 'paramount-photos-'));
+    await withApp(
+      { SUPABASE_URL: '', SUPABASE_SERVICE_ROLE_KEY: '', SUPABASE_ANON_KEY: '', VITE_SUPABASE_URL: '', DATA_DIR: dir, RESEND_API_KEY: '' },
+      async (base) => {
+        const store = require(ROOT + '/src/utils/shipmentStore');
+        const photoStore = require(ROOT + '/src/utils/photoStore');
+        const made = await store.create({ shipper_name: 'S', receiver_name: 'R', origin_city: 'Tema', destination_city: 'Lagos' });
+
+        const ask = await req(base, 'POST', `/api/track/${made.tracking_number}/photo-request`, { email: 'kofi@example.com' });
+        assert.strictEqual(ask.status, 201, ask.text);
+        assert.strictEqual((await req(base, 'GET', `/api/track/${made.tracking_number}`)).body.shipment.photo_request.open, true);
+
+        const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(40, 2)]);
+        await photoStore.addPhoto(made.id, { dataUrl: `data:image/png;base64,${png.toString('base64')}`, caption: 'At Tema' });
+        assert.strictEqual((await photoStore.fulfilRequests(made.id)).length, 1);
+
+        const shown = (await req(base, 'GET', `/api/track/${made.tracking_number}`)).body.shipment;
+        assert.strictEqual(shown.photos.length, 1);
+        assert.match(shown.photos[0].url, /^data:image\/png;base64,/);
+        assert.strictEqual(shown.photo_request.open, false);
+        console.log('  ok  without Supabase the whole photo loop runs on local files');
+      }
+    );
+    delete process.env.DATA_DIR;
+    require('fs').rmSync(dir, { recursive: true, force: true });
   }
 
   /* ---- tracking numbers ---- */

@@ -78,6 +78,8 @@
     tab: 'shipments',
     shipments: [],
     shipmentEvents: [],
+    // The open consignment's photos and photo requests, like its events.
+    shipmentPhotos: { photos: [], requests: [], limit: 12, error: '' },
     shipmentQuery: '',
     shipmentStatus: '',
     shipmentsError: '',
@@ -99,6 +101,8 @@
     settings: null,
     effective: null,
     drafts: {},
+    // What is typed into the consignment forms, keyed by form. See keep().
+    forms: {},
     settingsEditable: true,
   };
 
@@ -381,6 +385,10 @@
   };
 
   const loadShipmentEvents = async (id) => (await api('GET', `/api/shipments/${id}/events`)).events || [];
+  const loadShipmentPhotos = async (id) => {
+    const data = await api('GET', `/api/shipments/${id}/photos`);
+    return { photos: data.photos || [], requests: data.requests || [], limit: data.limit || 12, error: '' };
+  };
 
   const loadQuotes = () => client.select('quote_requests', 'select=*&order=created_at.desc&limit=200');
 
@@ -390,7 +398,8 @@
     const counts = {
       // Not "new": a consignment needs the desk when it is stuck, not when it
       // is young. Anything on hold or in exception is what should carry a dot.
-      shipments: state.shipments.filter((r) => r.status === 'on_hold' || r.status === 'exception').length,
+      // A customer waiting on a photo is waiting on the desk too.
+      shipments: state.shipments.filter((r) => r.status === 'on_hold' || r.status === 'exception' || r.photo_requested).length,
       quotes: state.quotes.filter((r) => r.status === 'new').length,
       enquiries: state.enquiries.filter((r) => r.status === 'new').length,
       applications: state.applications.filter((r) => r.status === 'new').length,
@@ -1147,6 +1156,87 @@
    * On create the server mints the tracking number; on edit it refuses a status
    * change, because moving a consignment is an event, not a field.
    */
+  /**
+   * Hold a form's contents across redraws.
+   *
+   * The desk redraws itself every few seconds so new chats and movements turn
+   * up without a reload, and a redraw builds every form afresh. The poll waits
+   * while a box has focus, but focus leaves a form all the time — picking from
+   * a dropdown, pressing its button, reading the error it gave back — and the
+   * next redraw then closed the hold form and emptied the booking form under
+   * the person filling it in.
+   *
+   * So a kept form is marked with its key, render() copies every marked form's
+   * values into state.forms before it rebuilds anything, and keep() puts them
+   * back into the new one. The last message a form showed is kept the same
+   * way, through say(), so an error does not vanish five seconds after it
+   * appears. forget() is for a form that has been sent or cancelled.
+   */
+  function keep(form, key) {
+    form.setAttribute('data-keep', key);
+    const saved = state.forms[key];
+    if (saved && saved.values) {
+      Array.from(form.elements).forEach((node) => {
+        if (!node.name || !(node.name in saved.values)) return;
+        if (node.type === 'checkbox') node.checked = saved.values[node.name];
+        else node.value = saved.values[node.name];
+      });
+    }
+    const status = form.querySelector('.form-status');
+    if (saved && saved.status && status) {
+      status.className = `form-status ${saved.status.tone}`.trim();
+      status.textContent = saved.status.text;
+    }
+    return {
+      saved: saved || {},
+      /** Remember something about the form besides its values, e.g. open. */
+      set(fields) {
+        state.forms[key] = Object.assign({}, state.forms[key], fields);
+      },
+      /** Show a message under the form, on whichever copy is on screen now. */
+      say(tone, text) {
+        state.forms[key] = Object.assign({}, state.forms[key], { status: { tone, text } });
+        const live = document.querySelector(`form[data-keep="${key}"] .form-status`) || status;
+        [status, live].forEach((node) => {
+          if (!node) return;
+          node.className = `form-status ${tone}`.trim();
+          node.textContent = text;
+        });
+      },
+      forget() {
+        delete state.forms[key];
+        document.querySelectorAll(`form[data-keep="${key}"]`).forEach((node) => node.removeAttribute('data-keep'));
+        form.removeAttribute('data-keep');
+      },
+    };
+  }
+
+  /**
+   * Let go of kept forms, both the saved values and the on-screen copies, so
+   * the snapshot at the top of the next render() does not save them again.
+   */
+  function dropForms(test) {
+    Object.keys(state.forms).forEach((key) => {
+      if (test(key)) delete state.forms[key];
+    });
+    document.querySelectorAll('form[data-keep]').forEach((form) => {
+      if (test(form.getAttribute('data-keep'))) form.removeAttribute('data-keep');
+    });
+  }
+
+  /** Copy every kept form's values into state, ahead of a redraw. */
+  function snapshotForms() {
+    document.querySelectorAll('form[data-keep]').forEach((form) => {
+      const key = form.getAttribute('data-keep');
+      const values = {};
+      Array.from(form.elements).forEach((node) => {
+        if (!node.name || node.type === 'submit' || node.type === 'button' || node.type === 'file') return;
+        values[node.name] = node.type === 'checkbox' ? node.checked : node.value;
+      });
+      state.forms[key] = Object.assign({}, state.forms[key], { values });
+    });
+  }
+
   function shipmentForm(existing) {
     const form = el('form', 'admin-ship-form');
     const values = existing || {
@@ -1173,20 +1263,22 @@
     save.type = 'submit';
     const cancel = el('button', 'btn ghost sm', 'Cancel');
     cancel.type = 'button';
-    cancel.addEventListener('click', () => {
-      state.editing = null;
-      render();
-    });
     actions.appendChild(save);
     actions.appendChild(cancel);
     form.appendChild(status);
     form.appendChild(actions);
 
+    const kept = keep(form, existing ? `ship:${existing.id}` : 'ship:new');
+    cancel.addEventListener('click', () => {
+      kept.forget();
+      state.editing = null;
+      render();
+    });
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       save.disabled = true;
-      status.className = 'form-status';
-      status.textContent = existing ? 'Saving…' : 'Creating and allocating a tracking number…';
+      kept.say('', existing ? 'Saving…' : 'Creating and allocating a tracking number…');
 
       const payload = {};
       SHIPMENT_FIELDS.forEach((spec) => {
@@ -1219,12 +1311,12 @@
             text: `Created ${data.shipment.tracking_number}.${mailed ? ' The shipper and consignee were emailed the number.' : ''}`,
           };
         }
+        kept.forget();
         state.editing = null;
         await refreshShipmentDetail();
         render();
       } catch (err) {
-        status.className = 'form-status bad';
-        status.textContent = err.message;
+        kept.say('bad', err.message);
       } finally {
         save.disabled = false;
       }
@@ -1329,27 +1421,47 @@
     form.appendChild(row);
     wrap.appendChild(form);
 
+    // Open or closed, and what is in it, outlive the desk's redraw; before
+    // this the form shut itself five seconds after it was opened.
+    const kept = keep(form, `hold:${shipment.id}`);
+    const setOpen = (open) => {
+      form.hidden = !open;
+      toggle.textContent = open ? 'Cancel' : onHold ? 'Release' : 'Hold';
+    };
+    setOpen(Boolean(kept.saved.open));
+
     toggle.addEventListener('click', () => {
-      form.hidden = !form.hidden;
-      toggle.textContent = form.hidden ? (onHold ? 'Release' : 'Hold') : 'Cancel';
-      if (!form.hidden) reason.focus();
+      const open = form.hidden;
+      if (open) {
+        kept.set({ open: true });
+      } else {
+        // Cancel means cancel: the next Hold starts from a clean form.
+        kept.forget();
+        form.setAttribute('data-keep', `hold:${shipment.id}`);
+        location.value = shipment.current_location || '';
+        lat.value = '';
+        lng.value = '';
+        reason.value = '';
+        status.className = 'form-status';
+        status.textContent = '';
+      }
+      setOpen(open);
+      if (open) reason.focus();
     });
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       const note = reason.value.trim();
       if (!note) {
-        status.className = 'form-status bad';
-        status.textContent = onHold
+        kept.say('bad', onHold
           ? 'Say what changed. The customer is watching this consignment.'
-          : 'A hold needs a reason. The customer is watching this consignment.';
+          : 'A hold needs a reason. The customer is watching this consignment.');
         reason.focus();
         return;
       }
 
       send.disabled = true;
-      status.className = 'form-status';
-      status.textContent = onHold ? 'Releasing\u2026' : 'Holding\u2026';
+      kept.say('', onHold ? 'Releasing\u2026' : 'Holding\u2026');
       try {
         // Releasing puts it back in transit; the desk corrects the stage from
         // the movement form below if it is somewhere more specific.
@@ -1367,16 +1479,236 @@
             ? `${shipment.tracking_number} released. It is moving again on the customer\u2019s map.`
             : `${shipment.tracking_number} held. The reason is on the tracking page now.`,
         };
+        kept.forget();
         await refreshShipmentDetail();
         render();
       } catch (err) {
-        status.className = 'form-status bad';
-        status.textContent = err.message;
+        kept.say('bad', err.message);
       } finally {
         send.disabled = false;
       }
     });
 
+    return wrap;
+  }
+
+  /* ----------------------------------------------------------- photos --- */
+
+  /**
+   * Make a photo small enough to send.
+   *
+   * A phone photo is 4–12 MB and 4000 px across; the tracking page shows it
+   * a few hundred pixels wide, and the platform refuses a request over 4.5 MB.
+   * So it is redrawn at 1600 px on its long side as a JPEG, stepping the
+   * quality down until it fits, before it leaves the browser.
+   */
+  async function shrinkPhoto(file) {
+    if (!file || !/^image\//.test(file.type || 'image/')) {
+      throw new Error('Choose a photo: a JPEG, PNG or WebP image.');
+    }
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((resolve, reject) => {
+        const node = new Image();
+        node.onload = () => resolve(node);
+        node.onerror = () => reject(new Error('That file could not be opened as an image. Try a JPEG or PNG.'));
+        node.src = url;
+      });
+      const MAX = 1600;
+      const scale = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+      const ctx = canvas.getContext('2d');
+      // JPEG has no transparency; a PNG's clear areas would otherwise go black.
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      let quality = 0.84;
+      let data = canvas.toDataURL('image/jpeg', quality);
+      while (data.length > 2800000 && quality > 0.45) {
+        quality -= 0.1;
+        data = canvas.toDataURL('image/jpeg', quality);
+      }
+      return data;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  /**
+   * Photos of the consignment, and the customers waiting on one.
+   *
+   * Whatever is uploaded here is on the public tracking page at once, for
+   * anyone holding the number, and answers every open request — each person
+   * who asked and left an address is emailed. The panel says both, since a
+   * photo taken for the desk's own records does not belong here.
+   */
+  function photoPanel(shipment) {
+    const gallery = state.shipmentPhotos || { photos: [], requests: [], limit: 12 };
+    const open = gallery.requests.filter((r) => r.status === 'open');
+    const wrap = el('section', `admin-photos${open.length ? ' is-asked' : ''}`);
+
+    const head = el('div', 'admin-hold-head');
+    const title = el('div', 'admin-hold-title');
+    title.appendChild(el('h4', null, `Photos (${gallery.photos.length}/${gallery.limit})`));
+    title.appendChild(el('p', 'admin-hold-sub', open.length
+      ? `${open.length === 1 ? 'A customer has' : `${open.length} customers have`} asked for a photo. Uploading one answers ${open.length === 1 ? 'it' : 'them all'}.`
+      : 'Shown on the public tracking page, to anyone with the number.'));
+    head.appendChild(title);
+    wrap.appendChild(head);
+
+    if (gallery.error) wrap.appendChild(el('p', 'form-status bad', gallery.error));
+
+    if (open.length) {
+      const asks = el('ul', 'admin-photo-asks');
+      open.forEach((r) => {
+        const li = el('li');
+        const who = el('div', 'admin-photo-ask-head');
+        who.appendChild(el('strong', null, r.email || 'No address left'));
+        who.appendChild(el('span', null, when(r.created_at)));
+        li.appendChild(who);
+        if (r.note) li.appendChild(el('div', 'admin-note-text', r.note));
+        asks.appendChild(li);
+      });
+      wrap.appendChild(asks);
+    }
+
+    if (gallery.photos.length) {
+      const grid = el('div', 'admin-photo-grid');
+      gallery.photos.forEach((photo) => {
+        const tile = el('figure', 'admin-photo');
+        const link = el('a');
+        link.href = photo.url;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        const img = el('img');
+        img.src = photo.url;
+        img.alt = photo.caption || 'Consignment photo';
+        img.loading = 'lazy';
+        link.appendChild(img);
+        tile.appendChild(link);
+        const cap = el('figcaption', null, photo.caption || when(photo.created_at));
+        cap.title = [photo.caption, when(photo.created_at)].filter(Boolean).join(' · ');
+        tile.appendChild(cap);
+        const drop = el('button', 'admin-photo-drop', '\u00d7');
+        drop.type = 'button';
+        drop.title = 'Remove this photo';
+        drop.setAttribute('aria-label', 'Remove this photo');
+        drop.addEventListener('click', async () => {
+          if (!window.confirm('Remove this photo from the tracking page?')) return;
+          drop.disabled = true;
+          try {
+            await api('DELETE', `/api/shipments/${shipment.id}/photos/${photo.id}`);
+            state.shipmentPhotos.photos = state.shipmentPhotos.photos.filter((p) => p.id !== photo.id);
+            render();
+          } catch (err) {
+            drop.disabled = false;
+            alertBar(err.message);
+          }
+        });
+        tile.appendChild(drop);
+        grid.appendChild(tile);
+      });
+      wrap.appendChild(grid);
+    }
+
+    if (gallery.photos.length >= gallery.limit) {
+      wrap.appendChild(el('p', 'admin-sub', 'That is the most one consignment carries. Remove one to add another.'));
+      return wrap;
+    }
+
+    const form = el('form', 'admin-photo-form');
+    form.noValidate = true;
+    const pick = el('label', 'admin-photo-pick');
+    const file = document.createElement('input');
+    file.type = 'file';
+    file.name = 'photo';
+    file.accept = 'image/jpeg,image/png,image/webp,image/*';
+    pick.appendChild(file);
+    pick.appendChild(el('span', null, 'Choose a photo'));
+    form.appendChild(pick);
+
+    const preview = el('img', 'admin-photo-preview');
+    preview.alt = 'The photo about to be uploaded';
+    preview.hidden = true;
+    form.appendChild(preview);
+
+    const caption = document.createElement('input');
+    caption.type = 'text';
+    caption.name = 'caption';
+    caption.maxLength = 200;
+    caption.placeholder = 'Caption, shown to the customer (optional) — e.g. Loaded at Tema, seal 448120';
+    form.appendChild(caption);
+
+    const status = el('div', 'form-status');
+    const send = el('button', 'btn sm', open.length ? 'Upload and tell the customer' : 'Upload photo');
+    send.type = 'submit';
+    const actions = el('div', 'admin-form-actions');
+    actions.appendChild(send);
+    form.appendChild(status);
+    form.appendChild(actions);
+
+    // The chosen file cannot be put back into a file box after a redraw, so
+    // what is kept is the resized image itself, and the preview shows it.
+    const kept = keep(form, `photo:${shipment.id}`);
+    let image = kept.saved.image || '';
+    const showPreview = () => {
+      preview.hidden = !image;
+      if (image) preview.src = image;
+      pick.lastChild.textContent = image ? 'Choose a different photo' : 'Choose a photo';
+    };
+    showPreview();
+
+    file.addEventListener('change', async () => {
+      const chosen = file.files && file.files[0];
+      if (!chosen) return;
+      kept.say('', 'Preparing the photo\u2026');
+      try {
+        image = await shrinkPhoto(chosen);
+        kept.set({ image });
+        kept.say('', '');
+        showPreview();
+      } catch (err) {
+        image = '';
+        kept.set({ image: '' });
+        showPreview();
+        kept.say('bad', err.message);
+      }
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!image) {
+        kept.say('bad', 'Choose a photo first.');
+        return;
+      }
+      send.disabled = true;
+      kept.say('', 'Uploading\u2026');
+      try {
+        const data = await api('POST', `/api/shipments/${shipment.id}/photos`, {
+          image,
+          caption: caption.value.trim() || null,
+        });
+        const told = data.notified && data.notified.recipients;
+        state.flash = {
+          tone: 'ok',
+          text: data.answered
+            ? `Photo added to ${shipment.tracking_number}. ${data.answered} request(s) answered${told ? `, ${told} customer(s) emailed` : ''}.`
+            : `Photo added to ${shipment.tracking_number}. It is on the tracking page now.`,
+        };
+        kept.forget();
+        state.shipments = state.shipments.map((r) => (r.id === shipment.id ? { ...r, photo_requested: false } : r));
+        await refreshShipmentDetail();
+        render();
+      } catch (err) {
+        kept.say('bad', err.message);
+      } finally {
+        send.disabled = false;
+      }
+    });
+
+    wrap.appendChild(form);
     return wrap;
   }
 
@@ -1476,11 +1808,12 @@
     form.appendChild(status);
     form.appendChild(send);
 
+    const kept = keep(form, `move:${shipment.id}`);
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       send.disabled = true;
-      status.className = 'form-status';
-      status.textContent = 'Recording…';
+      kept.say('', 'Recording…');
       try {
         const data = await api('POST', `/api/shipments/${shipment.id}/events`, {
           status: select.value,
@@ -1499,12 +1832,10 @@
             ? `Recorded: ${statusLabel(select.value)}. The customer was emailed (${data.notified.recipients} recipient(s)).`
             : `Recorded: ${statusLabel(select.value)}. No customer email was sent.`,
         };
-        location.value = '';
-        note.value = '';
+        kept.forget();
         render();
       } catch (err) {
-        status.className = 'form-status bad';
-        status.textContent = err.message;
+        kept.say('bad', err.message);
       } finally {
         send.disabled = false;
       }
@@ -1575,12 +1906,23 @@
       headRow.appendChild(el('strong', 'mono', row.tracking_number));
       headRow.appendChild(el('span', `admin-chip tone-${TONE[row.status] || 'go'}`, statusLabel(row.status)));
       btn.appendChild(headRow);
-      btn.appendChild(el('span', 'admin-row-sub', `${row.origin_city || '?'} → ${row.destination_city || '?'}`));
+      const subRow = el('span', 'admin-row-sub', `${row.origin_city || '?'} → ${row.destination_city || '?'}`);
+      if (row.photo_requested) subRow.appendChild(el('span', 'admin-chip tone-warn admin-chip-photo', 'Photo requested'));
+      btn.appendChild(subRow);
       btn.appendChild(
         el('span', 'admin-row-meta', `${modeLabel(row.mode)} · ${row.receiver_name || '—'} · ${when(row.updated_at || row.created_at)}`)
       );
 
       btn.addEventListener('click', async () => {
+        // A half-typed hold or movement belongs to the consignment it was
+        // typed against; only an unsent booking is worth carrying across.
+        if (row.id !== state.active.shipments) {
+          dropForms((key) => key !== 'ship:new');
+          // Not the last consignment's history and photos under this one's
+          // number while its own load.
+          state.shipmentEvents = [];
+          state.shipmentPhotos = { photos: [], requests: [], limit: 12, error: '' };
+        }
         state.active.shipments = row.id;
         state.editing = null;
         state.flash = null;
@@ -1640,6 +1982,8 @@
     const edit = el('button', 'btn ghost sm', 'Edit details');
     edit.type = 'button';
     edit.addEventListener('click', () => {
+      // Start from the record as it is now, not from an edit abandoned earlier.
+      dropForms((key) => key === `ship:${shipment.id}`);
       state.editing = shipment.id;
       render();
     });
@@ -1674,6 +2018,7 @@
     detail.appendChild(actions);
 
     detail.appendChild(holdControl(shipment));
+    detail.appendChild(photoPanel(shipment));
     detail.appendChild(movementForm(shipment));
 
     /* -- the file, and the history ---------------------------------------- */
@@ -1819,6 +2164,7 @@
       state.tab = 'shipments';
       state.editing = 'new';
       state.active.shipments = null;
+      dropForms((key) => key === 'ship:new');
       render();
       const form = $('shipment-detail').querySelector('form');
       if (!form) return;
@@ -2037,6 +2383,7 @@
   }
 
   function render() {
+    snapshotForms();
     document.querySelectorAll('[data-panel]').forEach((panel) => {
       panel.hidden = panel.getAttribute('data-panel') !== state.tab;
     });
@@ -2073,13 +2420,18 @@
   async function refreshShipmentDetail() {
     if (!state.active.shipments) {
       state.shipmentEvents = [];
+      state.shipmentPhotos = { photos: [], requests: [], limit: 12, error: '' };
       return;
     }
-    try {
-      state.shipmentEvents = await loadShipmentEvents(state.active.shipments);
-    } catch (err) {
-      state.shipmentEvents = [];
-    }
+    const id = state.active.shipments;
+    const [events, gallery] = await Promise.all([
+      loadShipmentEvents(id).catch(() => []),
+      loadShipmentPhotos(id).catch((err) => ({ photos: [], requests: [], limit: 12, error: err.message })),
+    ]);
+    // The desk may have moved on to another consignment while these loaded.
+    if (state.active.shipments !== id) return;
+    state.shipmentEvents = events;
+    state.shipmentPhotos = gallery;
   }
 
   async function refreshLists() {

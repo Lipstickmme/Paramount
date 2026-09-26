@@ -15,6 +15,7 @@ const { chromium } = require('playwright-core');
 const mock = require('./mock-supabase');
 
 const ROOT = require('path').join(__dirname, '..');
+const path = require('path');
 
 /** A plain JSON GET, for checking the public API behind the page's back. */
 async function req(base, path) {
@@ -239,6 +240,23 @@ async function until(check, what, timeout = 10000) {
       () => /needs a reason/.test(document.querySelector('.admin-hold-form .form-status').textContent)
     );
 
+    // The desk redraws itself every five seconds. Before keep(), the redraw
+    // after focus left the form closed it, emptied it and took the error with
+    // it — which in production read as "it keeps disappearing". Mark the node,
+    // step away, and wait out a redraw: a new node, still open, still filled.
+    await staff.fill('#hold-reason', 'Held pending a corrected');
+    await staff.click('.admin-detail-head h2');
+    await staff.evaluate(() => { document.querySelector('.admin-hold-form').__before = true; });
+    await staff.waitForFunction(
+      () => !document.querySelector('.admin-hold-form').__before,
+      null,
+      { timeout: 15000 }
+    );
+    assert.strictEqual(await staff.isVisible('.admin-hold-form'), true, 'the hold form stays open through a redraw');
+    assert.strictEqual(await staff.inputValue('#hold-reason'), 'Held pending a corrected', 'and keeps what was typed');
+    assert.match(await staff.textContent('.admin-hold-form .form-status'), /needs a reason/, 'and its message');
+    console.log('  ok  an open hold form survives the desk redrawing under it');
+
     await staff.fill('#hold-location', 'Algeciras');
     await staff.waitForSelector('.admin-hold .admin-suggest-row', { state: 'visible', timeout: 10000 });
     await staff.click('.admin-hold .admin-suggest-row');
@@ -263,6 +281,49 @@ async function until(check, what, timeout = 10000) {
     await visitor.waitForSelector('.cm-chart', { timeout: 15000 });
     assert.strictEqual(await visitor.$$eval('.cm-hold', (n) => n.length), 0, 'releasing clears the notice');
     console.log('  ok  releasing it starts it moving again');
+
+    /* ---------------- a photo, asked for and answered ---------------- */
+    await visitor.waitForSelector('[data-photos] [data-photo-ask]');
+    await visitor.click('[data-photo-ask]');
+    await visitor.fill('#photo-email', 'ada@example.com');
+    await visitor.fill('#photo-note', 'The seal on the container, please.');
+    await visitor.click('[data-photo-form] button[type="submit"]');
+    await visitor.waitForSelector('[data-photo-wait]', { timeout: 15000 });
+    await until(() => (sb.db.photo_requests.rows || []).length === 1, 'the request to be filed');
+    console.log('  ok  a visitor can ask for a photo from the tracking result');
+
+    // The desk hears about it on its next refresh, without a reload.
+    await staff.waitForSelector('.admin-chip-photo', { timeout: 15000 });
+    await staff.waitForSelector('.admin-photos.is-asked', { timeout: 15000 });
+    assert.match(await staff.textContent('.admin-photo-asks'), /ada@example\.com/);
+    await staff.setInputFiles('.admin-photo-form input[type="file"]', path.join(ROOT, 'public/assets/photo/service-road.webp'));
+    await staff.waitForSelector('.admin-photo-preview:not([hidden])', { timeout: 15000 });
+    const prepared = await staff.getAttribute('.admin-photo-preview', 'src');
+    assert.match(prepared, /^data:image\/jpeg;base64,/, 'the desk sends a resized JPEG');
+    await staff.fill('.admin-photo-form [name="caption"]', 'Sealed at Gothenburg');
+    await staff.click('.admin-photo-form button[type="submit"]');
+    await staff.waitForFunction(
+      () => /Photo added/.test(document.querySelector('#shipment-detail').textContent),
+      null,
+      { timeout: 15000 }
+    );
+    assert.strictEqual(sb.storage.get('consignment-photos').size, 1, 'the photo is in the bucket');
+    assert.ok(sb.db.photo_requests.rows.every((r) => r.status === 'done'), 'and the request is answered');
+    assert.strictEqual(await staff.$$eval('.admin-photo-grid .admin-photo', (n) => n.length), 1);
+    console.log('  ok  the desk sees the request and answers it with an upload');
+
+    await visitor.reload({ waitUntil: 'networkidle' });
+    await visitor.waitForSelector('.photo-grid .photo img', { timeout: 15000 });
+    assert.match(await visitor.textContent('.photo-grid'), /Sealed at Gothenburg/);
+    assert.strictEqual(await visitor.$$eval('[data-photo-wait]', (n) => n.length), 0, 'the waiting notice is gone');
+    assert.ok(
+      await visitor.$eval('.photo-grid .photo img', (img) => img.complete && img.naturalWidth > 0),
+      'and the image actually loads'
+    );
+    await visitor.click('.photo-grid .photo');
+    await visitor.waitForSelector('dialog.photo-view[open]');
+    await visitor.keyboard.press('Escape');
+    console.log('  ok  the visitor sees the photo on the tracking page');
 
     /* ---------------- a stranger, with no account at all ---------------- */
     // A fresh profile: no session, no storage, nothing carried over. This is

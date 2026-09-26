@@ -20,8 +20,14 @@ app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
 // Body parsing (built-in, no extra deps).
-// `verify` stashes the exact bytes so webhook signatures can be checked.
-app.use(express.json({ limit: '1mb', verify: (req, res, buf) => { req.rawBody = buf; } }));
+// `verify` stashes the exact bytes so webhook signatures can be checked. A
+// consignment photo is the one body allowed to be large: it arrives as a
+// resized JPEG in a data URL, and Vercel refuses anything over 4.5 MB anyway.
+const PHOTO_UPLOAD = /^\/api\/shipments\/[^/]+\/photos\/?$/;
+const keepRaw = (req, res, buf) => { req.rawBody = buf; };
+const jsonSmall = express.json({ limit: '1mb', verify: keepRaw });
+const jsonPhoto = express.json({ limit: '4mb', verify: keepRaw });
+app.use((req, res, next) => (PHOTO_UPLOAD.test(req.path) ? jsonPhoto : jsonSmall)(req, res, next));
 app.use(express.urlencoded({ extended: false, limit: '32kb' }));
 
 // Lightweight security headers (dependency-free).
@@ -45,6 +51,9 @@ app.use((req, res, next) => {
 // API namespace (rate limited).
 // Signed provider webhooks: verified by signature, not rate limited.
 app.use('/api/inbound', require('./routes/inbound'));
+// The same endpoint under the address the Resend webhook was first pointed
+// at, so mail sent there is filed rather than refused with a 404.
+app.post('/api/inbound-email', require('./controllers/inboundController').resend);
 
 app.use('/api', rateLimiter, apiRoutes);
 

@@ -45,6 +45,20 @@ const PROBES = [
     columns: 'id,created_at,user_id,shipment_id,label',
     migration: '0005_portal.sql',
   },
+  // Consignment photos. Optional: without them tracking works and shows no
+  // photos, and the desk is told which file to run when it tries to add one.
+  {
+    table: 'shipment_photos',
+    columns: 'id,created_at,shipment_id,url,storage_path,caption',
+    migration: '0006_photos.sql',
+    neededWhen: () => false,
+  },
+  {
+    table: 'photo_requests',
+    columns: 'id,created_at,shipment_id,email,note,status,fulfilled_at',
+    migration: '0006_photos.sql',
+    neededWhen: () => false,
+  },
   { table: 'applications', columns: 'id,created_at,name,email,phone,role_id,role_title,portfolio,experience,message,ip,status' },
   { table: 'chat_sessions', columns: 'id,created_at,visitor_id,last_message_at,status,handled_by_agent' },
   { table: 'chat_messages', columns: 'id,created_at,session_id,sender,body' },
