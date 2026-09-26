@@ -652,7 +652,21 @@ async function until(check, what, timeout = 10000) {
       .filter((line) => !expected.some((re) => re.test(line)))
       // Chromium reports a bare "Failed to load resource" alongside the
       // detailed [http*]/[netfail] entry for the same request.
-      .filter((line) => !/^\[error\] Failed to load resource/.test(line));
+      .filter((line) => !/^\[error\] Failed to load resource/.test(line))
+      /*
+       * An asset cancelled by navigation is not a failure.
+       *
+       * This walk scrolls each page to fire its reveals, which starts the
+       * lazy-loaded service card images, and then goes straight to the next
+       * page — so Chromium aborts them. Real visitors do the same thing all
+       * day; ERR_ABORTED on an image means "we stopped asking", not "it broke".
+       *
+       * Deliberately narrow. An aborted *API* call stays a failure, because
+       * that is a request whose answer somebody was waiting for: an enquiry
+       * that never confirmed it sent is exactly the bug this caught once
+       * already.
+       */
+      .filter((line) => !/^\[netfail\] \S+\/assets\/\S+ net::ERR_ABORTED/.test(line));
     assert.strictEqual(bad.length, 0, 'console clean, got:\n' + bad.join('\n'));
     console.log('  ok  no unexpected page errors');
 

@@ -181,6 +181,14 @@ exports.health = async (req, res) => {
     }
   }
 
+  if (resend && !(process.env.FORM_FROM || process.env.NOTIFY_FROM)) {
+    warnings.push(
+      'RESEND_API_KEY is set but FORM_FROM is not, so mail goes out as Resend\u2019s shared ' +
+        'onboarding@resend.dev. That address only delivers to the Resend account owner; ' +
+        'everyone else silently gets nothing. Set FORM_FROM to an address on a domain you ' +
+        'have verified in Resend.'
+    );
+  }
   // Opt-in: the plain health check stays a pure environment read.
   let schema;
   if (req.query.probe) {
@@ -204,7 +212,11 @@ exports.health = async (req, res) => {
       resendApiKey: Boolean(resend),
       resendWebhookSecret: Boolean(webhook),
       formTo: Boolean(to),
-      formFrom: Boolean(config.formFrom()),
+      // `true` only when a sender was actually set. config.formFrom() falls back
+      // to Resend's shared onboarding@resend.dev, which delivers to the account
+      // owner's own address and nowhere else — reporting that as configured
+      // sends people hunting for a bug in the code when the fix is one variable.
+      formFrom: Boolean(process.env.FORM_FROM || process.env.NOTIFY_FROM),
       mailboxAddress: Boolean(mailbox),
       forwardTo: Boolean(forward),
     },

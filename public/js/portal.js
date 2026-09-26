@@ -331,6 +331,12 @@
     if (!token || !user) return show('auth');
 
     show('shell');
+    // Name the account straight away, from the session we already hold. The
+    // list arrives over the network, and painting the identity with it meant
+    // the shell appeared saying "Signed in" as nobody in particular until the
+    // fetch came back — brief on a desk, not brief on a phone.
+    $('portal-who').textContent = user.email || '';
+
     try {
       await refresh();
     } catch (err) {

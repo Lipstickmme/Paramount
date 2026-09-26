@@ -173,6 +173,22 @@ number and a link to it. Every public movement emails the same people. Both are
 settings the desk can switch off, and both are silent no-ops until `RESEND_API_KEY`
 is set.
 
+**Turning mail on** takes three variables and one thing in the Resend dashboard:
+
+| | |
+| --- | --- |
+| `RESEND_API_KEY` | From Resend, API Keys. Nothing sends without it. |
+| `FORM_FROM` | The sender, e.g. `Paramount Shipping <hello@paramountshipping.com>`. Its **domain must be verified in Resend** or every send returns 403. |
+| `FORM_TO` | Where enquiries, quotes and applications land. |
+
+Leave `FORM_FROM` unset and mail goes out as Resend's shared
+`onboarding@resend.dev`, which delivers only to the Resend account owner —
+every customer silently gets nothing. `GET /api/health` warns about exactly that,
+and its `config` block reports which of the three are actually set.
+
+The desk can override the recipient, the sender, the reply-to and the signature
+under Settings without a deploy; the environment is the fallback behind them.
+
 ## Nobody has to sign up
 
 Tracking a consignment needs no account at all. Paste the number on the home
